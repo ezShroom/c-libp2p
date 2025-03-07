@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.10)
 # Project metadata.
 project(libp2p
     VERSION 0.1
-    DESCRIPTION "C Libp2p library implementation"
+    DESCRIPTION "C Libp2p implementation"
     LANGUAGES C
 )
 
