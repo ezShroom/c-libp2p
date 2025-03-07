@@ -1,3 +1,6 @@
+# Build directory (out-of-source build folder)
+build/
+
 # Prerequisites
 *.d
 
@@ -52,18 +55,6 @@ Mkfile.old
 dkms.conf
 
 .DS_Store
-
-# Ignore all files in the tests folder without extensions 
-tests/*
-
-# Un-ignore the fixtures folder inside tests (this re-includes the directory and its contents)
-!tests/fixtures/
-
-# Allow .c files (and other source files) in the tests folder
-!tests/*.c
-
-# Allow .h files in the tests folder (if headers exist)
-!tests/*.h
 
 # Ignore all files in the bin folder without extensions 
 bin/*
