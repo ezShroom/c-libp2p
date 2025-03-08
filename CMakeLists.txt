@@ -16,39 +16,34 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
-# Include directories: system/standard headers come first, then internal.
+# Include public headers.
 include_directories(${PROJECT_SOURCE_DIR}/include)
-include_directories(${PROJECT_SOURCE_DIR}/src)
 
-# Build the multiaddr library from its source files.
-add_library(multiaddr
-    src/multiformats/multiaddr/multiaddr.c
-    src/multiformats/multiaddr/multiaddr_helpers.c
+# Build the unsigned_varint library.
+add_library(unsigned_varint
+    src/multiformats/unsigned_varint/unsigned_varint.c
 )
 
-# Specify public include directories for the multiaddr library.
-target_include_directories(multiaddr PUBLIC
+# Specify public include directories for the unsigned_varint library.
+target_include_directories(unsigned_varint PUBLIC
     ${PROJECT_SOURCE_DIR}/include
 )
 
-# Build the test executable.
-add_executable(test_multiaddr
-    tests/multiformats/multiaddr/test_multiaddr.c
+# Optionally add private include directories if needed.
+target_include_directories(unsigned_varint PRIVATE
+    ${PROJECT_SOURCE_DIR}/src/multiformats/unsigned_varint
 )
 
-# Link the test executable with the multiaddr library.
-target_link_libraries(test_multiaddr PRIVATE multiaddr)
-
-# Organize test executables into a dedicated "tests" subdirectory in the build folder.
-set_target_properties(test_multiaddr PROPERTIES
+# Build the test executable for unsigned_varint.
+add_executable(test_unsigned_varint
+    tests/multiformats/unsigned_varint/test_unsigned_varint.c
+)
+target_link_libraries(test_unsigned_varint PRIVATE unsigned_varint)
+set_target_properties(test_unsigned_varint PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/tests
 )
 
 # Enable testing with CTest.
 enable_testing()
-
-# Register the test executable with CTest.
-add_test(NAME TestMultiaddr COMMAND test_multiaddr)
-
-# Optionally, set a timeout for tests (in seconds).
-set_tests_properties(TestMultiaddr PROPERTIES TIMEOUT 10)
+add_test(NAME TestUnsignedVarint COMMAND test_unsigned_varint)
+set_tests_properties(TestUnsignedVarint PROPERTIES TIMEOUT 10)
