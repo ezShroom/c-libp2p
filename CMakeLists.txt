@@ -43,6 +43,15 @@ set_target_properties(test_unsigned_varint PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/tests
 )
 
+# Build the benchmark executable for unsigned_varint.
+add_executable(bench_unsigned_varint
+    benchmarks/multiformats/unsigned_varint/bench_unsigned_varint.c
+)
+target_link_libraries(bench_unsigned_varint PRIVATE unsigned_varint)
+set_target_properties(bench_unsigned_varint PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/benchmarks
+)
+
 # Enable testing with CTest.
 enable_testing()
 add_test(NAME TestUnsignedVarint COMMAND test_unsigned_varint)
