@@ -1,5 +1,5 @@
-#ifndef MULTIFORMATS_UNSIGNED_VARINT_H
-#define MULTIFORMATS_UNSIGNED_VARINT_H
+#ifndef UNSIGNED_VARINT_H
+#define UNSIGNED_VARINT_H
 
 /**
  * @file unsigned_varint.h
@@ -81,4 +81,4 @@ size_t mf_uvarint_size(uint64_t value);
 }
 #endif
 
-#endif /* MULTIFORMATS_UNSIGNED_VARINT_H */
+#endif /* UNSIGNED_VARINT_H */
