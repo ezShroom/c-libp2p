@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include "multiaddr/multiaddr.h"
-#include "multiaddr/multiaddr_helpers.h"
+#include "multiformats/multiaddr/multiaddr.h"
+#include "multiformats/multiaddr/multiaddr_helpers.h"
 
 Multiaddr *libp2p_multiaddr_parse(const char *addr)
 {

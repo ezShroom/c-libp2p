@@ -1,7 +1,7 @@
 #ifndef LIBP2P_MULTIADDR_HELPERS_H
 #define LIBP2P_MULTIADDR_HELPERS_H
 
-#include "multiaddr/types.h"
+#include "multiformats/multiaddr/types.h"
 
 /**
  * @brief Duplicates the given string.

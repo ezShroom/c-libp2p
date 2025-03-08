@@ -22,8 +22,8 @@ include_directories(${PROJECT_SOURCE_DIR}/src)
 
 # Build the multiaddr library from its source files.
 add_library(multiaddr
-    src/multiaddr/multiaddr.c
-    src/multiaddr/multiaddr_helpers.c
+    src/multiformats/multiaddr/multiaddr.c
+    src/multiformats/multiaddr/multiaddr_helpers.c
 )
 
 # Specify public include directories for the multiaddr library.
@@ -33,7 +33,7 @@ target_include_directories(multiaddr PUBLIC
 
 # Build the test executable.
 add_executable(test_multiaddr
-    tests/multiaddr/test_multiaddr.c
+    tests/multiformats/multiaddr/test_multiaddr.c
 )
 
 # Link the test executable with the multiaddr library.

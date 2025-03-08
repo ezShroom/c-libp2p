@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "multiaddr/multiaddr.h"
+#include "multiformats/multiaddr/multiaddr.h"
 
 int main(void) {
     int errors = 0;
