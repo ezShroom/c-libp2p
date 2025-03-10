@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <stdlib.h>  // For EXIT_SUCCESS and EXIT_FAILURE
+#include <stdlib.h>  
 #include <string.h>
 #include <stdint.h>
 #include "multiformats/multicodec/multicodec.h"
