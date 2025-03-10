@@ -1,8 +1,8 @@
-#include "multiformats/unsigned_varint/unsigned_varint.h"
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h> // for EXIT_SUCCESS and EXIT_FAILURE
+#include <stdlib.h>
 #include <string.h>
+#include "multiformats/unsigned_varint/unsigned_varint.h"
 
 static void print_standard(const char *test_name, const char *details, int passed)
 {

@@ -1,15 +1,6 @@
 #ifndef UNSIGNED_VARINT_H
 #define UNSIGNED_VARINT_H
 
-/**
- * @file unsigned_varint.h
- * @brief Provides functions to encode/decode 64-bit unsigned integers using
- *        the MSB-based unsigned varint format (max 9 bytes).
- *
- * The specification requires minimal encoding and disallows varints longer
- * than 9 bytes (63 bits).
- */
-
 #include <stddef.h>
 #include <stdint.h>
 
