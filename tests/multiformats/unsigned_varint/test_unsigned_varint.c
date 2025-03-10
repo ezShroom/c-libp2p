@@ -185,7 +185,7 @@ int main(void)
     }
     else
     {
-        printf("\nAll tests passed.\n");
+        printf("\nAll tests passed!\n");
         return EXIT_SUCCESS;
     }
 }

@@ -19,17 +19,15 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 # Include public headers.
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
+# ---------------------------------------------
 # Build the unsigned_varint library.
+# ---------------------------------------------
 add_library(unsigned_varint
     src/multiformats/unsigned_varint/unsigned_varint.c
 )
-
-# Specify public include directories for the unsigned_varint library.
 target_include_directories(unsigned_varint PUBLIC
     ${PROJECT_SOURCE_DIR}/include
 )
-
-# Optionally add private include directories if needed.
 target_include_directories(unsigned_varint PRIVATE
     ${PROJECT_SOURCE_DIR}/src/multiformats/unsigned_varint
 )
@@ -52,7 +50,30 @@ set_target_properties(bench_unsigned_varint PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/benchmarks
 )
 
+# ---------------------------------------------
+# Build the multicodec library.
+# ---------------------------------------------
+add_library(multicodec
+    src/multiformats/multicodec/multicodec.c
+)
+target_include_directories(multicodec PUBLIC
+    ${PROJECT_SOURCE_DIR}/include
+)
+
+# Build the test executable for multicodec.
+add_executable(test_multicodec
+    tests/multiformats/multicodec/test_multicodec.c
+)
+target_link_libraries(test_multicodec PRIVATE multicodec)
+set_target_properties(test_multicodec PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/tests
+)
+
+# ---------------------------------------------
 # Enable testing with CTest.
+# ---------------------------------------------
 enable_testing()
 add_test(NAME TestUnsignedVarint COMMAND test_unsigned_varint)
+add_test(NAME TestMulticodec COMMAND test_multicodec)
 set_tests_properties(TestUnsignedVarint PROPERTIES TIMEOUT 10)
+set_tests_properties(TestMulticodec PROPERTIES TIMEOUT 10)
