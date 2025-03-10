@@ -30,34 +30,117 @@ static size_t varint_size_64(uint64_t value)
 mf_varint_err_t mf_uvarint_encode(uint64_t value, uint8_t *out, size_t out_size, size_t *written)
 {
     if (!out || !written)
-    {
         return MF_VARINT_ERR_BUFFER_OVER;
-    }
 
     if (value > 0x7FFFFFFFFFFFFFFFULL)
-    {
         return MF_VARINT_ERR_VALUE_OVERFLOW;
-    }
 
-    size_t needed = varint_size_64(value);
-    if (needed > 9)
+    if (value < 0x80ULL)
     {
-        return MF_VARINT_ERR_VALUE_OVERFLOW;
+        if (out_size < 1)
+            return MF_VARINT_ERR_BUFFER_OVER;
+        out[0] = (uint8_t)value;
+        *written = 1;
+        return MF_VARINT_OK;
     }
-
-    if (needed > out_size)
-    {
+    if (value < 0x4000ULL)
+    { /* < 2^14 */
+        if (out_size < 2)
+            return MF_VARINT_ERR_BUFFER_OVER;
+        out[0] = (uint8_t)((value & 0x7F) | 0x80);
+        out[1] = (uint8_t)(value >> 7);
+        *written = 2;
+        return MF_VARINT_OK;
+    }
+    if (value < 0x200000ULL)
+    { /* < 2^21 */
+        if (out_size < 3)
+            return MF_VARINT_ERR_BUFFER_OVER;
+        out[0] = (uint8_t)((value & 0x7F) | 0x80);
+        out[1] = (uint8_t)(((value >> 7) & 0x7F) | 0x80);
+        out[2] = (uint8_t)(value >> 14);
+        *written = 3;
+        return MF_VARINT_OK;
+    }
+    if (value < 0x10000000ULL)
+    { /* < 2^28 */
+        if (out_size < 4)
+            return MF_VARINT_ERR_BUFFER_OVER;
+        out[0] = (uint8_t)((value & 0x7F) | 0x80);
+        out[1] = (uint8_t)(((value >> 7) & 0x7F) | 0x80);
+        out[2] = (uint8_t)(((value >> 14) & 0x7F) | 0x80);
+        out[3] = (uint8_t)(value >> 21);
+        *written = 4;
+        return MF_VARINT_OK;
+    }
+    if (value < 0x800000000ULL)
+    { /* < 2^35 */
+        if (out_size < 5)
+            return MF_VARINT_ERR_BUFFER_OVER;
+        out[0] = (uint8_t)((value & 0x7F) | 0x80);
+        out[1] = (uint8_t)(((value >> 7) & 0x7F) | 0x80);
+        out[2] = (uint8_t)(((value >> 14) & 0x7F) | 0x80);
+        out[3] = (uint8_t)(((value >> 21) & 0x7F) | 0x80);
+        out[4] = (uint8_t)(value >> 28);
+        *written = 5;
+        return MF_VARINT_OK;
+    }
+    if (value < 0x40000000000ULL)
+    { /* < 2^42 */
+        if (out_size < 6)
+            return MF_VARINT_ERR_BUFFER_OVER;
+        out[0] = (uint8_t)((value & 0x7F) | 0x80);
+        out[1] = (uint8_t)(((value >> 7) & 0x7F) | 0x80);
+        out[2] = (uint8_t)(((value >> 14) & 0x7F) | 0x80);
+        out[3] = (uint8_t)(((value >> 21) & 0x7F) | 0x80);
+        out[4] = (uint8_t)(((value >> 28) & 0x7F) | 0x80);
+        out[5] = (uint8_t)(value >> 35);
+        *written = 6;
+        return MF_VARINT_OK;
+    }
+    if (value < 0x2000000000000ULL)
+    { /* < 2^49 */
+        if (out_size < 7)
+            return MF_VARINT_ERR_BUFFER_OVER;
+        out[0] = (uint8_t)((value & 0x7F) | 0x80);
+        out[1] = (uint8_t)(((value >> 7) & 0x7F) | 0x80);
+        out[2] = (uint8_t)(((value >> 14) & 0x7F) | 0x80);
+        out[3] = (uint8_t)(((value >> 21) & 0x7F) | 0x80);
+        out[4] = (uint8_t)(((value >> 28) & 0x7F) | 0x80);
+        out[5] = (uint8_t)(((value >> 35) & 0x7F) | 0x80);
+        out[6] = (uint8_t)(value >> 42);
+        *written = 7;
+        return MF_VARINT_OK;
+    }
+    if (value < 0x100000000000000ULL)
+    { /* < 2^56 */
+        if (out_size < 8)
+            return MF_VARINT_ERR_BUFFER_OVER;
+        out[0] = (uint8_t)((value & 0x7F) | 0x80);
+        out[1] = (uint8_t)(((value >> 7) & 0x7F) | 0x80);
+        out[2] = (uint8_t)(((value >> 14) & 0x7F) | 0x80);
+        out[3] = (uint8_t)(((value >> 21) & 0x7F) | 0x80);
+        out[4] = (uint8_t)(((value >> 28) & 0x7F) | 0x80);
+        out[5] = (uint8_t)(((value >> 35) & 0x7F) | 0x80);
+        out[6] = (uint8_t)(((value >> 42) & 0x7F) | 0x80);
+        out[7] = (uint8_t)(value >> 49);
+        *written = 8;
+        return MF_VARINT_OK;
+    }
+    /* Otherwise, value fits in 9 bytes */
+    if (out_size < 9)
         return MF_VARINT_ERR_BUFFER_OVER;
-    }
 
-    *written = 0;
-    while (value >= 0x80)
-    {
-        out[(*written)++] = (uint8_t)((value & 0x7F) | 0x80);
-        value >>= 7;
-    }
-    out[(*written)++] = (uint8_t)(value & 0x7F);
-
+    out[0] = (uint8_t)((value & 0x7F) | 0x80);
+    out[1] = (uint8_t)(((value >> 7) & 0x7F) | 0x80);
+    out[2] = (uint8_t)(((value >> 14) & 0x7F) | 0x80);
+    out[3] = (uint8_t)(((value >> 21) & 0x7F) | 0x80);
+    out[4] = (uint8_t)(((value >> 28) & 0x7F) | 0x80);
+    out[5] = (uint8_t)(((value >> 35) & 0x7F) | 0x80);
+    out[6] = (uint8_t)(((value >> 42) & 0x7F) | 0x80);
+    out[7] = (uint8_t)(((value >> 49) & 0x7F) | 0x80);
+    out[8] = (uint8_t)(value >> 56);
+    *written = 9;
     return MF_VARINT_OK;
 }
 
@@ -73,70 +156,182 @@ mf_varint_err_t mf_uvarint_encode(uint64_t value, uint8_t *out, size_t out_size,
 mf_varint_err_t mf_uvarint_decode(const uint8_t *in, size_t in_size, uint64_t *value, size_t *read)
 {
     if (!in || !value || !read)
-    {
         return MF_VARINT_ERR_BUFFER_OVER;
-    }
 
     if (in_size == 0)
-    {
         return MF_VARINT_ERR_TOO_LONG;
+
+    if (!(in[0] & 0x80))
+    {
+        *value = in[0];
+        *read = 1;
+        return MF_VARINT_OK;
+    }
+    if (in_size >= 2 && !(in[1] & 0x80))
+    {
+        uint64_t v = ((uint64_t)(in[1] & 0x7F) << 7) | (in[0] & 0x7F);
+        if (v >= (1ULL << 7))
+        {
+            *value = v;
+            *read = 2;
+            return MF_VARINT_OK;
+        }
+        return MF_VARINT_ERR_NOT_MINIMAL;
+    }
+
+    if (in_size >= 3 && !(in[2] & 0x80))
+    {
+        uint64_t v = ((uint64_t)(in[2] & 0x7F) << 14) |
+                     ((uint64_t)(in[1] & 0x7F) << 7) |
+                     (in[0] & 0x7F);
+        if (v >= (1ULL << 14))
+        {
+            *value = v;
+            *read = 3;
+            return MF_VARINT_OK;
+        }
+        return MF_VARINT_ERR_NOT_MINIMAL;
+    }
+
+    if (in_size >= 4 && !(in[3] & 0x80))
+    {
+        uint64_t v = ((uint64_t)(in[3] & 0x7F) << 21) |
+                     ((uint64_t)(in[2] & 0x7F) << 14) |
+                     ((uint64_t)(in[1] & 0x7F) << 7) |
+                     (in[0] & 0x7F);
+        if (v >= (1ULL << 21))
+        {
+            *value = v;
+            *read = 4;
+            return MF_VARINT_OK;
+        }
+        return MF_VARINT_ERR_NOT_MINIMAL;
     }
 
     uint64_t result = 0;
-    size_t shift = 0;
     size_t idx = 0;
+    uint8_t b;
 
-    for (; idx < in_size; idx++)
+    // Byte 0
+    b = in[idx++];
+    result = b & 0x7F;
+    if (!(b & 0x80))
+        goto minimal_check;
+
+    // Byte 1
+    if (idx >= in_size)
+        return MF_VARINT_ERR_TOO_LONG;
+    b = in[idx++];
+    result |= ((uint64_t)(b & 0x7F)) << 7;
+    if (!(b & 0x80))
+        goto minimal_check;
+
+    // Byte 2
+    if (idx >= in_size)
+        return MF_VARINT_ERR_TOO_LONG;
+    b = in[idx++];
+    result |= ((uint64_t)(b & 0x7F)) << 14;
+    if (!(b & 0x80))
+        goto minimal_check;
+
+    // Byte 3
+    if (idx >= in_size)
+        return MF_VARINT_ERR_TOO_LONG;
+    b = in[idx++];
+    result |= ((uint64_t)(b & 0x7F)) << 21;
+    if (!(b & 0x80))
+        goto minimal_check;
+
+    // Byte 4
+    if (idx >= in_size)
+        return MF_VARINT_ERR_TOO_LONG;
+    b = in[idx++];
+    result |= ((uint64_t)(b & 0x7F)) << 28;
+    if (!(b & 0x80))
+        goto minimal_check;
+
+    // Byte 5
+    if (idx >= in_size)
+        return MF_VARINT_ERR_TOO_LONG;
+    b = in[idx++];
+    result |= ((uint64_t)(b & 0x7F)) << 35;
+    if (!(b & 0x80))
+        goto minimal_check;
+
+    // Byte 6
+    if (idx >= in_size)
+        return MF_VARINT_ERR_TOO_LONG;
+    b = in[idx++];
+    result |= ((uint64_t)(b & 0x7F)) << 42;
+    if (!(b & 0x80))
+        goto minimal_check;
+
+    // Byte 7
+    if (idx >= in_size)
+        return MF_VARINT_ERR_TOO_LONG;
+    b = in[idx++];
+    result |= ((uint64_t)(b & 0x7F)) << 49;
+    if (!(b & 0x80))
+        goto minimal_check;
+
+    // Byte 8 (ninth byte)
+    if (idx >= in_size)
+        return MF_VARINT_ERR_TOO_LONG;
+    b = in[idx++];
+    if (b & 0x80)
     {
-        uint8_t byte = in[idx];
-        uint64_t lower7 = (uint64_t)(byte & 0x7F);
-
-        if (shift > 63)
-        {
-            return MF_VARINT_ERR_VALUE_OVERFLOW;
-        }
-
-        result |= (lower7 << shift);
-
-        if ((byte & 0x80) == 0)
-        {
-            idx++;
-            break;
-        }
-        shift += 7;
-    }
-
-    if (idx == in_size)
-    {
-        if ((in[idx - 1] & 0x80) != 0)
-        {
+        // There is a tenth byte. Process it:
+        result |= ((uint64_t)(b & 0x7F)) << 56;
+        if (idx >= in_size)
             return MF_VARINT_ERR_TOO_LONG;
-        }
+        b = in[idx++];
+        if (b & 0x80)
+            return MF_VARINT_ERR_TOO_LONG;
+        result |= ((uint64_t)(b & 0x7F)) << 63;
     }
+    else
+    {
+        result |= ((uint64_t)(b & 0x7F)) << 56;
+    }
+
+minimal_check:
 
     if (result > 0x7FFFFFFFFFFFFFFFULL)
-    {
         return MF_VARINT_ERR_VALUE_OVERFLOW;
-    }
 
     if (idx > 9)
-    {
         return MF_VARINT_ERR_TOO_LONG;
+
+    size_t expected;
+    if (result < (1ULL << 28))
+    {
+        if (result < (1ULL << 14))
+        {
+            expected = (result < (1ULL << 7)) ? 1 : 2;
+        }
+        else
+        {
+            expected = (result < (1ULL << 21)) ? 3 : 4;
+        }
+    }
+    else if (result < (1ULL << 56))
+    {
+        if (result < (1ULL << 42))
+        {
+            expected = (result < (1ULL << 35)) ? 5 : 6;
+        }
+        else
+        {
+            expected = (result < (1ULL << 49)) ? 7 : 8;
+        }
+    }
+    else
+    {
+        expected = 9;
     }
 
-    uint8_t reencoded[10];
-    size_t reencoded_size = 0;
-    mf_varint_err_t enc_err =
-        mf_uvarint_encode(result, reencoded, sizeof(reencoded), &reencoded_size);
-    if (enc_err != MF_VARINT_OK)
-    {
-        return enc_err;
-    }
-
-    if (reencoded_size != idx || memcmp(reencoded, in, idx) != 0)
-    {
+    if (expected != idx)
         return MF_VARINT_ERR_NOT_MINIMAL;
-    }
 
     *value = result;
     *read = idx;
