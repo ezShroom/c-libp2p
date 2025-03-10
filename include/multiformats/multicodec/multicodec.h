@@ -21,7 +21,6 @@ typedef struct
  *
  * @param[in] name A null-terminated string (e.g. "identity", "ip4").
  * @return The matching numeric code (e.g. 0x00 for "identity"), or 0 if not found.
- *         (Or you can choose a sentinel value you prefer, such as (uint64_t)-1).
  */
 uint64_t multicodec_code_from_name(const char *name);
 
