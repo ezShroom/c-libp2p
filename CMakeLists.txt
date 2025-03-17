@@ -119,3 +119,21 @@ add_module(
     ""
     ""
 )
+
+# multiformats/multibase/base58_btc
+add_module(
+    base58_btc
+    src/multiformats/multibase/base58_btc.c
+    tests/multiformats/multibase/test_base58_btc.c
+    ""
+    ""
+)
+
+# multiformats/multibase/base64
+add_module(
+    base64
+    src/multiformats/multibase/base64.c
+    tests/multiformats/multibase/test_base64.c
+    ""
+    ""
+)

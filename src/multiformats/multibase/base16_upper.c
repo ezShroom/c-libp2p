@@ -14,9 +14,6 @@
 #define BIG_ENDIAN_SYSTEM 0
 #endif
 
-/* Upper-case hex digits */
-static const char hex_digits_upper[] = "0123456789ABCDEF";
-
 /* Little‑endian lookup table for uppercase encoding */
 static const uint16_t hex_lookup_le_upper[256] = 
 {
@@ -153,7 +150,7 @@ int base16_upper_encode(const uint8_t *restrict data, size_t data_len, char *res
     {
         return MULTIBASE_ERR_NULL_POINTER;
     }
-    if (out_len < data_len * 2)
+    if (out_len < data_len * 2 + 1)  
     {
         return MULTIBASE_ERR_BUFFER_TOO_SMALL;
     }
@@ -175,9 +172,9 @@ int base16_upper_encode(const uint8_t *restrict data, size_t data_len, char *res
             out[2 * i + 1] = (char)(val & 0xFF);
         }
     }
+    out[data_len * 2] = '\0';  // Append null terminator
     return (int)(data_len * 2);
 }
-
 /**
  * @brief Decode a Base16 (hexadecimal) encoded string using uppercase letters.
  *

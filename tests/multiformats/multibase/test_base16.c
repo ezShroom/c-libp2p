@@ -51,7 +51,7 @@ int main(void)
             exit(EXIT_FAILURE);
         }
 
-        int ret = base16_encode((const uint8_t *)tv.input, input_len, encoded, out_buf_size - 1);
+        int ret = base16_encode((const uint8_t *)tv.input, input_len, encoded, out_buf_size);
         char test_name[128];
         sprintf(test_name, "base16_encode(\"%s\")", tv.input);
         if (ret < 0)
@@ -77,7 +77,7 @@ int main(void)
             print_standard(test_name, "", 1);
         }
 
-        size_t decode_buf_size = input_len + 1; 
+        size_t decode_buf_size = input_len + 1;
         uint8_t *decoded = malloc(decode_buf_size);
         if (!decoded)
         {
