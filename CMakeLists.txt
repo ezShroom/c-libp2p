@@ -137,3 +137,31 @@ add_module(
     ""
     ""
 )
+
+# multiformats/multibase/base64_url
+add_module(
+    base64_url
+    src/multiformats/multibase/base64_url.c
+    tests/multiformats/multibase/test_base64_url.c
+    ""
+    ""
+)
+
+# multiformats/multibase/base64_url_pad
+add_module(
+    base64_url_pad
+    src/multiformats/multibase/base64_url_pad.c
+    tests/multiformats/multibase/test_base64_url_pad.c
+    ""
+    ""
+)
+
+# multiformats/multibase/multibase
+add_module(
+    multibase
+    src/multiformats/multibase/multibase.c
+    tests/multiformats/multibase/test_multibase.c
+    ""
+    ""
+)
+target_link_libraries(multibase PRIVATE base16 base16_upper base32 base32_upper base58_btc base64 base64_url base64_url_pad)

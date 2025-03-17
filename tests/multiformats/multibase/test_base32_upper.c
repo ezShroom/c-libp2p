@@ -3,9 +3,7 @@
 #include <string.h>
 #include <stdint.h>
 #include "multiformats/multibase/multibase.h"
-
-extern int base32_upper_encode(const uint8_t *data, size_t data_len, char *out, size_t out_len);
-extern int base32_upper_decode(const char *in, uint8_t *out, size_t out_len);
+#include "multiformats/multibase/base32_upper.h"
 
 static void print_standard(const char *test_name, const char *details, int passed)
 {
