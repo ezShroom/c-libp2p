@@ -45,8 +45,8 @@ int main(void)
         double d = (double)rand() / (double)RAND_MAX;
         uint64_t value = (uint64_t)(d * (double)MAX_VALUE);
 
-        mf_varint_err_t err = mf_uvarint_encode(value, buffer, sizeof(buffer), &written);
-        if (err != MF_VARINT_OK)
+        unsigned_varint_err_t err = unsigned_varint_encode(value, buffer, sizeof(buffer), &written);
+        if (err != UNSIGNED_VARINT_OK)
         {
             fprintf(stderr, "Encode error, code=%d\n", err);
             return 1;
@@ -55,8 +55,8 @@ int main(void)
         if (includeInvalid && (i % M) == 0)
         {
             uint64_t out = 0;
-            err = mf_uvarint_decode(invalid_buffer, sizeof(invalid_buffer), &out, &read);
-            if (err != MF_VARINT_OK)
+            err = unsigned_varint_decode(invalid_buffer, sizeof(invalid_buffer), &out, &read);
+            if (err != UNSIGNED_VARINT_OK)
             {
                 invalid_count++;
             }
@@ -64,8 +64,8 @@ int main(void)
         else
         {
             uint64_t out = 0;
-            err = mf_uvarint_decode(buffer, sizeof(buffer), &out, &read);
-            if (err != MF_VARINT_OK)
+            err = unsigned_varint_decode(buffer, sizeof(buffer), &out, &read);
+            if (err != UNSIGNED_VARINT_OK)
             {
                 fprintf(stderr, "Decode error, code=%d\n", err);
                 return 1;

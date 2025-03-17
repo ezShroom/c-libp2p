@@ -20,60 +20,84 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
 # ---------------------------------------------
-# Build the unsigned_varint library.
+# Helper function for adding a module.
 # ---------------------------------------------
-add_library(unsigned_varint
-    src/multiformats/unsigned_varint/unsigned_varint.c
-)
-target_include_directories(unsigned_varint PUBLIC
-    ${PROJECT_SOURCE_DIR}/include
-)
-target_include_directories(unsigned_varint PRIVATE
-    ${PROJECT_SOURCE_DIR}/src/multiformats/unsigned_varint
-)
+#
+# Parameters:
+#   MODULE_NAME   - Name of the library target.
+#   MODULE_SOURCE - Source file for the library.
+#   TEST_SOURCE   - Source file for the test executable.
+#   BENCH_SOURCE  - (Optional) Source file for the benchmark executable.
+#   PRIVATE_DIR   - (Optional) Relative path for additional private include directories.
+#
+function(add_module MODULE_NAME MODULE_SOURCE TEST_SOURCE BENCH_SOURCE PRIVATE_DIR)
+    # Create the library.
+    add_library(${MODULE_NAME} ${MODULE_SOURCE})
+    target_include_directories(${MODULE_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/include)
+    if(NOT "${PRIVATE_DIR}" STREQUAL "")
+        target_include_directories(${MODULE_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/${PRIVATE_DIR})
+    endif()
 
-# Build the test executable for unsigned_varint.
-add_executable(test_unsigned_varint
-    tests/multiformats/unsigned_varint/test_unsigned_varint.c
-)
-target_link_libraries(test_unsigned_varint PRIVATE unsigned_varint)
-set_target_properties(test_unsigned_varint PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/tests
-)
+    # Create the test executable.
+    if(NOT "${TEST_SOURCE}" STREQUAL "")
+        add_executable(test_${MODULE_NAME} ${TEST_SOURCE})
+        target_link_libraries(test_${MODULE_NAME} PRIVATE ${MODULE_NAME})
+        set_target_properties(test_${MODULE_NAME} PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/tests
+        )
+        add_test(NAME Test${MODULE_NAME} COMMAND test_${MODULE_NAME})
+        set_tests_properties(Test${MODULE_NAME} PROPERTIES TIMEOUT 10)
+    endif()
 
-# Build the benchmark executable for unsigned_varint.
-add_executable(bench_unsigned_varint
-    benchmarks/multiformats/unsigned_varint/bench_unsigned_varint.c
-)
-target_link_libraries(bench_unsigned_varint PRIVATE unsigned_varint)
-set_target_properties(bench_unsigned_varint PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/benchmarks
-)
+    # Create the benchmark executable if provided.
+    if(NOT "${BENCH_SOURCE}" STREQUAL "")
+        add_executable(bench_${MODULE_NAME} ${BENCH_SOURCE})
+        target_link_libraries(bench_${MODULE_NAME} PRIVATE ${MODULE_NAME})
+        set_target_properties(bench_${MODULE_NAME} PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/benchmarks
+        )
+    endif()
+endfunction()
 
-# ---------------------------------------------
-# Build the multicodec library.
-# ---------------------------------------------
-add_library(multicodec
-    src/multiformats/multicodec/multicodec.c
-)
-target_include_directories(multicodec PUBLIC
-    ${PROJECT_SOURCE_DIR}/include
-)
-
-# Build the test executable for multicodec.
-add_executable(test_multicodec
-    tests/multiformats/multicodec/test_multicodec.c
-)
-target_link_libraries(test_multicodec PRIVATE multicodec)
-set_target_properties(test_multicodec PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/tests
-)
-
-# ---------------------------------------------
 # Enable testing with CTest.
-# ---------------------------------------------
 enable_testing()
-add_test(NAME TestUnsignedVarint COMMAND test_unsigned_varint)
-add_test(NAME TestMulticodec COMMAND test_multicodec)
-set_tests_properties(TestUnsignedVarint PROPERTIES TIMEOUT 10)
-set_tests_properties(TestMulticodec PROPERTIES TIMEOUT 10)
+
+# ---------------------------------------------
+# Add modules using the helper function.
+# ---------------------------------------------
+
+# multiformats/unsigned_varint
+add_module(
+    unsigned_varint
+    src/multiformats/unsigned_varint/unsigned_varint.c
+    tests/multiformats/unsigned_varint/test_unsigned_varint.c
+    benchmarks/multiformats/unsigned_varint/bench_unsigned_varint.c
+    src/multiformats/unsigned_varint
+)
+
+# multiformats/multicodec
+add_module(
+    multicodec
+    src/multiformats/multicodec/multicodec.c
+    tests/multiformats/multicodec/test_multicodec.c
+    ""
+    ""
+)
+
+# multiformats/multibase/base16
+add_module(
+    base16
+    src/multiformats/multibase/base16.c
+    tests/multiformats/multibase/test_base16.c
+    benchmarks/multiformats/multibase/bench_base16.c
+    src/multiformats/multibase
+)
+
+# multiformats/multibase/base16_upper
+add_module(
+    base16_upper
+    src/multiformats/multibase/base16_upper.c
+    tests/multiformats/multibase/test_base16_upper.c
+    benchmarks/multiformats/multibase/bench_base16_upper.c
+    src/multiformats/multibase
+)
