@@ -136,11 +136,16 @@ static const uint8_t hex_values_upper_table[256] =
     0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80
 };
 
-/*
- * Extremely optimized Base16 (hexadecimal) encoding function for uppercase.
+
+/**
+ * @brief Encode data into Base16 (hexadecimal) format using uppercase letters.
  *
- * Each input byte is converted into two uppercase hex characters.
- * If the output is 2-byte aligned, a 16-bit store is used per byte.
+ * @param data The input data to be encoded.
+ * @param data_len The length of the input data.
+ * @param out The buffer to store the encoded Base16 string.
+ * @param out_len The size of the output buffer.
+ * @return The number of characters written to the output buffer, or an error code
+ *         indicating a null pointer or insufficient buffer size.
  */
 int base16_upper_encode(const uint8_t *restrict data, size_t data_len, char *restrict out, size_t out_len)
 {
@@ -173,11 +178,15 @@ int base16_upper_encode(const uint8_t *restrict data, size_t data_len, char *res
     return (int)(data_len * 2);
 }
 
-/*
- * Extremely optimized Base16 (hexadecimal) decoding function for uppercase.
+/**
+ * @brief Decode a Base16 (hexadecimal) encoded string using uppercase letters.
  *
- * The input must be an even-length string of valid uppercase hex characters.
- * It processes data in unrolled blocks of 16 characters (8 output bytes).
+ * @param in The input Base16 encoded string.
+ * @param out The buffer to store the decoded data.
+ * @param out_len The size of the output buffer.
+ * @return The number of bytes written to the output buffer, or an error code
+ *         indicating a null pointer, invalid input length, insufficient buffer size,
+ *         or invalid character in the input string.
  */
 int base16_upper_decode(const char *restrict in, uint8_t *restrict out, size_t out_len)
 {
