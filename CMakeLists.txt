@@ -101,3 +101,21 @@ add_module(
     benchmarks/multiformats/multibase/bench_base16_upper.c
     src/multiformats/multibase
 )
+
+# multiformats/multibase/base32
+add_module(
+    base32
+    src/multiformats/multibase/base32.c
+    tests/multiformats/multibase/test_base32.c
+    ""
+    ""
+)
+
+# multiformats/multibase/base32_upper
+add_module(
+    base32_upper
+    src/multiformats/multibase/base32_upper.c
+    tests/multiformats/multibase/test_base32_upper.c
+    ""
+    ""
+)

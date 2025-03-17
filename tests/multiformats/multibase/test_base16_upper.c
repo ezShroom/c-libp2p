@@ -28,7 +28,6 @@ typedef struct
 int main(void)
 {
     int failures = 0;
-
     base16_upper_test_vector tests[] = {
         {"", ""},
         {"f", "66"},
@@ -44,7 +43,6 @@ int main(void)
         base16_upper_test_vector tv = tests[i];
         size_t input_len = strlen(tv.input);
         size_t expected_encoded_len = strlen(tv.expected);
-        /* Allocate output buffer: each input byte produces two characters plus room for a null terminator */
         size_t out_buf_size = input_len * 2 + 1;
         char *encoded = malloc(out_buf_size);
         if (!encoded)
