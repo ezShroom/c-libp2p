@@ -3,10 +3,6 @@
 #include <string.h>
 #include "multiformats/multibase/multibase.h"
 
-/* Base64 character and Unicode value */
-#define BASE64_CHARACTER 'm'
-#define BASE64_UNICODE 0x006D
-
 /* The base64 alphabet (RFC 4648, Table 1) */
 static const char base64_alphabet[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
@@ -17,8 +13,8 @@ static const char base64_alphabet[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklm
  * @param data_len The length of the input data.
  * @param out The buffer to store the encoded Base64 string.
  * @param out_len The size of the output buffer.
- * @return The number of characters written to the output buffer, or an error code
- *         indicating a null pointer or insufficient buffer size.
+ * @return The number of Base64 characters written (excluding the null terminator),
+ *         or an error code indicating a null pointer or insufficient buffer size.
  */
 int base64_encode(const uint8_t *data, size_t data_len, char *out, size_t out_len)
 {
@@ -27,10 +23,11 @@ int base64_encode(const uint8_t *data, size_t data_len, char *out, size_t out_le
         return MULTIBASE_ERR_NULL_POINTER;
     }
     size_t encoded_len = ((data_len + 2) / 3) * 4;
-    if (out_len < encoded_len)
+    if (out_len < encoded_len + 1)
     {
         return MULTIBASE_ERR_BUFFER_TOO_SMALL;
     }
+    
     size_t i = 0;
     size_t j = 0;
     while (i + 3 <= data_len)
@@ -59,6 +56,8 @@ int base64_encode(const uint8_t *data, size_t data_len, char *out, size_t out_le
         out[j++] = base64_alphabet[(triple >> 6) & 0x3F];
         out[j++] = '=';
     }
+
+    out[j] = '\0';
     return (int)encoded_len;
 }
 
@@ -66,18 +65,19 @@ int base64_encode(const uint8_t *data, size_t data_len, char *out, size_t out_le
  * @brief Decode data from Base64 format.
  *
  * @param in The input Base64 encoded string.
+ * @param data_len The length of the input data.
  * @param out The buffer to store the decoded data.
  * @param out_len The size of the output buffer.
  * @return The number of bytes written to the output buffer, or an error code
  *         indicating a null pointer, invalid input length, invalid character, or insufficient buffer size.
  */
-int base64_decode(const char *in, uint8_t *out, size_t out_len)
+int base64_decode(const char *in, size_t data_len, uint8_t *out, size_t out_len)
 {
     if (in == NULL || out == NULL)
     {
         return MULTIBASE_ERR_NULL_POINTER;
     }
-    size_t in_len = strlen(in);
+    size_t in_len = data_len;
     if (in_len % 4 != 0)
     {
         return MULTIBASE_ERR_INVALID_INPUT_LEN;
@@ -100,7 +100,6 @@ int base64_decode(const char *in, uint8_t *out, size_t out_len)
         return MULTIBASE_ERR_BUFFER_TOO_SMALL;
     }
 
-    /* Initialize decoding table on first use */
     static int8_t dtable[256];
     static int table_initialized = 0;
     if (!table_initialized)

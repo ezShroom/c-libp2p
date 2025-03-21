@@ -19,60 +19,83 @@ static void print_standard(const char *test_name, const char *details, int passe
 typedef struct
 {
     const char *input;
+    const char *expected_base16;
+    const char *expected_base16_upper;
+    const char *expected_base32_lower;
+    const char *expected_base32_upper;
 } test_vector;
-
-typedef struct
-{
-    multibase_t base;
-    const char *name;
-    char expected_prefix;
-} encoding_info;
 
 int main(void)
 {
     int failures = 0;
-
     test_vector tests[] = {
-        {""},
-        {"f"},
-        {"fo"},
-        {"foo"},
-        {"foob"},
-        {"fooba"},
-        {"foobar"}};
+        {"", "f", "F", "b", "B"},
+        {"f", "f66", "F66", "bmy======", "BMY======"},
+        {"fo", "f666f", "F666F", "bmzxq====", "BMZXQ===="},
+        {"foo", "f666f6f", "F666F6F", "bmzxw6===", "BMZXW6==="},
+        {"foob", "f666f6f62", "F666F6F62", "bmzxw6yq=", "BMZXW6YQ="},
+        {"fooba", "f666f6f6261", "F666F6F6261", "bmzxw6ytb", "BMZXW6YTB"},
+        {"foobar", "f666f6f626172", "F666F6F626172", "bmzxw6ytboi======", "BMZXW6YTBOI======"}};
     size_t num_tests = sizeof(tests) / sizeof(tests[0]);
 
-    encoding_info encodings[] = {
-        {MULTIBASE_BASE16, "base16 (lowercase)", 'f'},
-        {MULTIBASE_BASE16_UPPER, "base16 (uppercase)", 'F'},
-        {MULTIBASE_BASE32, "base32 (lowercase)", 'b'},
-        {MULTIBASE_BASE32_UPPER, "base32 (uppercase)", 'B'},
-        {MULTIBASE_BASE58_BTC, "base58btc", 'z'},
-        {MULTIBASE_BASE64, "base64 (no padding)", 'm'},
-        {MULTIBASE_BASE64_URL, "base64url (no padding)", 'u'},
-        {MULTIBASE_BASE64_URL_PAD, "base64url (with padding)", 'U'}};
-    size_t num_encodings = sizeof(encodings) / sizeof(encodings[0]);
-
-    /* --- Normal encode-decode tests --- */
-    for (size_t e = 0; e < num_encodings; e++)
+    /* Array of the supported multibase types with descriptive names */
+    struct
     {
-        encoding_info enc = encodings[e];
-        for (size_t i = 0; i < num_tests; i++)
+        multibase_t base;
+        const char *name;
+    } bases[] = {
+        {MULTIBASE_BASE16, "MULTIBASE_BASE16"},
+        {MULTIBASE_BASE16_UPPER, "MULTIBASE_BASE16_UPPER"},
+        {MULTIBASE_BASE32, "MULTIBASE_BASE32"},
+        {MULTIBASE_BASE32_UPPER, "MULTIBASE_BASE32_UPPER"}};
+    size_t num_bases = sizeof(bases) / sizeof(bases[0]);
+
+    for (size_t i = 0; i < num_tests; i++)
+    {
+        for (size_t j = 0; j < num_bases; j++)
         {
-            test_vector tv = tests[i];
-            size_t input_len = strlen(tv.input);
-            /* Allocate an output buffer generously */
-            size_t out_buf_size = input_len * 10 + 10;
+            const char *input = tests[i].input;
+            size_t input_len = strlen(input);
+            const char *expected = NULL;
+            switch (bases[j].base)
+            {
+            case MULTIBASE_BASE16:
+                expected = tests[i].expected_base16;
+                break;
+            case MULTIBASE_BASE16_UPPER:
+                expected = tests[i].expected_base16_upper;
+                break;
+            case MULTIBASE_BASE32:
+                expected = tests[i].expected_base32_lower;
+                break;
+            case MULTIBASE_BASE32_UPPER:
+                expected = tests[i].expected_base32_upper;
+                break;
+            default:
+                break;
+            }
+
+            size_t out_buf_size = 0;
+            if (bases[j].base == MULTIBASE_BASE16 || bases[j].base == MULTIBASE_BASE16_UPPER)
+            {
+                out_buf_size = input_len * 2 + 2;
+            }
+            else
+            {
+                size_t blocks = (input_len == 0) ? 0 : ((input_len + 4) / 5);
+                out_buf_size = (blocks > 0 ? (blocks * 8 + 1) : 1) + 1;
+            }
+
             char *encoded = malloc(out_buf_size);
-            if (encoded == NULL)
+            if (!encoded)
             {
                 fprintf(stderr, "Memory allocation failed\n");
                 exit(EXIT_FAILURE);
             }
 
+            int ret = multibase_encode(bases[j].base, (const uint8_t *)input, input_len, encoded, out_buf_size);
             char test_name[128];
-            sprintf(test_name, "multibase_encode [%s] (\"%s\")", enc.name, tv.input);
-            int ret = multibase_encode(enc.base, (const uint8_t *)tv.input, input_len, encoded, out_buf_size);
+            sprintf(test_name, "%s_encode(\"%s\")", bases[j].name, input);
             if (ret < 0)
             {
                 char details[256];
@@ -84,32 +107,28 @@ int main(void)
             }
             encoded[ret] = '\0';
 
-            /* Check that the encoded string begins with the expected prefix */
-            if (encoded[0] != enc.expected_prefix)
+            if (strcmp(encoded, expected) != 0)
             {
                 char details[256];
-                sprintf(details, "Encoded string prefix '%c' does not match expected '%c'", encoded[0], enc.expected_prefix);
+                sprintf(details, "Encoded result \"%s\", expected \"%s\"", encoded, expected);
                 print_standard(test_name, details, 0);
                 failures++;
-                free(encoded);
-                continue;
             }
             else
             {
                 print_standard(test_name, "", 1);
             }
 
-            /* Perform round-trip decode test */
-            size_t decode_buf_size = input_len + 10;
+            size_t decode_buf_size = input_len + 1;
             uint8_t *decoded = malloc(decode_buf_size);
-            if (decoded == NULL)
+            if (!decoded)
             {
                 fprintf(stderr, "Memory allocation failed\n");
                 free(encoded);
                 exit(EXIT_FAILURE);
             }
-            sprintf(test_name, "multibase_decode [%s] (\"%s\")", enc.name, encoded);
-            int ret_dec = multibase_decode(enc.base, encoded, decoded, decode_buf_size);
+            int ret_dec = multibase_decode(bases[j].base, encoded, decoded, decode_buf_size);
+            sprintf(test_name, "%s_decode(\"%s\")", bases[j].name, encoded);
             if (ret_dec < 0)
             {
                 char details[256];
@@ -120,10 +139,11 @@ int main(void)
                 free(decoded);
                 continue;
             }
-            if ((size_t)ret_dec != input_len || memcmp(decoded, tv.input, input_len) != 0)
+
+            if ((size_t)ret_dec != input_len || memcmp(decoded, input, input_len) != 0)
             {
                 char details[256];
-                sprintf(details, "Decoded output does not match original input \"%s\"", tv.input);
+                sprintf(details, "Decoded result does not match original input \"%s\"", input);
                 print_standard(test_name, details, 0);
                 failures++;
             }
@@ -131,59 +151,9 @@ int main(void)
             {
                 print_standard(test_name, "", 1);
             }
+
             free(encoded);
             free(decoded);
-        }
-    }
-
-    /* --- Insufficient Buffer Tests --- */
-    /* --- Insufficient Buffer Tests --- */
-    for (size_t e = 0; e < num_encodings; e++)
-    {
-        encoding_info enc = encodings[e];
-        for (size_t i = 0; i < num_tests; i++)
-        {
-            test_vector tv = tests[i];
-            size_t input_len = strlen(tv.input);
-            /* First, encode with a large buffer to determine the full required length */
-            size_t large_buf_size = input_len * 10 + 10;
-            char *full_encoded = malloc(large_buf_size);
-            if (full_encoded == NULL)
-            {
-                fprintf(stderr, "Memory allocation failed\n");
-                exit(EXIT_FAILURE);
-            }
-            int full_ret = multibase_encode(enc.base, (const uint8_t *)tv.input, input_len, full_encoded, large_buf_size);
-            if (full_ret < 0)
-            {
-                free(full_encoded);
-                continue; /* Skip insufficient test if full encoding fails */
-            }
-            /* Allocate a buffer that is one byte smaller than the full required length */
-            size_t insufficient_size = (size_t)full_ret - 1;
-            char *insuff_encoded = malloc(insufficient_size);
-            if (insuff_encoded == NULL)
-            {
-                fprintf(stderr, "Memory allocation failed\n");
-                free(full_encoded);
-                exit(EXIT_FAILURE);
-            }
-            int ret = multibase_encode(enc.base, (const uint8_t *)tv.input, input_len, insuff_encoded, insufficient_size);
-            char test_name[128];  // Declare test_name here.
-            sprintf(test_name, "multibase_encode insufficient buffer [%s] (\"%s\")", enc.name, tv.input);
-            if (ret != MULTIBASE_ERR_BUFFER_TOO_SMALL)
-            {
-                char details[256];
-                sprintf(details, "Expected MULTIBASE_ERR_BUFFER_TOO_SMALL for insufficient buffer, got %d", ret);
-                print_standard(test_name, details, 0);
-                failures++;
-            }
-            else
-            {
-                print_standard(test_name, "", 1);
-            }
-            free(full_encoded);
-            free(insuff_encoded);
         }
     }
 

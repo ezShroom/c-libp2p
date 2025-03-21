@@ -34,14 +34,14 @@ int main(void)
         {"foob", "Zm9vYg=="},
         {"fooba", "Zm9vYmE="},
         {"foobar", "Zm9vYmFy"},
-        {"ladies and gentlemen, we are floating in space", "bGFkaWVzIGFuZCBnZW50bGVtZW4sIHdlIGFyZSBmbG9hdGluZyBpbiBzcGFjZQ=="}
-    };
+        {"ladies and gentlemen, we are floating in space", "bGFkaWVzIGFuZCBnZW50bGVtZW4sIHdlIGFyZSBmbG9hdGluZyBpbiBzcGFjZQ=="}};
     size_t num_tests = sizeof(tests) / sizeof(tests[0]);
 
     for (size_t i = 0; i < num_tests; i++)
     {
         base64_test_vector tv = tests[i];
         size_t input_len = strlen(tv.input);
+        /* Calculate output buffer size including space for null terminator */
         size_t out_buf_size = ((input_len + 2) / 3) * 4 + 1;
         char *encoded = malloc(out_buf_size);
         if (encoded == NULL)
@@ -49,7 +49,8 @@ int main(void)
             fprintf(stderr, "Memory allocation failed\n");
             exit(EXIT_FAILURE);
         }
-        int ret = base64_encode((const uint8_t *)tv.input, input_len, encoded, out_buf_size - 1);
+        /* Call base64_encode with full buffer size */
+        int ret = base64_encode((const uint8_t *)tv.input, input_len, encoded, out_buf_size);
         char test_name[128];
         sprintf(test_name, "base64_encode(\"%s\")", tv.input);
         if (ret < 0)
@@ -61,7 +62,7 @@ int main(void)
             free(encoded);
             continue;
         }
-        encoded[ret] = '\0';
+        /* No need to manually add null terminator; it's done inside base64_encode */
         if (strcmp(encoded, tv.expected) != 0)
         {
             char details[256];
@@ -82,7 +83,8 @@ int main(void)
             free(encoded);
             exit(EXIT_FAILURE);
         }
-        int ret_dec = base64_decode(encoded, decoded, decode_buf_size);
+        /* Use strlen(encoded) as the length for decoding */
+        int ret_dec = base64_decode(encoded, strlen(encoded), decoded, decode_buf_size);
         sprintf(test_name, "base64_decode(\"%s\")", encoded);
         if (ret_dec < 0)
         {

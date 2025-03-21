@@ -2,10 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 #include "multiformats/multibase/multibase.h"
-
-/* The base64 URL padding character and Unicode value */
-#define BASE64_URL_PAD_CHARACTER 'U'
-#define BASE64_URL_PAD_UNICODE 0x0055
+#include "multiformats/multibase/base64_url_pad.h"
 
 /* The base64 URL alphabet (RFC 4648, Table 2) */
 static const char base64url_alphabet[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
@@ -28,7 +25,7 @@ int base64_url_pad_encode(const uint8_t *data, size_t data_len, char *out, size_
     }
 
     size_t encoded_len = ((data_len + 2) / 3) * 4;
-    if (out_len < encoded_len)
+    if (out_len < encoded_len + 1)
     {
         return MULTIBASE_ERR_BUFFER_TOO_SMALL;
     }
@@ -62,6 +59,9 @@ int base64_url_pad_encode(const uint8_t *data, size_t data_len, char *out, size_
         out[j++] = base64url_alphabet[(triple >> 6) & 0x3F];
         out[j++] = BASE64_URL_PAD_CHARACTER;
     }
+
+    out[j] = '\0';
+
     return (int)encoded_len;
 }
 
@@ -69,39 +69,39 @@ int base64_url_pad_encode(const uint8_t *data, size_t data_len, char *out, size_
  * @brief Decode data from Base64 URL format with padding using the URL and filename safe alphabet.
  *
  * @param in The input Base64 URL encoded string.
+ * @param data_len The length of the input encoded data.
  * @param out The buffer to store the decoded data.
  * @param out_len The size of the output buffer.
  * @return The number of bytes written to the output buffer, or an error code
  *         indicating a null pointer, invalid input length, invalid character, or insufficient buffer size.
  */
-int base64_url_pad_decode(const char *in, uint8_t *out, size_t out_len)
+int base64_url_pad_decode(const char *in, size_t data_len, uint8_t *out, size_t out_len)
 {
     if (in == NULL || out == NULL)
     {
         return MULTIBASE_ERR_NULL_POINTER;
     }
 
-    size_t in_len = strlen(in);
-    if (in_len == 0)
+    if (data_len == 0)
     {
         return 0;
     }
-    if (in_len % 4 != 0)
+    if (data_len % 4 != 0)
     {
         return MULTIBASE_ERR_INVALID_INPUT_LEN;
     }
 
     size_t pad_count = 0;
-    if (in_len >= 1 && in[in_len - 1] == BASE64_URL_PAD_CHARACTER)
+    if (data_len >= 1 && in[data_len - 1] == BASE64_URL_PAD_CHARACTER)
     {
         pad_count++;
     }
-    if (in_len >= 2 && in[in_len - 2] == BASE64_URL_PAD_CHARACTER)
+    if (data_len >= 2 && in[data_len - 2] == BASE64_URL_PAD_CHARACTER)
     {
         pad_count++;
     }
 
-    size_t decoded_len = (in_len / 4) * 3 - pad_count;
+    size_t decoded_len = (data_len / 4) * 3 - pad_count;
     if (out_len < decoded_len)
     {
         return MULTIBASE_ERR_BUFFER_TOO_SMALL;
@@ -133,7 +133,7 @@ int base64_url_pad_decode(const char *in, uint8_t *out, size_t out_len)
         table_initialized = 1;
     }
 
-    size_t groups = in_len / 4;
+    size_t groups = data_len / 4;
     size_t i = 0;
     size_t j = 0;
     if (groups > 0)

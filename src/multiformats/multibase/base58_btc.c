@@ -84,43 +84,44 @@ int base58_btc_encode(const uint8_t *data, size_t data_len, char *out, size_t ou
  * @brief Decode a Base58 (Bitcoin) encoded string into data.
  *
  * @param in The Base58 encoded input string.
+ * @param data_len The length of the input data.
  * @param out The buffer to store the decoded data.
  * @param out_len The size of the output buffer.
  * @return The number of bytes written to the output buffer, or an error code
  *         indicating a null pointer, invalid character, or insufficient buffer size.
  */
-int base58_btc_decode(const char *in, uint8_t *out, size_t out_len)
+int base58_btc_decode(const char *in, size_t data_len, uint8_t *out, size_t out_len)
 {
     if (in == NULL || out == NULL)
     {
         return MULTIBASE_ERR_NULL_POINTER;
     }
 
-    size_t in_len = strlen(in);
     size_t zeros = 0;
-    while (zeros < in_len && in[zeros] == '1')
+    while (zeros < data_len && in[zeros] == '1')
     {
         zeros++;
     }
 
-    size_t size = in_len * 733 / 1000 + 1;
+    size_t size = data_len * 733 / 1000 + 1;
     uint8_t *b256 = (uint8_t *)malloc(size);
     if (b256 == NULL)
     {
         return MULTIBASE_ERR_BUFFER_TOO_SMALL;
     }
     memset(b256, 0, size);
+
     int map[128];
     for (int i = 0; i < 128; i++)
     {
         map[i] = -1;
     }
-
     for (int i = 0; i < 58; i++)
     {
         map[(int)base58_btc_alphabet[i]] = i;
     }
-    for (size_t i = zeros; i < in_len; i++)
+
+    for (size_t i = zeros; i < data_len; i++)
     {
         char c = in[i];
         if ((unsigned char)c & 0x80)

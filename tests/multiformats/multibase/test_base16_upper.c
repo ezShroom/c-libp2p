@@ -40,7 +40,6 @@ int main(void)
     {
         base16_upper_test_vector tv = tests[i];
         size_t input_len = strlen(tv.input);
-        size_t expected_encoded_len = strlen(tv.expected);
         size_t out_buf_size = input_len * 2 + 1;
         char *encoded = malloc(out_buf_size);
         if (!encoded)
@@ -75,7 +74,7 @@ int main(void)
             print_standard(test_name, "", 1);
         }
 
-        size_t decode_buf_size = input_len + 1; 
+        size_t decode_buf_size = input_len + 1;
         uint8_t *decoded = malloc(decode_buf_size);
         if (!decoded)
         {
@@ -83,7 +82,8 @@ int main(void)
             free(encoded);
             exit(EXIT_FAILURE);
         }
-        int ret_dec = base16_upper_decode(encoded, decoded, decode_buf_size);
+        
+        int ret_dec = base16_upper_decode(encoded, ret, decoded, decode_buf_size);
         sprintf(test_name, "base16_upper_decode(\"%s\")", encoded);
         if (ret_dec < 0)
         {

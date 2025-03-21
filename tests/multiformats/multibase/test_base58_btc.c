@@ -32,7 +32,8 @@ int main(void)
     base58_test_vector tests[] = {
         {"Hello World!", (const uint8_t *)"Hello World!", strlen("Hello World!"), "2NEpo7TZRRrLZSi2U"},
         {"The quick brown fox jumps over the lazy dog.", (const uint8_t *)"The quick brown fox jumps over the lazy dog.", strlen("The quick brown fox jumps over the lazy dog."), "USm3fpXnKG5EUBx2ndxBDMPVciP5hGey2Jh4NDv6gmeo1LkMeiKrLJUUBk6Z"},
-        {"0x0000287fb4cd", binary_data, sizeof(binary_data), "111233QC4"}};
+        {"0x0000287fb4cd", binary_data, sizeof(binary_data), "111233QC4"}
+    };
     size_t num_tests = sizeof(tests) / sizeof(tests[0]);
 
     for (size_t i = 0; i < num_tests; i++)
@@ -80,7 +81,8 @@ int main(void)
             free(encoded);
             exit(EXIT_FAILURE);
         }
-        int ret_dec = base58_btc_decode(encoded, decoded, decode_buf_size);
+
+        int ret_dec = base58_btc_decode(encoded, (size_t)ret, decoded, decode_buf_size);
         sprintf(test_name, "base58_btc_decode(\"%s\")", encoded);
         if (ret_dec < 0)
         {

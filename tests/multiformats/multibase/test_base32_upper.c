@@ -28,12 +28,12 @@ int main(void)
     int failures = 0;
     base32_test_vector tests[] = {
         {"", ""},
-        {"f", "BMY======"},
-        {"fo", "BMZXQ===="},
-        {"foo", "BMZXW6==="},
-        {"foob", "BMZXW6YQ="},
-        {"fooba", "BMZXW6YTB"},
-        {"foobar", "BMZXW6YTBOI======"}
+        {"f", "MY======"},
+        {"fo", "MZXQ===="},
+        {"foo", "MZXW6==="},
+        {"foob", "MZXW6YQ="},
+        {"fooba", "MZXW6YTB"},
+        {"foobar", "MZXW6YTBOI======"}
     };
     size_t num_tests = sizeof(tests) / sizeof(tests[0]);
 
@@ -41,7 +41,7 @@ int main(void)
     {
         base32_test_vector tv = tests[i];
         size_t input_len = strlen(tv.input);
-        size_t out_buf_size = 1 + (((input_len + 4) / 5) * 8) + 1;
+        size_t out_buf_size = (((input_len + 4) / 5) * 8) + 1;
         char *encoded = malloc(out_buf_size);
         if (!encoded)
         {
@@ -49,7 +49,7 @@ int main(void)
             exit(EXIT_FAILURE);
         }
 
-        int ret = base32_upper_encode((const uint8_t *)tv.input, input_len, encoded, out_buf_size - 1);
+        int ret = base32_upper_encode((const uint8_t *)tv.input, input_len, encoded, out_buf_size);
         char test_name[128];
         sprintf(test_name, "base32_upper_encode(\"%s\")", tv.input);
         if (ret < 0)
@@ -63,12 +63,12 @@ int main(void)
         }
         encoded[ret] = '\0';
 
-        if ((input_len == 0 && strcmp(encoded, "B") != 0) ||
+        if ((input_len == 0 && strcmp(encoded, "") != 0) ||
             (input_len > 0 && strcmp(encoded, tv.expected) != 0))
         {
             char details[256];
             sprintf(details, "Encoded result \"%s\", expected \"%s\"",
-                    encoded, (input_len == 0) ? "B" : tv.expected);
+                    encoded, (input_len == 0) ? "" : tv.expected);
             print_standard(test_name, details, 0);
             failures++;
         }
@@ -85,7 +85,8 @@ int main(void)
             free(encoded);
             exit(EXIT_FAILURE);
         }
-        int ret_dec = base32_upper_decode(encoded, decoded, decode_buf_size);
+
+        int ret_dec = base32_upper_decode(encoded, strlen(encoded), decoded, decode_buf_size);
         sprintf(test_name, "base32_upper_decode(\"%s\")", encoded);
         if (ret_dec < 0)
         {

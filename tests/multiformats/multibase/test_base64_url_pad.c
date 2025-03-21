@@ -35,8 +35,7 @@ int main(void)
         {"fooba", "Zm9vYmEU"},
         {"foobar", "Zm9vYmFy"},
         {"foo+bar/baz", "Zm9vK2Jhci9iYXoU"},
-        {"ladies and gentlemen, we are floating in space", "bGFkaWVzIGFuZCBnZW50bGVtZW4sIHdlIGFyZSBmbG9hdGluZyBpbiBzcGFjZQUU"}
-    };
+        {"ladies and gentlemen, we are floating in space", "bGFkaWVzIGFuZCBnZW50bGVtZW4sIHdlIGFyZSBmbG9hdGluZyBpbiBzcGFjZQUU"}};
     size_t num_tests = sizeof(tests) / sizeof(tests[0]);
 
     for (size_t i = 0; i < num_tests; i++)
@@ -50,7 +49,8 @@ int main(void)
             fprintf(stderr, "Memory allocation failed\n");
             exit(EXIT_FAILURE);
         }
-        int ret = base64_url_pad_encode((const uint8_t *)tv.input, input_len, encoded, out_buf_size - 1);
+
+        int ret = base64_url_pad_encode((const uint8_t *)tv.input, input_len, encoded, out_buf_size);
         char test_name[128];
         sprintf(test_name, "base64_url_pad_encode(\"%s\")", tv.input);
         if (ret < 0)
@@ -62,7 +62,7 @@ int main(void)
             free(encoded);
             continue;
         }
-        encoded[ret] = '\0';
+
         if (strcmp(encoded, tv.expected) != 0)
         {
             char details[256];
@@ -83,7 +83,8 @@ int main(void)
             free(encoded);
             exit(EXIT_FAILURE);
         }
-        int ret_dec = base64_url_pad_decode(encoded, decoded, decode_buf_size);
+
+        int ret_dec = base64_url_pad_decode(encoded, strlen(encoded), decoded, decode_buf_size);
         sprintf(test_name, "base64_url_pad_decode(\"%s\")", encoded);
         if (ret_dec < 0)
         {

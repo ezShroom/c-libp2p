@@ -28,20 +28,19 @@ int main(void)
     int failures = 0;
     base32_test_vector tests[] = {
         {"", ""},
-        {"f", "bmy======"},
-        {"fo", "bmzxq===="},
-        {"foo", "bmzxw6==="},
-        {"foob", "bmzxw6yq="},
-        {"fooba", "bmzxw6ytb"},
-        {"foobar", "bmzxw6ytboi======"}
-    };
+        {"f", "my======"},
+        {"fo", "mzxq===="},
+        {"foo", "mzxw6==="},
+        {"foob", "mzxw6yq="},
+        {"fooba", "mzxw6ytb"},
+        {"foobar", "mzxw6ytboi======"}};
     size_t num_tests = sizeof(tests) / sizeof(tests[0]);
 
     for (size_t i = 0; i < num_tests; i++)
     {
         base32_test_vector tv = tests[i];
         size_t input_len = strlen(tv.input);
-        size_t out_buf_size = 1 + (((input_len + 4) / 5) * 8) + 1;
+        size_t out_buf_size = (((input_len + 4) / 5) * 8) + 1;
         char *encoded = malloc(out_buf_size);
         if (!encoded)
         {
@@ -49,7 +48,7 @@ int main(void)
             exit(EXIT_FAILURE);
         }
 
-        int ret = base32_encode((const uint8_t *)tv.input, input_len, encoded, out_buf_size - 1);
+        int ret = base32_encode((const uint8_t *)tv.input, input_len, encoded, out_buf_size);
         char test_name[128];
         sprintf(test_name, "base32_encode(\"%s\")", tv.input);
         if (ret < 0)
@@ -63,12 +62,12 @@ int main(void)
         }
         encoded[ret] = '\0';
 
-        if ((input_len == 0 && strcmp(encoded, "b") != 0) ||
+        if ((input_len == 0 && strcmp(encoded, "") != 0) ||
             (input_len > 0 && strcmp(encoded, tv.expected) != 0))
         {
             char details[256];
             sprintf(details, "Encoded result \"%s\", expected \"%s\"",
-                    encoded, (input_len == 0) ? "b" : tv.expected);
+                    encoded, (input_len == 0) ? "" : tv.expected);
             print_standard(test_name, details, 0);
             failures++;
         }
@@ -77,6 +76,7 @@ int main(void)
             print_standard(test_name, "", 1);
         }
 
+        // Prepare for decoding.
         size_t decode_buf_size = input_len + 1;
         uint8_t *decoded = malloc(decode_buf_size);
         if (!decoded)
@@ -85,7 +85,8 @@ int main(void)
             free(encoded);
             exit(EXIT_FAILURE);
         }
-        int ret_dec = base32_decode(encoded, decoded, decode_buf_size);
+
+        int ret_dec = base32_decode(encoded, strlen(encoded), decoded, decode_buf_size);
         sprintf(test_name, "base32_decode(\"%s\")", encoded);
         if (ret_dec < 0)
         {
