@@ -49,8 +49,6 @@ int base32_encode(const uint8_t *data, size_t data_len, char *out, size_t out_le
         return MULTIBASE_ERR_BUFFER_TOO_SMALL;
     }
 
-    // Note: No prefix is added.
-
     for (i = 0; i < full_blocks; i++)
     {
         const uint8_t *chunk = data + (i * 5);

@@ -90,11 +90,63 @@ int multibase_encode
             return ret + 1;
         }
         case MULTIBASE_BASE58_BTC:
+        {
+            if (out_len < 2)
+            {
+                return MULTIBASE_ERR_BUFFER_TOO_SMALL;
+            }
+            out[0] = BASE58_BTC_CHARACTER;
+            ret = base58_btc_encode(data, data_len, out + 1, out_len - 1);
+            if (ret < 0)
+            {
+                return ret;
+            }
+            return ret + 1;
+        }
         case MULTIBASE_BASE64:
+        {
+            size_t encoded_len = ((data_len + 2) / 3) * 4;
+            if (out_len < encoded_len + 2)
+            {
+                return MULTIBASE_ERR_BUFFER_TOO_SMALL;
+            }
+            out[0] = BASE64_CHARACTER;  /* Expected to be 'm' */
+            ret = base64_encode(data, data_len, out + 1, out_len - 1);
+            if (ret < 0)
+            {
+                return ret;
+            }
+            return ret + 1;
+        }
         case MULTIBASE_BASE64_URL:
+        {
+            size_t encoded_len = ((data_len + 2) / 3) * 4;
+            if (out_len < encoded_len + 2)
+            {
+                return MULTIBASE_ERR_BUFFER_TOO_SMALL;
+            }
+            out[0] = BASE64_URL_CHARACTER;  /* Expected to be 'u' */
+            ret = base64_url_encode(data, data_len, out + 1, out_len - 1);
+            if (ret < 0)
+            {
+                return ret;
+            }
+            return ret + 1;
+        }
         case MULTIBASE_BASE64_URL_PAD:
         {
-            return MULTIBASE_ERR_UNSUPPORTED_BASE;
+            size_t encoded_len = ((data_len + 2) / 3) * 4;
+            if (out_len < encoded_len + 2)
+            {
+                return MULTIBASE_ERR_BUFFER_TOO_SMALL;
+            }
+            out[0] = BASE64_URL_PAD_CHARACTER;  /* Expected to be 'U' */
+            ret = base64_url_pad_encode(data, data_len, out + 1, out_len - 1);
+            if (ret < 0)
+            {
+                return ret;
+            }
+            return ret + 1;
         }
         default:
         {
@@ -155,11 +207,40 @@ int multibase_decode
             return base32_upper_decode(in + 1, encoded_len, out, out_len);
         }
         case MULTIBASE_BASE58_BTC:
+        {
+            if (in[0] != BASE58_BTC_CHARACTER)
+            {
+                return MULTIBASE_ERR_INVALID_CHARACTER;
+            }
+            size_t encoded_len = strlen(in + 1);
+            return base58_btc_decode(in + 1, encoded_len, out, out_len);
+        }
         case MULTIBASE_BASE64:
+        {
+            if (in[0] != BASE64_CHARACTER)
+            {
+                return MULTIBASE_ERR_INVALID_CHARACTER;
+            }
+            size_t encoded_len = strlen(in + 1);
+            return base64_decode(in + 1, encoded_len, out, out_len);
+        }
         case MULTIBASE_BASE64_URL:
+        {
+            if (in[0] != BASE64_URL_CHARACTER)
+            {
+                return MULTIBASE_ERR_INVALID_CHARACTER;
+            }
+            size_t encoded_len = strlen(in + 1);
+            return base64_url_decode(in + 1, encoded_len, out, out_len);
+        }
         case MULTIBASE_BASE64_URL_PAD:
         {
-            return MULTIBASE_ERR_UNSUPPORTED_BASE;
+            if (in[0] != BASE64_URL_PAD_CHARACTER)
+            {
+                return MULTIBASE_ERR_INVALID_CHARACTER;
+            }
+            size_t encoded_len = strlen(in + 1);
+            return base64_url_pad_decode(in + 1, encoded_len, out, out_len);
         }
         default:
         {
