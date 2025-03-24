@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include "multiformats/multibase/multibase.h"
 
-/* Helper for printing test results */
 static void print_standard(const char *test_name, const char *details, int passed)
 {
     if (passed)
@@ -17,17 +16,6 @@ static void print_standard(const char *test_name, const char *details, int passe
     }
 }
 
-/*
- * Updated test vector structure now includes expected values for base64,
- * base64 URL (no padding), and base64 URL with padding.
- *
- * The expected outputs below are computed as follows:
- *   - For an empty input, the underlying encoder returns an empty string so the multibase
- *     result is just the prefix (e.g. "m" for base64).
- *   - For non-empty inputs, the underlying encoding result is prefixed. For example,
- *     for input "f", base64_encode returns "Zg==", so the expected multibase string for
- *     MULTIBASE_BASE64 is "mZg==".
- */
 typedef struct
 {
     const char *input;
@@ -122,12 +110,12 @@ int main(void)
                 case MULTIBASE_BASE64_URL_PAD:
                     out_buf_size = ((input_len + 2) / 3) * 4 + 2;
                     break;
-                default: /* MULTIBASE_BASE32 and MULTIBASE_BASE32_UPPER */
+                default: 
                 {
                     size_t blocks = (input_len == 0) ? 0 : ((input_len + 4) / 5);
                     out_buf_size = (blocks > 0 ? (blocks * 8 + 1) : 1) + 1;
                 }
-                    break;
+                break;
             }
 
             char *encoded = malloc(out_buf_size);

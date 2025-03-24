@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 #include "multiformats/multibase/multibase.h"
-#include "multiformats/multibase/base64_url_pad.h"
+#include "multiformats/multibase/encoding/base64_url_pad.h"
 
 /* The base64 URL alphabet (RFC 4648, Table 2) */
 static const char base64url_alphabet[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";

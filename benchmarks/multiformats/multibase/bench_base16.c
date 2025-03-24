@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <time.h>
-#include "multiformats/multibase/base16.h"
+#include "multiformats/multibase/encoding/base16.h"
 
 #define _POSIX_C_SOURCE 200809L
 

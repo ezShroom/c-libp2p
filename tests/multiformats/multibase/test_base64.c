@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdint.h>
 #include "multiformats/multibase/multibase.h"
-#include "multiformats/multibase/base64.h"
+#include "multiformats/multibase/encoding/base64.h"
 
 static void print_standard(const char *test_name, const char *details, int passed)
 {

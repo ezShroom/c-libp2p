@@ -3,14 +3,14 @@
 #include <string.h>
 #include <stdlib.h>
 #include "multiformats/multibase/multibase.h"
-#include "multiformats/multibase/base16.h"
-#include "multiformats/multibase/base16_upper.h"
-#include "multiformats/multibase/base32.h"
-#include "multiformats/multibase/base32_upper.h"
-#include "multiformats/multibase/base58_btc.h"
-#include "multiformats/multibase/base64.h"
-#include "multiformats/multibase/base64_url.h"
-#include "multiformats/multibase/base64_url_pad.h"
+#include "multiformats/multibase/encoding/base16.h"
+#include "multiformats/multibase/encoding/base16_upper.h"
+#include "multiformats/multibase/encoding/base32.h"
+#include "multiformats/multibase/encoding/base32_upper.h"
+#include "multiformats/multibase/encoding/base58_btc.h"
+#include "multiformats/multibase/encoding/base64.h"
+#include "multiformats/multibase/encoding/base64_url.h"
+#include "multiformats/multibase/encoding/base64_url_pad.h"
 
 int multibase_encode
 (

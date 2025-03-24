@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdint.h>
 #include "multiformats/multibase/multibase.h"
-#include "multiformats/multibase/base58_btc.h"
+#include "multiformats/multibase/encoding/base58_btc.h"
 
 static void print_standard(const char *test_name, const char *details, int passed)
 {

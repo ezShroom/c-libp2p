@@ -84,73 +84,73 @@ add_module(
     ""
 )
 
-# multiformats/multibase/base16
+# multiformats/multibase/encoding/base16
 add_module(
     base16
-    src/multiformats/multibase/base16.c
+    src/multiformats/multibase/encoding/base16.c
     tests/multiformats/multibase/test_base16.c
     benchmarks/multiformats/multibase/bench_base16.c
     src/multiformats/multibase
 )
 
-# multiformats/multibase/base16_upper
+# multiformats/multibase/encoding/base16_upper
 add_module(
     base16_upper
-    src/multiformats/multibase/base16_upper.c
+    src/multiformats/multibase/encoding/base16_upper.c
     tests/multiformats/multibase/test_base16_upper.c
     benchmarks/multiformats/multibase/bench_base16_upper.c
     src/multiformats/multibase
 )
 
-# multiformats/multibase/base32
+# multiformats/multibase/encoding/base32
 add_module(
     base32
-    src/multiformats/multibase/base32.c
+    src/multiformats/multibase/encoding/base32.c
     tests/multiformats/multibase/test_base32.c
     ""
     ""
 )
 
-# multiformats/multibase/base32_upper
+# multiformats/multibase/encoding/base32_upper
 add_module(
     base32_upper
-    src/multiformats/multibase/base32_upper.c
+    src/multiformats/multibase/encoding/base32_upper.c
     tests/multiformats/multibase/test_base32_upper.c
     ""
     ""
 )
 
-# multiformats/multibase/base58_btc
+# multiformats/multibase/encoding/base58_btc
 add_module(
     base58_btc
-    src/multiformats/multibase/base58_btc.c
+    src/multiformats/multibase/encoding/base58_btc.c
     tests/multiformats/multibase/test_base58_btc.c
     ""
     ""
 )
 
-# multiformats/multibase/base64
+# multiformats/multibase/encoding/base64
 add_module(
     base64
-    src/multiformats/multibase/base64.c
+    src/multiformats/multibase/encoding/base64.c
     tests/multiformats/multibase/test_base64.c
     ""
     ""
 )
 
-# multiformats/multibase/base64_url
+# multiformats/multibase/encoding/base64_url
 add_module(
     base64_url
-    src/multiformats/multibase/base64_url.c
+    src/multiformats/multibase/encoding/base64_url.c
     tests/multiformats/multibase/test_base64_url.c
     ""
     ""
 )
 
-# multiformats/multibase/base64_url_pad
+# multiformats/multibase/encoding/base64_url_pad
 add_module(
     base64_url_pad
-    src/multiformats/multibase/base64_url_pad.c
+    src/multiformats/multibase/encoding/base64_url_pad.c
     tests/multiformats/multibase/test_base64_url_pad.c
     ""
     ""
@@ -165,3 +165,25 @@ add_module(
     ""
 )
 target_link_libraries(multibase PRIVATE base16 base16_upper base32 base32_upper base58_btc base64 base64_url base64_url_pad)
+
+add_library(wjcryptlib
+    lib/wjcryptlib/src/sha1.c
+    lib/wjcryptlib/src/sha256.c
+    lib/wjcryptlib/src/sha512.c
+)
+target_include_directories(wjcryptlib PUBLIC ${PROJECT_SOURCE_DIR}/lib/wjcryptlib/include)
+
+add_library(sha3_pablotron
+    lib/sha3_pablotron/src/sha3.c
+)
+target_include_directories(sha3_pablotron PUBLIC ${PROJECT_SOURCE_DIR}/lib/sha3_pablotron/include)
+
+# multiformats/multihash
+add_module(
+    multihash
+    src/multiformats/multihash/multihash.c
+    tests/multiformats/multihash/test_multihash.c
+    ""
+    ""
+)
+target_link_libraries(multihash PRIVATE multicodec unsigned_varint wjcryptlib sha3_pablotron)
