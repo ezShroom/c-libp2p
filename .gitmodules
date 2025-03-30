@@ -1,0 +1,9 @@
+[submodule "lib/secp256k1"]
+	path = lib/secp256k1
+	url = https://github.com/bitcoin-core/secp256k1.git
+[submodule "lib/wjcryptlib"]
+	path = lib/wjcryptlib
+	url = https://github.com/WaterJuice/WjCryptLib.git
+[submodule "lib/sha3"]
+	path = lib/sha3
+	url = https://github.com/pablotron/sha3.git
