@@ -1,3 +1,4 @@
+# CMake minimum required version.
 cmake_minimum_required(VERSION 3.10)
 
 # Project metadata.
@@ -18,6 +19,9 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 # Include public headers.
 include_directories(${PROJECT_SOURCE_DIR}/include)
+
+# Add secp256k1 submodule.
+add_subdirectory(lib/secp256k1)
 
 # ---------------------------------------------
 # Helper function for adding a module.
@@ -63,10 +67,8 @@ endfunction()
 enable_testing()
 
 # ---------------------------------------------
-# Add modules using the helper function.
-# ---------------------------------------------
-
 # multiformats/unsigned_varint
+# ---------------------------------------------
 add_module(
     unsigned_varint
     src/multiformats/unsigned_varint/unsigned_varint.c
@@ -75,7 +77,9 @@ add_module(
     src/multiformats/unsigned_varint
 )
 
+# ---------------------------------------------
 # multiformats/multicodec
+# ---------------------------------------------
 add_module(
     multicodec
     src/multiformats/multicodec/multicodec.c
@@ -84,7 +88,9 @@ add_module(
     ""
 )
 
+# ---------------------------------------------
 # multiformats/multibase/encoding/base16
+# ---------------------------------------------
 add_module(
     base16
     src/multiformats/multibase/encoding/base16.c
@@ -93,7 +99,9 @@ add_module(
     src/multiformats/multibase
 )
 
+# ---------------------------------------------
 # multiformats/multibase/encoding/base16_upper
+# ---------------------------------------------
 add_module(
     base16_upper
     src/multiformats/multibase/encoding/base16_upper.c
@@ -102,7 +110,9 @@ add_module(
     src/multiformats/multibase
 )
 
+# ---------------------------------------------
 # multiformats/multibase/encoding/base32
+# ---------------------------------------------
 add_module(
     base32
     src/multiformats/multibase/encoding/base32.c
@@ -111,7 +121,9 @@ add_module(
     ""
 )
 
+# ---------------------------------------------
 # multiformats/multibase/encoding/base32_upper
+# ---------------------------------------------
 add_module(
     base32_upper
     src/multiformats/multibase/encoding/base32_upper.c
@@ -120,7 +132,9 @@ add_module(
     ""
 )
 
+# ---------------------------------------------
 # multiformats/multibase/encoding/base58_btc
+# ---------------------------------------------
 add_module(
     base58_btc
     src/multiformats/multibase/encoding/base58_btc.c
@@ -129,7 +143,9 @@ add_module(
     ""
 )
 
+# ---------------------------------------------
 # multiformats/multibase/encoding/base64
+# ---------------------------------------------
 add_module(
     base64
     src/multiformats/multibase/encoding/base64.c
@@ -138,7 +154,9 @@ add_module(
     ""
 )
 
+# ---------------------------------------------
 # multiformats/multibase/encoding/base64_url
+# ---------------------------------------------
 add_module(
     base64_url
     src/multiformats/multibase/encoding/base64_url.c
@@ -147,7 +165,9 @@ add_module(
     ""
 )
 
+# ---------------------------------------------
 # multiformats/multibase/encoding/base64_url_pad
+# ---------------------------------------------
 add_module(
     base64_url_pad
     src/multiformats/multibase/encoding/base64_url_pad.c
@@ -156,7 +176,9 @@ add_module(
     ""
 )
 
+# ---------------------------------------------
 # multiformats/multibase/multibase
+# ---------------------------------------------
 add_module(
     multibase
     src/multiformats/multibase/multibase.c
@@ -166,19 +188,26 @@ add_module(
 )
 target_link_libraries(multibase PRIVATE base16 base16_upper base32 base32_upper base58_btc base64 base64_url base64_url_pad)
 
+# ---------------------------------------------
+# wjcryptlib
+# ---------------------------------------------
 add_library(wjcryptlib
-    lib/wjcryptlib/src/sha1.c
-    lib/wjcryptlib/src/sha256.c
-    lib/wjcryptlib/src/sha512.c
+    lib/wjcryptlib/lib/WjCryptLib_Sha256.c
+    lib/wjcryptlib/lib/WjCryptLib_Sha512.c
 )
-target_include_directories(wjcryptlib PUBLIC ${PROJECT_SOURCE_DIR}/lib/wjcryptlib/include)
+target_include_directories(wjcryptlib PUBLIC ${PROJECT_SOURCE_DIR}/lib/wjcryptlib/lib)
 
-add_library(sha3_pablotron
-    lib/sha3_pablotron/src/sha3.c
+# ---------------------------------------------
+# sha3
+# ---------------------------------------------
+add_library(sha3
+    lib/sha3/sha3.c
 )
-target_include_directories(sha3_pablotron PUBLIC ${PROJECT_SOURCE_DIR}/lib/sha3_pablotron/include)
+target_include_directories(sha3 PUBLIC ${PROJECT_SOURCE_DIR}/lib/sha3/lib)
 
+# ---------------------------------------------
 # multiformats/multihash
+# ---------------------------------------------
 add_module(
     multihash
     src/multiformats/multihash/multihash.c
@@ -186,4 +215,16 @@ add_module(
     ""
     ""
 )
-target_link_libraries(multihash PRIVATE multicodec unsigned_varint wjcryptlib sha3_pablotron)
+target_link_libraries(multihash PRIVATE multicodec unsigned_varint wjcryptlib sha3)
+
+# ---------------------------------------------
+# peer_id/peer_id_secp256k1
+# ---------------------------------------------
+add_module(
+    peer_id_secp256k1
+    src/peer_id/peer_id_secp256k1.c
+    ""
+    ""
+    src/peer_id
+)
+target_link_libraries(peer_id_secp256k1 PRIVATE secp256k1)

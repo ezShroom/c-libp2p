@@ -14,8 +14,7 @@ To build the project, you will need to have CMake installed. Follow these steps:
 
 2. Create a build directory and navigate into it:
     ```sh
-    mkdir build
-    cd build
+    mkdir build && cd build
     ```
 
 3. Run CMake to configure the project:

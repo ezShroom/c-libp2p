@@ -33,12 +33,10 @@ int main(void)
         print_standard("Mapping count check", "", 1);
     }
 
-    // Test each mapping (name → code → name).
     for (int i = 0; i < num_mappings; i++) {
         const char *expected_name = multicodec_mappings[i].name;
         uint64_t expected_code = multicodec_mappings[i].code;
 
-        // 1) Test name → code.
         uint64_t actual_code = multicodec_code_from_name(expected_name);
         char test_name[128];
         sprintf(test_name, "multicodec_code_from_name(\"%s\")", expected_name);
@@ -54,7 +52,6 @@ int main(void)
             print_standard(test_name, "", 1);
         }
 
-        // 2) Test code → name.
         const char *actual_name = multicodec_name_from_code(expected_code);
         sprintf(test_name, "multicodec_name_from_code(0x%llx)", (unsigned long long)expected_code);
         if (!actual_name || strcmp(expected_name, actual_name) != 0) {

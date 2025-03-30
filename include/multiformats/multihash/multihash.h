@@ -19,7 +19,8 @@ typedef enum
     MULTIHASH_ERR_NULL_POINTER     = -1,  /**< A null pointer was provided. */
     MULTIHASH_ERR_INVALID_INPUT    = -2,  /**< The input provided is invalid. */
     MULTIHASH_ERR_UNSUPPORTED_FUN  = -3,  /**< The requested function is unsupported. */
-    MULTIHASH_ERR_DIGEST_TOO_LARGE = -4   /**< The computed digest exceeds the allowed size. */
+    MULTIHASH_ERR_DIGEST_TOO_LARGE = -4,  /**< The computed digest exceeds the allowed size. */
+    MULTIHASH_ERR_ALLOC_FAILURE    = -5   /**< Memory allocation failed. */
 } multihash_error_t;
 
 /**

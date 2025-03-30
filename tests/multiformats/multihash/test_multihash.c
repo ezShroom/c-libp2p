@@ -98,111 +98,6 @@ int main(void)
         size_t input_len = strlen(input);
 
         // -----------------------
-        // Test for SHA1.
-        // -----------------------
-        {
-            /* For SHA1: 1 byte (code) + 1 byte (length) + 20-byte digest = 22 bytes. */
-            size_t binary_buf_size = 22;
-            uint8_t *binary_hash = malloc(binary_buf_size);
-            if (!binary_hash)
-            {
-                fprintf(stderr, "Memory allocation failed\n");
-                exit(EXIT_FAILURE);
-            }
-
-            int ret = multihash_encode(MULTICODEC_SHA1, (const uint8_t *)input, input_len, binary_hash, binary_buf_size);
-            snprintf(test_name, sizeof(test_name), "MULTIHASH_encode_SHA1(\"%s\")", input);
-            if (ret < 0)
-            {
-                char details[256];
-                snprintf(details, sizeof(details), "Error code %d returned", ret);
-                print_standard(test_name, details, 0);
-                failures++;
-                free(binary_hash);
-            }
-            else
-            {
-                size_t binary_hash_len = ret;
-                char *hex_output = malloc(binary_hash_len * 2 + 1);
-                if (!hex_output)
-                {
-                    fprintf(stderr, "Memory allocation failed\n");
-                    free(binary_hash);
-                    exit(EXIT_FAILURE);
-                }
-                bytes_to_hex(binary_hash, binary_hash_len, hex_output);
-
-                if (strcmp(hex_output, tests[i].expected_sha1) != 0)
-                {
-                    char details[256];
-                    snprintf(details, sizeof(details), "Encoded result \"%s\", expected \"%s\"", hex_output, tests[i].expected_sha1);
-                    print_standard(test_name, details, 0);
-                    failures++;
-                }
-                else
-                {
-                    print_standard(test_name, "", 1);
-                }
-
-                /* Test decoding for SHA1. */
-                size_t decode_buf_size = 32; /* Sufficient for SHA1 digest (20 bytes) */
-                uint8_t *decoded = malloc(decode_buf_size);
-                if (!decoded)
-                {
-                    fprintf(stderr, "Memory allocation failed\n");
-                    free(binary_hash);
-                    free(hex_output);
-                    exit(EXIT_FAILURE);
-                }
-                uint64_t code = 0;
-                size_t digest_len = decode_buf_size;
-                int ret_dec = multihash_decode(binary_hash, binary_hash_len, &code, decoded, &digest_len);
-                snprintf(test_name, sizeof(test_name), "MULTIHASH_decode_SHA1(\"%s\")", hex_output);
-                if (ret_dec < 0)
-                {
-                    char details[256];
-                    snprintf(details, sizeof(details), "Error code %d returned", ret_dec);
-                    print_standard(test_name, details, 0);
-                    failures++;
-                }
-                else if (digest_len != 20)
-                {
-                    char details[256];
-                    snprintf(details, sizeof(details), "Decoded digest length %zu, expected 20", digest_len);
-                    print_standard(test_name, details, 0);
-                    failures++;
-                }
-                else
-                {
-                    const char *expected_digest_hex = tests[i].expected_sha1 + 4;
-                    uint8_t expected_digest[20];
-                    int res = hex_to_bytes(expected_digest_hex, expected_digest, sizeof(expected_digest));
-                    if (res < 0 || (size_t)res != 20)
-                    {
-                        char details[256];
-                        snprintf(details, sizeof(details), "Error converting expected digest hex to bytes");
-                        print_standard(test_name, details, 0);
-                        failures++;
-                    }
-                    else if (memcmp(decoded, expected_digest, 20) != 0)
-                    {
-                        char details[256];
-                        snprintf(details, sizeof(details), "Decoded digest does not match expected digest");
-                        print_standard(test_name, details, 0);
-                        failures++;
-                    }
-                    else
-                    {
-                        print_standard(test_name, "", 1);
-                    }
-                }
-                free(binary_hash);
-                free(hex_output);
-                free(decoded);
-            }
-        }
-
-        // -----------------------
         // Test for SHA2-256.
         // -----------------------
         {
@@ -828,6 +723,119 @@ int main(void)
                     }
                 }
                 free(binary_hash);
+                free(hex_output);
+                free(decoded);
+            }
+        }
+
+        // -----------------------
+        // Test for Identity.
+        // -----------------------
+        {
+            /* For Identity: 1 byte (code) + varint for length + input bytes.
+             * For short inputs (input_len < 0x80) the varint is a single byte.
+             */
+            size_t identity_buf_size = 2 + input_len;
+            uint8_t *identity_hash = malloc(identity_buf_size);
+            if (!identity_hash)
+            {
+                fprintf(stderr, "Memory allocation failed\n");
+                exit(EXIT_FAILURE);
+            }
+
+            int ret = multihash_encode(MULTICODEC_IDENTITY, (const uint8_t *)input, input_len, identity_hash, identity_buf_size);
+            snprintf(test_name, sizeof(test_name), "MULTIHASH_encode_IDENTITY(\"%s\")", input);
+
+            /* Build the expected hex string.
+             * For inputs shorter than 0x80, expected output is:
+             *    "00" + (2-digit hex of input length) + (hex of input bytes).
+             */
+            char expected_identity[256];
+            if (input_len < 0x80)
+            {
+                char length_hex[3];
+                snprintf(length_hex, sizeof(length_hex), "%02x", (unsigned int)input_len);
+                char input_hex[256];
+                bytes_to_hex((const uint8_t *)input, input_len, input_hex);
+                snprintf(expected_identity, sizeof(expected_identity), "00%s%s", length_hex, input_hex);
+            }
+            else
+            {
+                /* For longer inputs, this simple test is not supported */
+                snprintf(expected_identity, sizeof(expected_identity), "unsupported");
+            }
+
+            if (ret < 0)
+            {
+                char details[256];
+                snprintf(details, sizeof(details), "Error code %d returned", ret);
+                print_standard(test_name, details, 0);
+                failures++;
+                free(identity_hash);
+            }
+            else
+            {
+                size_t identity_hash_len = ret;
+                char *hex_output = malloc(identity_hash_len * 2 + 1);
+                if (!hex_output)
+                {
+                    fprintf(stderr, "Memory allocation failed\n");
+                    free(identity_hash);
+                    exit(EXIT_FAILURE);
+                }
+                bytes_to_hex(identity_hash, identity_hash_len, hex_output);
+                if (strcmp(hex_output, expected_identity) != 0)
+                {
+                    char details[256];
+                    snprintf(details, sizeof(details), "Encoded result \"%s\", expected \"%s\"", hex_output, expected_identity);
+                    print_standard(test_name, details, 0);
+                    failures++;
+                }
+                else
+                {
+                    print_standard(test_name, "", 1);
+                }
+
+                /* Test decoding for Identity */
+                size_t decode_buf_size = identity_buf_size;
+                uint8_t *decoded = malloc(decode_buf_size);
+                if (!decoded)
+                {
+                    fprintf(stderr, "Memory allocation failed\n");
+                    free(identity_hash);
+                    free(hex_output);
+                    exit(EXIT_FAILURE);
+                }
+                uint64_t code = 0;
+                size_t digest_len = decode_buf_size;
+                int ret_dec = multihash_decode(identity_hash, identity_hash_len, &code, decoded, &digest_len);
+                snprintf(test_name, sizeof(test_name), "MULTIHASH_decode_IDENTITY(\"%s\")", hex_output);
+                if (ret_dec < 0)
+                {
+                    char details[256];
+                    snprintf(details, sizeof(details), "Error code %d returned", ret_dec);
+                    print_standard(test_name, details, 0);
+                    failures++;
+                }
+                else if (digest_len != input_len)
+                {
+                    char details[256];
+                    snprintf(details, sizeof(details), "Decoded digest length %zu, expected %zu", digest_len, input_len);
+                    print_standard(test_name, details, 0);
+                    failures++;
+                }
+                else if (memcmp(decoded, input, input_len) != 0)
+                {
+                    char details[256];
+                    snprintf(details, sizeof(details), "Decoded digest does not match input");
+                    print_standard(test_name, details, 0);
+                    failures++;
+                }
+                else
+                {
+                    print_standard(test_name, "", 1);
+                }
+                free(identity_hash);
                 free(hex_output);
                 free(decoded);
             }

@@ -338,7 +338,6 @@ unsigned_varint_err_t unsigned_varint_decode(const uint8_t *in, size_t in_size, 
     b = in[idx++];
     if (b & 0x80)
     {
-        // There is a tenth byte. Process it:
         result |= ((uint64_t)(b & 0x7F)) << 56;
         if (idx >= in_size)
         {

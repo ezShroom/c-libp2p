@@ -12,6 +12,16 @@
 #include "multiformats/multibase/encoding/base64_url.h"
 #include "multiformats/multibase/encoding/base64_url_pad.h"
 
+/**
+ * @brief Encode data using the specified multibase encoding.
+ *
+ * @param base The multibase encoding to use.
+ * @param data The input data to be encoded.
+ * @param data_len The length of the input data.
+ * @param out The buffer to store the encoded output.
+ * @param out_len The size of the output buffer.
+ * @return int The number of bytes written to the output buffer, or a negative error code.
+ */
 int multibase_encode
 (
     multibase_t base,
@@ -110,7 +120,7 @@ int multibase_encode
             {
                 return MULTIBASE_ERR_BUFFER_TOO_SMALL;
             }
-            out[0] = BASE64_CHARACTER;  /* Expected to be 'm' */
+            out[0] = BASE64_CHARACTER;  
             ret = base64_encode(data, data_len, out + 1, out_len - 1);
             if (ret < 0)
             {
@@ -125,7 +135,7 @@ int multibase_encode
             {
                 return MULTIBASE_ERR_BUFFER_TOO_SMALL;
             }
-            out[0] = BASE64_URL_CHARACTER;  /* Expected to be 'u' */
+            out[0] = BASE64_URL_CHARACTER; 
             ret = base64_url_encode(data, data_len, out + 1, out_len - 1);
             if (ret < 0)
             {
@@ -140,7 +150,7 @@ int multibase_encode
             {
                 return MULTIBASE_ERR_BUFFER_TOO_SMALL;
             }
-            out[0] = BASE64_URL_PAD_CHARACTER;  /* Expected to be 'U' */
+            out[0] = BASE64_URL_PAD_CHARACTER; 
             ret = base64_url_pad_encode(data, data_len, out + 1, out_len - 1);
             if (ret < 0)
             {
@@ -155,6 +165,15 @@ int multibase_encode
     }
 }
 
+/**
+ * @brief Decode a multibase-encoded string.
+ *
+ * @param base The multibase encoding type.
+ * @param in The input string to be decoded.
+ * @param out The buffer to store the decoded output.
+ * @param out_len The size of the output buffer.
+ * @return int Error code indicating success or type of failure.
+ */
 int multibase_decode
 (
     multibase_t base,
