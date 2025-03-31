@@ -48,8 +48,8 @@ int base64_url_pad_encode(const uint8_t *data, size_t data_len, char *out, size_
         uint32_t triple = ((uint32_t)data[i]) << 16;
         out[j++] = base64url_alphabet[(triple >> 18) & 0x3F];
         out[j++] = base64url_alphabet[(triple >> 12) & 0x3F];
-        out[j++] = BASE64_URL_PAD_CHARACTER;
-        out[j++] = BASE64_URL_PAD_CHARACTER;
+        out[j++] = '=';
+        out[j++] = '=';
     }
     else if (remainder == 2)
     {
@@ -57,7 +57,7 @@ int base64_url_pad_encode(const uint8_t *data, size_t data_len, char *out, size_
         out[j++] = base64url_alphabet[(triple >> 18) & 0x3F];
         out[j++] = base64url_alphabet[(triple >> 12) & 0x3F];
         out[j++] = base64url_alphabet[(triple >> 6) & 0x3F];
-        out[j++] = BASE64_URL_PAD_CHARACTER;
+        out[j++] = '=';
     }
 
     out[j] = '\0';
@@ -92,11 +92,11 @@ int base64_url_pad_decode(const char *in, size_t data_len, uint8_t *out, size_t 
     }
 
     size_t pad_count = 0;
-    if (data_len >= 1 && in[data_len - 1] == BASE64_URL_PAD_CHARACTER)
+    if (data_len >= 1 && in[data_len - 1] == '=')
     {
         pad_count++;
     }
-    if (data_len >= 2 && in[data_len - 2] == BASE64_URL_PAD_CHARACTER)
+    if (data_len >= 2 && in[data_len - 2] == '=')
     {
         pad_count++;
     }
@@ -167,12 +167,12 @@ int base64_url_pad_decode(const char *in, size_t data_len, uint8_t *out, size_t 
         {
             return MULTIBASE_ERR_INVALID_CHARACTER;
         }
-        if (c2 == BASE64_URL_PAD_CHARACTER && c3 == BASE64_URL_PAD_CHARACTER)
+        if (c2 == '=' && c3 == '=')
         {
             uint32_t triple = (v0 << 18) | (v1 << 12);
             out[j++] = (triple >> 16) & 0xFF;
         }
-        else if (c3 == BASE64_URL_PAD_CHARACTER)
+        else if (c3 == '=')
         {
             int v2 = dtable[(unsigned char)c2];
             if (v2 == -1)

@@ -33,13 +33,13 @@ int main(void)
 {
     int failures = 0;
     test_vector tests[] = {
-        { "",      "f",               "F",               "b",                "B",                "z",        "m",         "u",         "U" },
-        { "f",     "f66",             "F66",             "bmy======",        "BMY======",        "z2m",      "mZg==",     "uZg",       "UZgUU" },
-        { "fo",    "f666f",           "F666F",           "bmzxq====",        "BMZXQ====",        "z8o8",     "mZm8=",     "uZm8",      "UZm8U" },
-        { "foo",   "f666f6f",         "F666F6F",         "bmzxw6===",        "BMZXW6===",        "zbQbp",    "mZm9v",     "uZm9v",     "UZm9v" },
-        { "foob",  "f666f6f62",       "F666F6F62",       "bmzxw6yq=",        "BMZXW6YQ=",        "z3csAg9",  "mZm9vYg==", "uZm9vYg",   "UZm9vYgUU" },
-        { "fooba", "f666f6f6261",     "F666F6F6261",     "bmzxw6ytb",        "BMZXW6YTB",        "zCZJRhmz", "mZm9vYmE=", "uZm9vYmE",  "UZm9vYmEU" },
-        { "foobar","f666f6f626172",   "F666F6F626172",   "bmzxw6ytboi======", "BMZXW6YTBOI======", "zt1Zv2yaZ", "mZm9vYmFy", "uZm9vYmFy", "UZm9vYmFy" }
+        { "",       "f",              "F",             "b",           "B",           "z",         "m",         "u",         "U" },
+        { "f",      "f66",            "F66",           "bmy",         "BMY",         "z2m",       "mZg",       "uZg",       "UZg==" },
+        { "fo",     "f666f",          "F666F",         "bmzxq",       "BMZXQ",       "z8o8",      "mZm8",      "uZm8",      "UZm8=" },
+        { "foo",    "f666f6f",        "F666F6F",       "bmzxw6",      "BMZXW6",      "zbQbp",     "mZm9v",     "uZm9v",     "UZm9v" },
+        { "foob",   "f666f6f62",      "F666F6F62",     "bmzxw6yq",    "BMZXW6YQ",    "z3csAg9",   "mZm9vYg",   "uZm9vYg",   "UZm9vYg==" },
+        { "fooba",  "f666f6f6261",    "F666F6F6261",   "bmzxw6ytb",   "BMZXW6YTB",   "zCZJRhmz",  "mZm9vYmE",  "uZm9vYmE",  "UZm9vYmE=" },
+        { "foobar", "f666f6f626172",  "F666F6F626172", "bmzxw6ytboi", "BMZXW6YTBOI", "zt1Zv2yaZ", "mZm9vYmFy", "uZm9vYmFy", "UZm9vYmFy" }
     };
     size_t num_tests = sizeof(tests) / sizeof(tests[0]);
     struct

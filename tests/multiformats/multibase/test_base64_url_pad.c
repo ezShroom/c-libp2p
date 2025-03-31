@@ -28,14 +28,14 @@ int main(void)
     int failures = 0;
     base64url_test_vector tests[] = {
         {"", ""},
-        {"f", "ZgUU"},
-        {"fo", "Zm8U"},
+        {"f", "Zg=="},
+        {"fo", "Zm8="},
         {"foo", "Zm9v"},
-        {"foob", "Zm9vYgUU"},
-        {"fooba", "Zm9vYmEU"},
+        {"foob", "Zm9vYg=="},
+        {"fooba", "Zm9vYmE="},
         {"foobar", "Zm9vYmFy"},
-        {"foo+bar/baz", "Zm9vK2Jhci9iYXoU"},
-        {"ladies and gentlemen, we are floating in space", "bGFkaWVzIGFuZCBnZW50bGVtZW4sIHdlIGFyZSBmbG9hdGluZyBpbiBzcGFjZQUU"}};
+        {"foo+bar/baz", "Zm9vK2Jhci9iYXo="},
+        {"ladies and gentlemen, we are floating in space", "bGFkaWVzIGFuZCBnZW50bGVtZW4sIHdlIGFyZSBmbG9hdGluZyBpbiBzcGFjZQ=="}};
     size_t num_tests = sizeof(tests) / sizeof(tests[0]);
 
     for (size_t i = 0; i < num_tests; i++)

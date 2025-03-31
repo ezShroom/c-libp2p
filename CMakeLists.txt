@@ -228,3 +228,27 @@ add_module(
     src/peer_id
 )
 target_link_libraries(peer_id_secp256k1 PRIVATE secp256k1)
+
+# ---------------------------------------------
+# multiformats/cid_v0
+# ---------------------------------------------
+add_module(
+    cid_v0
+    src/multiformats/cid/cid_v0.c
+    tests/multiformats/cid/test_cid_v0.c
+    ""
+    ""
+)
+target_link_libraries(cid_v0 PRIVATE base58_btc multicodec unsigned_varint)
+
+# ---------------------------------------------
+# multiformats/cid_v1
+# ---------------------------------------------
+add_module(
+    cid_v1
+    src/multiformats/cid/cid_v1.c
+    tests/multiformats/cid/test_cid_v1.c
+    ""
+    ""
+)
+target_link_libraries(cid_v1 PRIVATE multibase multicodec unsigned_varint)

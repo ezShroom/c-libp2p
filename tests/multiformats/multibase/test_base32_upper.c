@@ -28,12 +28,12 @@ int main(void)
     int failures = 0;
     base32_test_vector tests[] = {
         {"", ""},
-        {"f", "MY======"},
-        {"fo", "MZXQ===="},
-        {"foo", "MZXW6==="},
-        {"foob", "MZXW6YQ="},
+        {"f", "MY"},
+        {"fo", "MZXQ"},
+        {"foo", "MZXW6"},
+        {"foob", "MZXW6YQ"},
         {"fooba", "MZXW6YTB"},
-        {"foobar", "MZXW6YTBOI======"}
+        {"foobar", "MZXW6YTBOI"}
     };
     size_t num_tests = sizeof(tests) / sizeof(tests[0]);
 

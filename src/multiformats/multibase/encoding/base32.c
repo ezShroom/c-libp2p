@@ -20,7 +20,6 @@ static const char base32_alphabet[32] = "abcdefghijklmnopqrstuvwxyz234567";
  */
 int base32_encode(const uint8_t *data, size_t data_len, char *out, size_t out_len)
 {
-    size_t required;
     size_t full_blocks, rem;
     size_t i, j;
     size_t pos = 0;
@@ -32,8 +31,7 @@ int base32_encode(const uint8_t *data, size_t data_len, char *out, size_t out_le
 
     if (data_len == 0)
     {
-        required = 1; 
-        if (out_len < required)
+        if (out_len < 1)
         {
             return MULTIBASE_ERR_BUFFER_TOO_SMALL;
         }
@@ -43,12 +41,33 @@ int base32_encode(const uint8_t *data, size_t data_len, char *out, size_t out_le
 
     full_blocks = data_len / 5;
     rem = data_len % 5;
-    required = ((full_blocks + (rem ? 1 : 0)) * 8) + 1;
-    if (out_len < required)
+
+    size_t out_chars = full_blocks * 8;
+    if (rem)
+    {
+        if (rem == 1)
+        {
+            out_chars += 2;
+        }
+        else if (rem == 2)
+        {
+            out_chars += 4;
+        }
+        else if (rem == 3)
+        {
+            out_chars += 5;
+        }
+        else /* rem == 4 */
+        {
+            out_chars += 7;
+        }
+    }
+    if (out_len < out_chars + 1)
     {
         return MULTIBASE_ERR_BUFFER_TOO_SMALL;
     }
 
+    /* Process full 5-byte blocks */
     for (i = 0; i < full_blocks; i++)
     {
         const uint8_t *chunk = data + (i * 5);
@@ -118,7 +137,7 @@ int base32_encode(const uint8_t *data, size_t data_len, char *out, size_t out_le
         {
             valid_chars = 5;
         }
-        else
+        else /* rem == 4 */
         {
             valid_chars = 7;
         }
@@ -127,14 +146,9 @@ int base32_encode(const uint8_t *data, size_t data_len, char *out, size_t out_le
         {
             out[pos++] = base32_alphabet[indices[j]];
         }
-        for (j = valid_chars; j < 8; j++)
-        {
-            out[pos++] = '=';
-        }
     }
 
     out[pos] = '\0';
-
     return pos;
 }
 
@@ -150,25 +164,17 @@ int base32_encode(const uint8_t *data, size_t data_len, char *out, size_t out_le
  */
 int base32_decode(const char *in, size_t data_len, uint8_t *out, size_t out_len)
 {
-    size_t in_len, pos = 0;
+    size_t pos = 0;
     size_t i, j;
-    size_t decoded_len = 0;
 
     if (!in || !out)
     {
         return MULTIBASE_ERR_NULL_POINTER;
     }
-    
+
     if (data_len == 0)
     {
         return 0;
-    }
-
-    in_len = data_len;
-
-    if (in_len % 8 != 0)
-    {
-        return MULTIBASE_ERR_INVALID_INPUT_LEN;
     }
 
     uint8_t decode_table[256];
@@ -185,53 +191,31 @@ int base32_decode(const char *in, size_t data_len, uint8_t *out, size_t out_len)
         decode_table[(unsigned char)('2' + i)] = 26 + i;
     }
 
-    size_t blocks = in_len / 8;
-    for (i = 0; i < blocks; i++)
+    size_t full_blocks = data_len / 8;
+    size_t rem = data_len % 8;
+    size_t decoded_len = full_blocks * 5;
+
+    if (rem)
     {
-        const char *block = in + i * 8;
-        size_t valid_chars = 0;
-        for (j = 0; j < 8; j++)
+        if (rem == 2)
         {
-            if (block[j] == '=')
-            {
-                break;
-            }
-            valid_chars++;
+            decoded_len += 1;
         }
-        if (i < blocks - 1 && valid_chars != 8)
-        {
-            return MULTIBASE_ERR_INVALID_INPUT_LEN;
-        }
-        if (valid_chars == 8)
-        {
-            decoded_len += 5;
-        }
-        else if (valid_chars == 7)
-        {
-            decoded_len += 4;
-        }
-        else if (valid_chars == 5)
-        {
-            decoded_len += 3;
-        }
-        else if (valid_chars == 4)
+        else if (rem == 4)
         {
             decoded_len += 2;
         }
-        else if (valid_chars == 2)
+        else if (rem == 5)
         {
-            decoded_len += 1;
+            decoded_len += 3;
+        }
+        else if (rem == 7)
+        {
+            decoded_len += 4;
         }
         else
         {
             return MULTIBASE_ERR_INVALID_INPUT_LEN;
-        }
-        for (; j < 8; j++)
-        {
-            if (block[j] != '=')
-            {
-                return MULTIBASE_ERR_INVALID_INPUT_LEN;
-            }
         }
     }
 
@@ -240,55 +224,59 @@ int base32_decode(const char *in, size_t data_len, uint8_t *out, size_t out_len)
         return MULTIBASE_ERR_BUFFER_TOO_SMALL;
     }
 
-    for (i = 0; i < blocks; i++)
+    for (i = 0; i < full_blocks; i++)
     {
         const char *block = in + i * 8;
         uint8_t indices[8];
-        size_t valid_chars = 0;
         for (j = 0; j < 8; j++)
         {
-            if (block[j] == '=')
-            {
-                break;
-            }
             uint8_t val = decode_table[(unsigned char)block[j]];
             if (val == 0xFF)
             {
                 return MULTIBASE_ERR_INVALID_CHARACTER;
             }
             indices[j] = val;
-            valid_chars++;
         }
+        out[pos++] = (indices[0] << 3) | (indices[1] >> 2);
+        out[pos++] = ((indices[1] & 0x03) << 6) | (indices[2] << 1) | (indices[3] >> 4);
+        out[pos++] = ((indices[3] & 0x0F) << 4) | (indices[4] >> 1);
+        out[pos++] = ((indices[4] & 0x01) << 7) | (indices[5] << 2) | (indices[6] >> 3);
+        out[pos++] = ((indices[6] & 0x07) << 5) | indices[7];
+    }
 
-        if (valid_chars == 8)
+    if (rem)
+    {
+        uint8_t indices[8];
+        for (j = 0; j < rem; j++)
+        {
+            uint8_t val = decode_table[(unsigned char)in[full_blocks * 8 + j]];
+            if (val == 0xFF)
+            {
+                return MULTIBASE_ERR_INVALID_CHARACTER;
+            }
+            indices[j] = val;
+        }
+        if (rem == 2)
+        {
+            out[pos++] = (indices[0] << 3) | (indices[1] >> 2);
+        }
+        else if (rem == 4)
+        {
+            out[pos++] = (indices[0] << 3) | (indices[1] >> 2);
+            out[pos++] = ((indices[1] & 0x03) << 6) | (indices[2] << 1) | (indices[3] >> 4);
+        }
+        else if (rem == 5)
+        {
+            out[pos++] = (indices[0] << 3) | (indices[1] >> 2);
+            out[pos++] = ((indices[1] & 0x03) << 6) | (indices[2] << 1) | (indices[3] >> 4);
+            out[pos++] = ((indices[3] & 0x0F) << 4) | (indices[4] >> 1);
+        }
+        else if (rem == 7)
         {
             out[pos++] = (indices[0] << 3) | (indices[1] >> 2);
             out[pos++] = ((indices[1] & 0x03) << 6) | (indices[2] << 1) | (indices[3] >> 4);
             out[pos++] = ((indices[3] & 0x0F) << 4) | (indices[4] >> 1);
             out[pos++] = ((indices[4] & 0x01) << 7) | (indices[5] << 2) | (indices[6] >> 3);
-            out[pos++] = ((indices[6] & 0x07) << 5) | indices[7];
-        }
-        else if (valid_chars == 7)
-        {
-            out[pos++] = (indices[0] << 3) | (indices[1] >> 2);
-            out[pos++] = ((indices[1] & 0x03) << 6) | (indices[2] << 1) | (indices[3] >> 4);
-            out[pos++] = ((indices[3] & 0x0F) << 4) | (indices[4] >> 1);
-            out[pos++] = ((indices[4] & 0x01) << 7) | (indices[5] << 2) | (indices[6] >> 3);
-        }
-        else if (valid_chars == 5)
-        {
-            out[pos++] = (indices[0] << 3) | (indices[1] >> 2);
-            out[pos++] = ((indices[1] & 0x03) << 6) | (indices[2] << 1) | (indices[3] >> 4);
-            out[pos++] = ((indices[3] & 0x0F) << 4) | (indices[4] >> 1);
-        }
-        else if (valid_chars == 4)
-        {
-            out[pos++] = (indices[0] << 3) | (indices[1] >> 2);
-            out[pos++] = ((indices[1] & 0x03) << 6) | (indices[2] << 1) | (indices[3] >> 4);
-        }
-        else if (valid_chars == 2)
-        {
-            out[pos++] = (indices[0] << 3) | (indices[1] >> 2);
         }
     }
     return pos;
