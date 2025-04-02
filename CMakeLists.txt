@@ -252,3 +252,16 @@ add_module(
     ""
 )
 target_link_libraries(cid_v1 PRIVATE multibase multicodec unsigned_varint)
+
+# ---------------------------------------------
+# multiformats/multiaddr
+# ---------------------------------------------
+add_module(
+    multiaddr
+    src/multiformats/multiaddr/multiaddr.c
+    tests/multiformats/multiaddr/test_multiaddr.c
+    ""
+    ""
+)
+target_link_libraries(multiaddr PRIVATE multibase multicodec unsigned_varint)
+

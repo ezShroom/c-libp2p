@@ -8,7 +8,7 @@ To build the project, you will need to have CMake installed. Follow these steps:
 
 1. Clone the repository:
     ```sh
-    git clone https://github.com/uink45/libp2p-c.git
+    git clone https://github.com/Pier-Two/libp2p-c.git
     cd libp2p-c
     ```
 

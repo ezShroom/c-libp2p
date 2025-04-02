@@ -20,12 +20,10 @@ typedef enum {
 } multiaddr_error_t;
 
 /**
- * @brief Multiaddr opaque struct. You never access its fields directly.
+ * @brief Multiaddr opaque struct. 
  *
  * Internally, a multiaddr is often stored in its binary format:
  *   <proto code (varint)><addr bytes>... repeated ...
- *
- * We store it in a single contiguous byte array.
  */
 typedef struct multiaddr_s multiaddr_t;
 
@@ -73,14 +71,6 @@ multiaddr_t* multiaddr_copy(const multiaddr_t *addr, int *err);
  *                  `multiaddr_new_*()` functions.
  */
 void multiaddr_free(multiaddr_t *addr);
-
-/**
- * @brief Return the size (in bytes) of the underlying multiaddr binary representation.
- *
- * @param[in] addr  Pointer to the multiaddr.
- * @return The size in bytes of the multiaddr's internal buffer. 0 if `addr` is NULL.
- */
-size_t multiaddr_size(const multiaddr_t *addr);
 
 /**
  * @brief Serialize (copy) the internal multiaddr bytes into an external buffer.
