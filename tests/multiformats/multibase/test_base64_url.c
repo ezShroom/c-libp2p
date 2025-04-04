@@ -1,9 +1,9 @@
+#include "multiformats/multibase/encoding/base64_url.h"
+#include "multiformats/multibase/multibase.h"
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
-#include "multiformats/multibase/multibase.h"
-#include "multiformats/multibase/encoding/base64_url.h"
 
 static void print_standard(const char *test_name, const char *details, int passed)
 {
@@ -35,14 +35,15 @@ int main(void)
         {"fooba", "Zm9vYmE"},
         {"foobar", "Zm9vYmFy"},
         {"foo+bar/baz", "Zm9vK2Jhci9iYXo"},
-        {"ladies and gentlemen, we are floating in space", "bGFkaWVzIGFuZCBnZW50bGVtZW4sIHdlIGFyZSBmbG9hdGluZyBpbiBzcGFjZQ"}};
+        {"ladies and gentlemen, we are floating in space",
+         "bGFkaWVzIGFuZCBnZW50bGVtZW4sIHdlIGFyZSBmbG9hdGluZyBpbiBzcGFjZQ"}};
     size_t num_tests = sizeof(tests) / sizeof(tests[0]);
 
     for (size_t i = 0; i < num_tests; i++)
     {
         base64url_test_vector tv = tests[i];
         size_t input_len = strlen(tv.input);
-        size_t out_buf_size = ((input_len + 2) / 3) * 4 + 1; 
+        size_t out_buf_size = ((input_len + 2) / 3) * 4 + 1;
         char *encoded = malloc(out_buf_size);
         if (encoded == NULL)
         {

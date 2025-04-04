@@ -2,7 +2,8 @@
 #define PEER_ID_H
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include <stddef.h>
@@ -28,14 +29,11 @@ extern "C" {
  *   - CIDv1 strings in a multibase encoding, typically base32 (e.g., "bafz...")
  */
 
-/* ------------------------------------------------------------------
- * Enumerations
- * ------------------------------------------------------------------ */
-
 /**
  * @brief Error codes for Peer ID operations.
  */
-typedef enum peer_id_error {
+typedef enum peer_id_error
+{
     PEER_ID_SUCCESS = 0,        /**< Operation completed successfully. */
     PEER_ID_E_NULL_PTR,         /**< A null pointer was passed where it is not allowed. */
     PEER_ID_E_INVALID_PROTOBUF, /**< Could not parse or handle the given protobuf data. */
@@ -54,14 +52,11 @@ typedef enum peer_id_error {
  * PEER_ID_FMT_MULTIBASE_CIDv1: a CIDv1 with multibase prefix (usually base32)
  *                              and multicodec = `libp2p-key`.
  */
-typedef enum peer_id_format {
+typedef enum peer_id_format
+{
     PEER_ID_FMT_BASE58_LEGACY,
     PEER_ID_FMT_MULTIBASE_CIDv1
 } peer_id_format_t;
-
-/* ------------------------------------------------------------------
- * Data Structures
- * ------------------------------------------------------------------ */
 
 /**
  * @brief Opaque structure holding the canonical bytes (multihash) of a Peer ID.
@@ -71,14 +66,11 @@ typedef enum peer_id_format {
  *
  * The size is stored in @p size.
  */
-typedef struct peer_id {
-    uint8_t *bytes;  /**< Pointer to the multihash bytes. */
-    size_t   size;   /**< Number of bytes in @p bytes.     */
+typedef struct peer_id
+{
+    uint8_t *bytes; /**< Pointer to the multihash bytes. */
+    size_t size;    /**< Number of bytes in @p bytes.     */
 } peer_id_t;
-
-/* ------------------------------------------------------------------
- * Core API
- * ------------------------------------------------------------------ */
 
 /**
  * @brief Derive a Peer ID from a deterministically serialized (protobuf) public key.
@@ -102,9 +94,8 @@ typedef struct peer_id {
  * @note The caller is responsible for calling peer_id_destroy() on @p pid
  *       to free allocated resources.
  */
-peer_id_error_t peer_id_create_from_public_key(const uint8_t *pubkey_buf,
-                               size_t pubkey_len,
-                               peer_id_t *pid);
+peer_id_error_t peer_id_create_from_public_key(const uint8_t *pubkey_buf, size_t pubkey_len,
+                                               peer_id_t *pid);
 
 /**
  * @brief Derive a Peer ID from a deterministically serialized (protobuf) private key.
@@ -127,9 +118,8 @@ peer_id_error_t peer_id_create_from_public_key(const uint8_t *pubkey_buf,
  * @note The caller is responsible for calling peer_id_destroy() on @p pid
  *       to free allocated resources.
  */
-peer_id_error_t peer_id_create_from_private_key(const uint8_t *privkey_buf,
-                                size_t privkey_len,
-                                peer_id_t *pid);
+peer_id_error_t peer_id_create_from_private_key(const uint8_t *privkey_buf, size_t privkey_len,
+                                                peer_id_t *pid);
 
 /**
  * @brief Parse a human-readable Peer ID string (either legacy base58btc multihash
@@ -147,10 +137,6 @@ peer_id_error_t peer_id_create_from_private_key(const uint8_t *privkey_buf,
  */
 peer_id_error_t peer_id_create_from_string(const char *str, peer_id_t *pid);
 
-/* ------------------------------------------------------------------
- * Serialization / Deserialization
- * ------------------------------------------------------------------ */
-
 /**
  * @brief Return a textual representation of the Peer ID in either:
  *        - Legacy base58btc multihash format, or
@@ -163,14 +149,7 @@ peer_id_error_t peer_id_create_from_string(const char *str, peer_id_t *pid);
  * @return On success, the number of characters written (excluding null terminator).
  *         On failure, a negative `peer_id_error_t` code is returned.
  */
-int peer_id_to_string(const peer_id_t *pid,
-                  peer_id_format_t format,
-                  char *out,
-                  size_t out_size);
-
-/* ------------------------------------------------------------------
- * Utility Functions
- * ------------------------------------------------------------------ */
+int peer_id_to_string(const peer_id_t *pid, peer_id_format_t format, char *out, size_t out_size);
 
 /**
  * @brief Compare two Peer IDs for equality (byte-for-byte).

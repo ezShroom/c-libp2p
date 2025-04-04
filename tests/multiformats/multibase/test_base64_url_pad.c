@@ -1,9 +1,9 @@
+#include "multiformats/multibase/encoding/base64_url_pad.h"
+#include "multiformats/multibase/multibase.h"
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
-#include "multiformats/multibase/multibase.h"
-#include "multiformats/multibase/encoding/base64_url_pad.h"
 
 static void print_standard(const char *test_name, const char *details, int passed)
 {
@@ -35,7 +35,8 @@ int main(void)
         {"fooba", "Zm9vYmE="},
         {"foobar", "Zm9vYmFy"},
         {"foo+bar/baz", "Zm9vK2Jhci9iYXo="},
-        {"ladies and gentlemen, we are floating in space", "bGFkaWVzIGFuZCBnZW50bGVtZW4sIHdlIGFyZSBmbG9hdGluZyBpbiBzcGFjZQ=="}};
+        {"ladies and gentlemen, we are floating in space",
+         "bGFkaWVzIGFuZCBnZW50bGVtZW4sIHdlIGFyZSBmbG9hdGluZyBpbiBzcGFjZQ=="}};
     size_t num_tests = sizeof(tests) / sizeof(tests[0]);
 
     for (size_t i = 0; i < num_tests; i++)
@@ -50,7 +51,8 @@ int main(void)
             exit(EXIT_FAILURE);
         }
 
-        int ret = base64_url_pad_encode((const uint8_t *)tv.input, input_len, encoded, out_buf_size);
+        int ret =
+            base64_url_pad_encode((const uint8_t *)tv.input, input_len, encoded, out_buf_size);
         char test_name[128];
         sprintf(test_name, "base64_url_pad_encode(\"%s\")", tv.input);
         if (ret < 0)

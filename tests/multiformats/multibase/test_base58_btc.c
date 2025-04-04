@@ -1,9 +1,9 @@
+#include "multiformats/multibase/encoding/base58_btc.h"
+#include "multiformats/multibase/multibase.h"
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
-#include "multiformats/multibase/multibase.h"
-#include "multiformats/multibase/encoding/base58_btc.h"
 
 static void print_standard(const char *test_name, const char *details, int passed)
 {
@@ -30,10 +30,13 @@ int main(void)
     int failures = 0;
     uint8_t binary_data[] = {0x00, 0x00, 0x00, 0x28, 0x7f, 0xb4, 0xcd};
     base58_test_vector tests[] = {
-        {"Hello World!", (const uint8_t *)"Hello World!", strlen("Hello World!"), "2NEpo7TZRRrLZSi2U"},
-        {"The quick brown fox jumps over the lazy dog.", (const uint8_t *)"The quick brown fox jumps over the lazy dog.", strlen("The quick brown fox jumps over the lazy dog."), "USm3fpXnKG5EUBx2ndxBDMPVciP5hGey2Jh4NDv6gmeo1LkMeiKrLJUUBk6Z"},
-        {"0x0000287fb4cd", binary_data, sizeof(binary_data), "111233QC4"}
-    };
+        {"Hello World!", (const uint8_t *)"Hello World!", strlen("Hello World!"),
+         "2NEpo7TZRRrLZSi2U"},
+        {"The quick brown fox jumps over the lazy dog.",
+         (const uint8_t *)"The quick brown fox jumps over the lazy dog.",
+         strlen("The quick brown fox jumps over the lazy dog."),
+         "USm3fpXnKG5EUBx2ndxBDMPVciP5hGey2Jh4NDv6gmeo1LkMeiKrLJUUBk6Z"},
+        {"0x0000287fb4cd", binary_data, sizeof(binary_data), "111233QC4"}};
     size_t num_tests = sizeof(tests) / sizeof(tests[0]);
 
     for (size_t i = 0; i < num_tests; i++)

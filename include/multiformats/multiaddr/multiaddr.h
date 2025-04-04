@@ -2,25 +2,27 @@
 #define MULTIADDR_H
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
-typedef enum {
-    MULTIADDR_SUCCESS = 0,           /**< No error.                          */
-    MULTIADDR_ERR_NULL_POINTER = -1, /**< A null pointer was passed.         */
-    MULTIADDR_ERR_INVALID_STRING = -2,/**< Failed to parse multiaddr string.  */
-    MULTIADDR_ERR_INVALID_DATA = -3, /**< Binary data not a valid multiaddr. */
+typedef enum
+{
+    MULTIADDR_SUCCESS = 0,               /**< No error.                          */
+    MULTIADDR_ERR_NULL_POINTER = -1,     /**< A null pointer was passed.         */
+    MULTIADDR_ERR_INVALID_STRING = -2,   /**< Failed to parse multiaddr string.  */
+    MULTIADDR_ERR_INVALID_DATA = -3,     /**< Binary data not a valid multiaddr. */
     MULTIADDR_ERR_BUFFER_TOO_SMALL = -4, /**< Insufficient out buffer size.   */
-    MULTIADDR_ERR_NO_MATCH = -5,     /**< Decapsulation match not found.     */
-    MULTIADDR_ERR_ALLOC_FAILURE = -6,/**< Memory allocation failed.           */
-    MULTIADDR_ERR_UNKNOWN_PROTOCOL = -7 /**< Protocol code is not recognized. */
+    MULTIADDR_ERR_NO_MATCH = -5,         /**< Decapsulation match not found.     */
+    MULTIADDR_ERR_ALLOC_FAILURE = -6,    /**< Memory allocation failed.           */
+    MULTIADDR_ERR_UNKNOWN_PROTOCOL = -7  /**< Protocol code is not recognized. */
 } multiaddr_error_t;
 
 /**
- * @brief Multiaddr opaque struct. 
+ * @brief Multiaddr opaque struct.
  *
  * Internally, a multiaddr is often stored in its binary format:
  *   <proto code (varint)><addr bytes>... repeated ...
@@ -31,13 +33,14 @@ typedef struct multiaddr_s multiaddr_t;
  * @brief Create a new multiaddr by parsing a human-readable string.
  *
  * @param[in]  str       Null-terminated multiaddr string (e.g. "/ip4/127.0.0.1/tcp/8080").
- * @param[out] err       On failure, set to one of the multiaddr_error_t codes. On success, set to MULTIADDR_SUCCESS.
+ * @param[out] err       On failure, set to one of the multiaddr_error_t codes. On success, set to
+ * MULTIADDR_SUCCESS.
  *
  * @return Pointer to a newly allocated multiaddr_t. NULL on error.
  *
  * @note The caller must call `multiaddr_free()` when done.
  */
-multiaddr_t* multiaddr_new_from_str(const char *str, int *err);
+multiaddr_t *multiaddr_new_from_str(const char *str, int *err);
 
 /**
  * @brief Create a new multiaddr from its serialized binary format.
@@ -51,7 +54,7 @@ multiaddr_t* multiaddr_new_from_str(const char *str, int *err);
  *
  * @note The caller must call `multiaddr_free()` when done.
  */
-multiaddr_t* multiaddr_new_from_bytes(const uint8_t *bytes, size_t length, int *err);
+multiaddr_t *multiaddr_new_from_bytes(const uint8_t *bytes, size_t length, int *err);
 
 /**
  * @brief Create a deep copy of an existing multiaddr.
@@ -62,7 +65,7 @@ multiaddr_t* multiaddr_new_from_bytes(const uint8_t *bytes, size_t length, int *
  *
  * @return Pointer to a newly allocated multiaddr_t copy. NULL on error.
  */
-multiaddr_t* multiaddr_copy(const multiaddr_t *addr, int *err);
+multiaddr_t *multiaddr_copy(const multiaddr_t *addr, int *err);
 
 /**
  * @brief Free the memory for a multiaddr object.
@@ -96,7 +99,7 @@ int multiaddr_get_bytes(const multiaddr_t *addr, uint8_t *buffer, size_t buffer_
  * @return Null-terminated string representing the multiaddr (e.g. "/ip4/127.0.0.1/tcp/8080").
  *         The caller must free this string via `free()`. Returns NULL on error.
  */
-char* multiaddr_to_str(const multiaddr_t *addr, int *err);
+char *multiaddr_to_str(const multiaddr_t *addr, int *err);
 
 /**
  * @brief Return how many protocols (or "components") are contained in this multiaddr.
@@ -135,9 +138,7 @@ int multiaddr_get_protocol_code(const multiaddr_t *addr, size_t index, uint64_t 
  *
  * @return 0 on success, or a negative multiaddr_error_t code on error.
  */
-int multiaddr_get_address_bytes(const multiaddr_t *addr,
-                                size_t index,
-                                uint8_t *buf,
+int multiaddr_get_address_bytes(const multiaddr_t *addr, size_t index, uint8_t *buf,
                                 size_t *buf_len);
 
 /**
@@ -148,11 +149,12 @@ int multiaddr_get_address_bytes(const multiaddr_t *addr,
  *
  * @param[in]  addr      Pointer to the "outer" multiaddr.
  * @param[in]  sub       Pointer to the "inner" multiaddr to be appended.
- * @param[out] err       On error, set to negative multiaddr_error_t code. Otherwise MULTIADDR_SUCCESS.
+ * @param[out] err       On error, set to negative multiaddr_error_t code. Otherwise
+ * MULTIADDR_SUCCESS.
  *
  * @return A newly allocated multiaddr_t, or NULL on error.
  */
-multiaddr_t* multiaddr_encapsulate(const multiaddr_t *addr, const multiaddr_t *sub, int *err);
+multiaddr_t *multiaddr_encapsulate(const multiaddr_t *addr, const multiaddr_t *sub, int *err);
 
 /**
  * @brief Create a new multiaddr by decapsulating the last occurrence of `sub` from `addr`.
@@ -172,7 +174,7 @@ multiaddr_t* multiaddr_encapsulate(const multiaddr_t *addr, const multiaddr_t *s
  * @return A newly allocated multiaddr_t. Returns NULL if no match is found
  *         or if an error occurs.
  */
-multiaddr_t* multiaddr_decapsulate(const multiaddr_t *addr, const multiaddr_t *sub, int *err);
+multiaddr_t *multiaddr_decapsulate(const multiaddr_t *addr, const multiaddr_t *sub, int *err);
 
 #ifdef __cplusplus
 }

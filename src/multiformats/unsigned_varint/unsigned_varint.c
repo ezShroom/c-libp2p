@@ -1,5 +1,5 @@
-#include <string.h>
 #include "multiformats/unsigned_varint/unsigned_varint.h"
+#include <string.h>
 
 /**
  * @brief Calculate the number of bytes required to encode a 64-bit unsigned integer as a varint.
@@ -27,7 +27,8 @@ static size_t varint_size_64(uint64_t value)
  * @param written Pointer to store the number of bytes written to the output buffer.
  * @return unsigned_varint_err_t Error code indicating success or type of failure.
  */
-unsigned_varint_err_t unsigned_varint_encode(uint64_t value, uint8_t *out, size_t out_size, size_t *written)
+unsigned_varint_err_t unsigned_varint_encode(uint64_t value, uint8_t *out, size_t out_size,
+                                             size_t *written)
 {
     if (!out || !written)
     {
@@ -175,7 +176,8 @@ unsigned_varint_err_t unsigned_varint_encode(uint64_t value, uint8_t *out, size_
  * @param read Pointer to store the number of bytes read from the input buffer.
  * @return unsigned_varint_err_t Error code indicating success or type of failure.
  */
-unsigned_varint_err_t unsigned_varint_decode(const uint8_t *in, size_t in_size, uint64_t *value, size_t *read)
+unsigned_varint_err_t unsigned_varint_decode(const uint8_t *in, size_t in_size, uint64_t *value,
+                                             size_t *read)
 {
     if (!in || !value || !read)
     {
@@ -207,9 +209,8 @@ unsigned_varint_err_t unsigned_varint_decode(const uint8_t *in, size_t in_size, 
 
     if (in_size >= 3 && !(in[2] & 0x80))
     {
-        uint64_t v = ((uint64_t)(in[2] & 0x7F) << 14) |
-                     ((uint64_t)(in[1] & 0x7F) << 7) |
-                     (in[0] & 0x7F);
+        uint64_t v =
+            ((uint64_t)(in[2] & 0x7F) << 14) | ((uint64_t)(in[1] & 0x7F) << 7) | (in[0] & 0x7F);
         if (v >= (1ULL << 14))
         {
             *value = v;
@@ -221,10 +222,8 @@ unsigned_varint_err_t unsigned_varint_decode(const uint8_t *in, size_t in_size, 
 
     if (in_size >= 4 && !(in[3] & 0x80))
     {
-        uint64_t v = ((uint64_t)(in[3] & 0x7F) << 21) |
-                     ((uint64_t)(in[2] & 0x7F) << 14) |
-                     ((uint64_t)(in[1] & 0x7F) << 7) |
-                     (in[0] & 0x7F);
+        uint64_t v = ((uint64_t)(in[3] & 0x7F) << 21) | ((uint64_t)(in[2] & 0x7F) << 14) |
+                     ((uint64_t)(in[1] & 0x7F) << 7) | (in[0] & 0x7F);
         if (v >= (1ULL << 21))
         {
             *value = v;
@@ -411,7 +410,4 @@ minimal_check:
  * @param value The 64-bit unsigned integer to be encoded.
  * @return The number of bytes required to encode the value.
  */
-size_t unsigned_varint_size(uint64_t value)
-{
-    return varint_size_64(value);
-}
+size_t unsigned_varint_size(uint64_t value) { return varint_size_64(value); }

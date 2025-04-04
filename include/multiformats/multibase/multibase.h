@@ -5,7 +5,8 @@
 #include <stdint.h>
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /**
@@ -47,15 +48,12 @@ typedef enum
  * @return The number of characters written (excluding the terminating null byte) on success,
  *         or a negative value on error.
  */
-int multibase_encode(
-    multibase_t base,
-    const uint8_t *data,
-    size_t data_len,
-    char *out,
-    size_t out_len);
+int multibase_encode(multibase_t base, const uint8_t *data, size_t data_len, char *out,
+                     size_t out_len);
 
 /**
- * @brief Decode a multibase string (which includes the prefix) into binary data using the specified encoding.
+ * @brief Decode a multibase string (which includes the prefix) into binary data using the specified
+ * encoding.
  *
  * @param base       One of the MULTIBASE_BASE* values indicating the expected encoding.
  * @param in         Null-terminated string with a multibase prefix.
@@ -64,11 +62,7 @@ int multibase_encode(
  * @return The number of bytes decoded on success,
  *         or a negative value on error.
  */
-int multibase_decode(
-    multibase_t base,
-    const char *in,
-    uint8_t *out,
-    size_t out_len);
+int multibase_decode(multibase_t base, const char *in, uint8_t *out, size_t out_len);
 
 #ifdef __cplusplus
 }

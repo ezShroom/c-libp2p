@@ -1,20 +1,19 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include <inttypes.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "multiformats/cid/cid_v1.h"
-#include "multiformats/unsigned_varint/unsigned_varint.h"
-#include "multiformats/multibase/multibase.h"
-#include "multiformats/multibase/encoding/base58_btc.h"
 #include "multiformats/multibase/encoding/base16.h"
 #include "multiformats/multibase/encoding/base32.h"
+#include "multiformats/multibase/encoding/base58_btc.h"
 #include "multiformats/multibase/encoding/base64.h"
 #include "multiformats/multibase/encoding/base64_url.h"
 #include "multiformats/multibase/encoding/base64_url_pad.h"
+#include "multiformats/multibase/multibase.h"
 #include "multiformats/multicodec/multicodec_codes.h"
 #include "multiformats/multicodec/multicodec_mappings.h"
-
+#include "multiformats/unsigned_varint/unsigned_varint.h"
 
 /**
  * @brief Detect the multibase encoding from the given string.
@@ -26,7 +25,7 @@ static multibase_t detect_multibase(const char *str)
 {
     if (str == NULL || *str == '\0')
     {
-        return MULTIBASE_BASE58_BTC; 
+        return MULTIBASE_BASE58_BTC;
     }
     switch (str[0])
     {
@@ -106,7 +105,8 @@ static const char *get_multicodec_name(uint64_t code)
  * @param out_len The size of the output buffer.
  * @return int Error code indicating success or type of failure.
  */
-static int multihash_to_human(const uint8_t *mh, size_t mh_size, char *out, size_t out_len)
+static int multihash_to_human(const uint8_t *mh, size_t mh_size, char *out,
+                              size_t out_len)
 {
     if (mh == NULL || out == NULL)
     {
@@ -115,7 +115,8 @@ static int multihash_to_human(const uint8_t *mh, size_t mh_size, char *out, size
 
     uint64_t hash_code = 0;
     size_t read = 0;
-    if (unsigned_varint_decode(mh, mh_size, &hash_code, &read) != UNSIGNED_VARINT_OK)
+    if (unsigned_varint_decode(mh, mh_size, &hash_code, &read) !=
+        UNSIGNED_VARINT_OK)
     {
         return CIDV1_ERROR_DECODE_FAILURE;
     }
@@ -127,7 +128,8 @@ static int multihash_to_human(const uint8_t *mh, size_t mh_size, char *out, size
 
     uint64_t digest_len = 0;
     size_t read2 = 0;
-    if (unsigned_varint_decode(mh + read, mh_size - read, &digest_len, &read2) != UNSIGNED_VARINT_OK)
+    if (unsigned_varint_decode(mh + read, mh_size - read, &digest_len,
+                               &read2) != UNSIGNED_VARINT_OK)
     {
         return CIDV1_ERROR_DECODE_FAILURE;
     }
@@ -168,7 +170,8 @@ static int multihash_to_human(const uint8_t *mh, size_t mh_size, char *out, size
  * @param out_size Pointer to store the size of the human-readable string.
  * @return int Error code indicating success or type of failure.
  */
-static int compute_mh_human_size(const uint8_t *mh, size_t mh_size, size_t *out_size)
+static int compute_mh_human_size(const uint8_t *mh, size_t mh_size,
+                                 size_t *out_size)
 {
     if (mh == NULL || out_size == NULL)
     {
@@ -177,7 +180,8 @@ static int compute_mh_human_size(const uint8_t *mh, size_t mh_size, size_t *out_
 
     uint64_t hash_code = 0;
     size_t read = 0;
-    if (unsigned_varint_decode(mh, mh_size, &hash_code, &read) != UNSIGNED_VARINT_OK)
+    if (unsigned_varint_decode(mh, mh_size, &hash_code, &read) !=
+        UNSIGNED_VARINT_OK)
     {
         return CIDV1_ERROR_DECODE_FAILURE;
     }
@@ -188,7 +192,8 @@ static int compute_mh_human_size(const uint8_t *mh, size_t mh_size, size_t *out_
 
     uint64_t digest_len = 0;
     size_t read2 = 0;
-    if (unsigned_varint_decode(mh + read, mh_size - read, &digest_len, &read2) != UNSIGNED_VARINT_OK)
+    if (unsigned_varint_decode(mh + read, mh_size - read, &digest_len,
+                               &read2) != UNSIGNED_VARINT_OK)
     {
         return CIDV1_ERROR_DECODE_FAILURE;
     }
@@ -213,7 +218,8 @@ static int compute_mh_human_size(const uint8_t *mh, size_t mh_size, size_t *out_
  * @param mh_size The size of the multihash data.
  * @return int Error code indicating success or type of failure.
  */
-int cid_v1_init(cid_v1_t *cid, uint64_t content_codec, const uint8_t *mh_data, size_t mh_size)
+int cid_v1_init(cid_v1_t *cid, uint64_t content_codec, const uint8_t *mh_data,
+                size_t mh_size)
 {
     if (cid == NULL || (mh_data == NULL && mh_size > 0))
     {
@@ -275,7 +281,8 @@ int cid_v1_from_bytes(cid_v1_t *cid, const uint8_t *data, size_t data_len)
     size_t offset = 0;
     uint64_t version = 0;
     size_t read = 0;
-    if (unsigned_varint_decode(data, data_len, &version, &read) != UNSIGNED_VARINT_OK)
+    if (unsigned_varint_decode(data, data_len, &version, &read) !=
+        UNSIGNED_VARINT_OK)
     {
         return CIDV1_ERROR_DECODE_FAILURE;
     }
@@ -287,7 +294,8 @@ int cid_v1_from_bytes(cid_v1_t *cid, const uint8_t *data, size_t data_len)
 
     uint64_t codec = 0;
     size_t read2 = 0;
-    if (unsigned_varint_decode(data + offset, data_len - offset, &codec, &read2) != UNSIGNED_VARINT_OK)
+    if (unsigned_varint_decode(data + offset, data_len - offset, &codec,
+                               &read2) != UNSIGNED_VARINT_OK)
     {
         return CIDV1_ERROR_DECODE_FAILURE;
     }
@@ -310,7 +318,7 @@ int cid_v1_from_bytes(cid_v1_t *cid, const uint8_t *data, size_t data_len)
     cid->multihash = mh;
     cid->multihash_size = mh_size;
 
-    return offset + mh_size; 
+    return offset + mh_size;
 }
 
 /**
@@ -335,7 +343,8 @@ int cid_v1_to_bytes(const cid_v1_t *cid, uint8_t *out, size_t out_len)
     {
         return CIDV1_ERROR_BUFFER_TOO_SMALL;
     }
-    if (unsigned_varint_encode(cid->version, out + pos, out_len - pos, &written) != UNSIGNED_VARINT_OK)
+    if (unsigned_varint_encode(cid->version, out + pos, out_len - pos,
+                               &written) != UNSIGNED_VARINT_OK)
     {
         return CIDV1_ERROR_ENCODE_FAILURE;
     }
@@ -346,7 +355,8 @@ int cid_v1_to_bytes(const cid_v1_t *cid, uint8_t *out, size_t out_len)
     {
         return CIDV1_ERROR_BUFFER_TOO_SMALL;
     }
-    if (unsigned_varint_encode(cid->codec, out + pos, out_len - pos, &written) != UNSIGNED_VARINT_OK)
+    if (unsigned_varint_encode(cid->codec, out + pos, out_len - pos,
+                               &written) != UNSIGNED_VARINT_OK)
     {
         return CIDV1_ERROR_ENCODE_FAILURE;
     }
@@ -371,7 +381,8 @@ int cid_v1_to_bytes(const cid_v1_t *cid, uint8_t *out, size_t out_len)
  * @param out_len The length of the output string buffer.
  * @return int Error code indicating success or type of failure.
  */
-int cid_v1_to_string(const cid_v1_t *cid, multibase_t base, char *out, size_t out_len)
+int cid_v1_to_string(const cid_v1_t *cid, multibase_t base, char *out,
+                     size_t out_len)
 {
     if (cid == NULL || out == NULL)
     {
@@ -454,7 +465,8 @@ int cid_v1_from_string(cid_v1_t *cid, const char *str)
  * @param out_len The length of the output string buffer.
  * @return int Error code indicating success or type of failure.
  */
-int cid_v1_to_human(const cid_v1_t *cid, multibase_t base, char *out, size_t out_len)
+int cid_v1_to_human(const cid_v1_t *cid, multibase_t base, char *out,
+                    size_t out_len)
 {
     if (cid == NULL || out == NULL)
     {
@@ -465,7 +477,8 @@ int cid_v1_to_human(const cid_v1_t *cid, multibase_t base, char *out, size_t out
     const char *codec_name = get_multicodec_name(cid->codec);
 
     size_t mh_human_size = 0;
-    int err = compute_mh_human_size(cid->multihash, cid->multihash_size, &mh_human_size);
+    int err = compute_mh_human_size(cid->multihash, cid->multihash_size,
+                                    &mh_human_size);
     if (err < 0)
     {
         return err;
@@ -477,14 +490,16 @@ int cid_v1_to_human(const cid_v1_t *cid, multibase_t base, char *out, size_t out
         return CIDV1_ERROR_ALLOCATION_FAILED;
     }
 
-    err = multihash_to_human(cid->multihash, cid->multihash_size, mh_human, mh_human_size);
+    err = multihash_to_human(cid->multihash, cid->multihash_size, mh_human,
+                             mh_human_size);
     if (err < 0)
     {
         free(mh_human);
         return err;
     }
 
-    int written = snprintf(out, out_len, "%s - cidv1 - %s - %s", mb_name, codec_name, mh_human);
+    int written = snprintf(out, out_len, "%s - cidv1 - %s - %s", mb_name,
+                           codec_name, mh_human);
     free(mh_human);
 
     if (written < 0 || (size_t)written >= out_len)

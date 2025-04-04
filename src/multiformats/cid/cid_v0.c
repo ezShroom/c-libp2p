@@ -1,4 +1,5 @@
 #include <string.h>
+
 #include "multiformats/cid/cid_v0.h"
 #include "multiformats/multibase/encoding/base58_btc.h"
 #include "multiformats/multicodec/multicodec_codes.h"
@@ -85,7 +86,8 @@ int cid_v0_from_bytes(cid_v0_t *cid, const uint8_t *bytes, size_t bytes_len)
 }
 
 /**
- * @brief Convert a CIDv0 structure to its string representation using base58btc encoding.
+ * @brief Convert a CIDv0 structure to its string representation using base58btc
+ * encoding.
  *
  * @param cid Pointer to the CIDv0 structure.
  * @param out Buffer to store the string representation.
@@ -117,7 +119,8 @@ int cid_v0_to_string(const cid_v0_t *cid, char *out, size_t out_len)
 }
 
 /**
- * @brief Initialize a CIDv0 structure from its string representation using base58btc decoding.
+ * @brief Initialize a CIDv0 structure from its string representation using
+ * base58btc decoding.
  *
  * @param cid Pointer to the CIDv0 structure to initialize.
  * @param str String representation of the CIDv0.

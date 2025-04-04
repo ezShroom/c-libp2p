@@ -1,15 +1,15 @@
+#include <ctype.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
-#include <errno.h>
 #include <unistd.h>
 
 #include "multiformats/multiaddr/multiaddr.h"
-#include "multiformats/unsigned_varint/unsigned_varint.h"
+#include "multiformats/multibase/encoding/base58_btc.h"
 #include "multiformats/multicodec/multicodec.h"
 #include "multiformats/multicodec/multicodec_codes.h"
-#include "multiformats/multibase/encoding/base58_btc.h"
+#include "multiformats/unsigned_varint/unsigned_varint.h"
 #include "peer_id/peer_id.h"
 
 #ifdef _WIN32
@@ -18,18 +18,31 @@
 #include <arpa/inet.h> /* for inet_pton, inet_ntop */
 #endif
 
+/**
+ * @brief Structure representing a multiaddr.
+ */
 struct multiaddr_s
 {
     size_t size;    /* Number of bytes in 'bytes' */
     uint8_t *bytes; /* The raw, serialized multiaddr data */
 };
 
+/**
+ * @brief Enumeration for protocol address lengths.
+ */
 typedef enum
 {
     ADDR_LEN_UNKNOWN = -1, /* not recognized in this implementation */
     ADDR_LEN_VARIABLE = -2 /* address length is variable */
 } protocol_len_e;
 
+/**
+ * @brief Retrieve the address length for a given protocol code.
+ *
+ * @param code The protocol code as a 64-bit unsigned integer.
+ * @return The number of bytes for the protocol's address, ADDR_LEN_VARIABLE for
+ * variable length, or ADDR_LEN_UNKNOWN if the protocol is unrecognized.
+ */
 static int get_protocol_addr_len(uint64_t code)
 {
     switch (code)
@@ -71,6 +84,9 @@ static int get_protocol_addr_len(uint64_t code)
     }
 }
 
+/**
+ * @brief Structure representing a buffer for multiaddr data.
+ */
 typedef struct
 {
     uint8_t *data;
@@ -78,6 +94,11 @@ typedef struct
     size_t capacity;
 } ma_buf_t;
 
+/**
+ * @brief Initialize a multiaddr buffer.
+ *
+ * @param b Pointer to the ma_buf_t structure to initialize.
+ */
 static void ma_buf_init(ma_buf_t *b)
 {
     b->data = NULL;
@@ -85,6 +106,11 @@ static void ma_buf_init(ma_buf_t *b)
     b->capacity = 0;
 }
 
+/**
+ * @brief Free the memory allocated for a multiaddr buffer.
+ *
+ * @param b Pointer to the ma_buf_t structure to free.
+ */
 static void ma_buf_free(ma_buf_t *b)
 {
     if (b->data)
@@ -96,6 +122,13 @@ static void ma_buf_free(ma_buf_t *b)
     b->capacity = 0;
 }
 
+/**
+ * @brief Ensure the buffer has enough capacity for additional data.
+ *
+ * @param b Pointer to the ma_buf_t structure.
+ * @param needed The additional number of bytes needed.
+ * @return 0 on success, or -1 on memory allocation failure.
+ */
 static int ma_buf_ensure(ma_buf_t *b, size_t needed)
 {
     if (b->size + needed <= b->capacity)
@@ -117,6 +150,14 @@ static int ma_buf_ensure(ma_buf_t *b, size_t needed)
     return 0;
 }
 
+/**
+ * @brief Append data to the multiaddr buffer.
+ *
+ * @param b Pointer to the ma_buf_t structure.
+ * @param src Pointer to the source data to append.
+ * @param n Number of bytes to append.
+ * @return 0 on success, or -1 on failure.
+ */
 static int ma_buf_append(ma_buf_t *b, const uint8_t *src, size_t n)
 {
     if (ma_buf_ensure(b, n) < 0)
@@ -128,6 +169,16 @@ static int ma_buf_append(ma_buf_t *b, const uint8_t *src, size_t n)
     return 0;
 }
 
+/**
+ * @brief Append a single byte to the multiaddr buffer.
+ *
+ * This function appends a single byte to the buffer, ensuring that the buffer
+ * has enough capacity.
+ *
+ * @param b Pointer to the ma_buf_t structure.
+ * @param c The byte to append.
+ * @return 0 on success, or -1 on failure.
+ */
 static int ma_buf_append_byte(ma_buf_t *b, uint8_t c)
 {
     if (ma_buf_ensure(b, 1) < 0)
@@ -138,6 +189,14 @@ static int ma_buf_append_byte(ma_buf_t *b, uint8_t c)
     return 0;
 }
 
+/**
+ * @brief Append a varint encoded 64-bit unsigned integer to the multiaddr
+ * buffer.
+ *
+ * @param b Pointer to the ma_buf_t structure.
+ * @param val The 64-bit unsigned integer to encode and append.
+ * @return 0 on success, or -1 on failure.
+ */
 static int ma_buf_append_varint(ma_buf_t *b, uint64_t val)
 {
     uint8_t tmp[10];
@@ -150,7 +209,14 @@ static int ma_buf_append_varint(ma_buf_t *b, uint64_t val)
     return ma_buf_append(b, tmp, written);
 }
 
-
+/**
+ * @brief Validate the structure of a multiaddr byte array.
+ *
+ * @param bytes Pointer to the multiaddr byte array.
+ * @param len Length of the byte array.
+ * @return MULTIADDR_SUCCESS if valid, or an error code (e.g.,
+ * MULTIADDR_ERR_INVALID_DATA) on failure.
+ */
 static int validate_multiaddr_bytes(const uint8_t *bytes, size_t len)
 {
     size_t offset = 0;
@@ -158,7 +224,8 @@ static int validate_multiaddr_bytes(const uint8_t *bytes, size_t len)
     {
         uint64_t code = 0;
         size_t csize = 0;
-        if (unsigned_varint_decode(bytes + offset, len - offset, &code, &csize) != UNSIGNED_VARINT_OK)
+        if (unsigned_varint_decode(bytes + offset, len - offset, &code, &csize) !=
+            UNSIGNED_VARINT_OK)
         {
             return MULTIADDR_ERR_INVALID_DATA;
         }
@@ -184,10 +251,11 @@ static int validate_multiaddr_bytes(const uint8_t *bytes, size_t len)
             offset += addr_len;
         }
         else
-        { 
+        {
             uint64_t addr_size = 0;
             size_t csize2 = 0;
-            if (unsigned_varint_decode(bytes + offset, len - offset, &addr_size, &csize2) != UNSIGNED_VARINT_OK)
+            if (unsigned_varint_decode(bytes + offset, len - offset, &addr_size, &csize2) !=
+                UNSIGNED_VARINT_OK)
             {
                 return MULTIADDR_ERR_INVALID_DATA;
             }
@@ -206,6 +274,13 @@ static int validate_multiaddr_bytes(const uint8_t *bytes, size_t len)
     return MULTIADDR_SUCCESS;
 }
 
+/**
+ * @brief Parse an IPv4 address string into a 4-byte representation.
+ *
+ * @param addr_str The IPv4 address string.
+ * @param out Output array of 4 bytes to store the parsed address.
+ * @return 0 on success, or -1 if parsing fails.
+ */
 static int parse_ip4(const char *addr_str, uint8_t out[4])
 {
     int parts[4];
@@ -224,6 +299,13 @@ static int parse_ip4(const char *addr_str, uint8_t out[4])
     return 0;
 }
 
+/**
+ * @brief Parse an IPv6 address string into a 16-byte representation.
+ *
+ * @param addr_str The IPv6 address string.
+ * @param out Output array of 16 bytes to store the parsed address.
+ * @return 0 on success, or -1 if parsing fails.
+ */
 static int parse_ip6(const char *addr_str, uint8_t out[16])
 {
     if (inet_pton(AF_INET6, addr_str, out) == 1)
@@ -233,6 +315,13 @@ static int parse_ip6(const char *addr_str, uint8_t out[16])
     return -1;
 }
 
+/**
+ * @brief Parse a port number string into a 2-byte representation.
+ *
+ * @param addr_str The port number string.
+ * @param out Output array of 2 bytes to store the parsed port.
+ * @return 0 on success, or -1 if parsing fails.
+ */
 static int parse_port(const char *addr_str, uint8_t out[2])
 {
     char *endptr = NULL;
@@ -246,21 +335,39 @@ static int parse_port(const char *addr_str, uint8_t out[2])
     return 0;
 }
 
+/**
+ * @brief Parse a peer-to-peer identifier string into its binary representation.
+ *
+ * @param id_str The peer-to-peer identifier string.
+ * @param out_buf Buffer to store the decoded identifier.
+ * @param out_len Pointer to a variable holding the size of the output buffer;
+ * updated with the length of the decoded identifier.
+ * @return 0 on success, or -1 if decoding fails.
+ */
 static int parse_p2p_id(const char *id_str, uint8_t *out_buf, size_t *out_len)
 {
     size_t encoded_len = strlen(id_str);
     int ret = base58_btc_decode(id_str, encoded_len, out_buf, *out_len);
-    if (ret < 0) 
+    if (ret < 0)
     {
         return -1; // decoding error
     }
-    *out_len = (size_t) ret;
+    *out_len = (size_t)ret;
     return 0;
 }
 
-static int parse_and_append_protocol(const char *proto_str,
-                                     const char *addr_str,
-                                     ma_buf_t *b)
+/**
+ * @brief Parse a protocol and its address from strings and append their encoded
+ * representation to a buffer.
+ *
+ * @param proto_str The protocol name as a string.
+ * @param addr_str The address string associated with the protocol.
+ * @param b Pointer to the ma_buf_t structure where the encoded protocol and
+ * address will be appended.
+ * @return MULTIADDR_SUCCESS on success, or an appropriate error code on
+ * failure.
+ */
+static int parse_and_append_protocol(const char *proto_str, const char *addr_str, ma_buf_t *b)
 {
     uint64_t code = multicodec_code_from_name(proto_str);
     if (code == 0)
@@ -340,12 +447,13 @@ static int parse_and_append_protocol(const char *proto_str,
             if (code == MULTICODEC_P2P || code == MULTICODEC_IPFS)
             {
                 tmp_len = sizeof(tmp);
-                if (parse_p2p_id(addr_str, tmp, &tmp_len) < 0) {
+                if (parse_p2p_id(addr_str, tmp, &tmp_len) < 0)
+                {
                     return MULTIADDR_ERR_INVALID_STRING;
                 }
             }
-            else if (code == MULTICODEC_DNS || code == MULTICODEC_DNS4 ||
-                    code == MULTICODEC_DNS6 || code == MULTICODEC_DNSADDR)
+            else if (code == MULTICODEC_DNS || code == MULTICODEC_DNS4 || code == MULTICODEC_DNS6 ||
+                     code == MULTICODEC_DNSADDR)
             {
                 tmp_len = strlen(addr_str);
                 if (tmp_len > sizeof(tmp))
@@ -375,6 +483,15 @@ static int parse_and_append_protocol(const char *proto_str,
     return MULTIADDR_SUCCESS;
 }
 
+/**
+ * @brief Create a new multiaddr from its string representation.
+ *
+ * @param str The multiaddr string.
+ * @param err Pointer to an integer to store error codes; set to
+ * MULTIADDR_SUCCESS on success.
+ * @return Pointer to the newly created multiaddr_t structure, or NULL on
+ * failure.
+ */
 multiaddr_t *multiaddr_new_from_str(const char *str, int *err)
 {
     if (err)
@@ -491,6 +608,16 @@ multiaddr_t *multiaddr_new_from_str(const char *str, int *err)
     return m;
 }
 
+/**
+ * @brief Create a new multiaddr from a byte array.
+ *
+ * @param bytes Pointer to the multiaddr byte array.
+ * @param length Length of the byte array.
+ * @param err Pointer to an integer to store error codes; set to
+ * MULTIADDR_SUCCESS on success.
+ * @return Pointer to the newly created multiaddr_t structure, or NULL on
+ * failure.
+ */
 multiaddr_t *multiaddr_new_from_bytes(const uint8_t *bytes, size_t length, int *err)
 {
     if (err)
@@ -537,6 +664,15 @@ multiaddr_t *multiaddr_new_from_bytes(const uint8_t *bytes, size_t length, int *
     return m;
 }
 
+/**
+ * @brief Create a copy of an existing multiaddr.
+ *
+ * @param addr Pointer to the multiaddr_t structure to copy.
+ * @param err Pointer to an integer to store error codes; set to
+ * MULTIADDR_SUCCESS on success.
+ * @return Pointer to the newly allocated copy of the multiaddr, or NULL on
+ * failure.
+ */
 multiaddr_t *multiaddr_copy(const multiaddr_t *addr, int *err)
 {
     if (err)
@@ -575,6 +711,11 @@ multiaddr_t *multiaddr_copy(const multiaddr_t *addr, int *err)
     return m;
 }
 
+/**
+ * @brief Free a multiaddr structure.
+ *
+ * @param addr Pointer to the multiaddr_t structure to free.
+ */
 void multiaddr_free(multiaddr_t *addr)
 {
     if (!addr)
@@ -588,6 +729,14 @@ void multiaddr_free(multiaddr_t *addr)
     free(addr);
 }
 
+/**
+ * @brief Retrieve the byte representation of a multiaddr.
+ *
+ * @param addr Pointer to the multiaddr_t structure.
+ * @param buffer Buffer to copy the byte data into.
+ * @param buffer_len Size of the provided buffer.
+ * @return The number of bytes copied on success, or an error code on failure.
+ */
 int multiaddr_get_bytes(const multiaddr_t *addr, uint8_t *buffer, size_t buffer_len)
 {
     if (!addr || !buffer)
@@ -602,17 +751,33 @@ int multiaddr_get_bytes(const multiaddr_t *addr, uint8_t *buffer, size_t buffer_
     return (int)addr->size;
 }
 
+/**
+ * @brief Convert an IPv4 address from binary to string representation.
+ *
+ * @param addr_bytes Pointer to the 4-byte IPv4 address.
+ * @param out Output buffer to store the formatted IPv4 string.
+ * @param out_size Size of the output buffer.
+ * @return 0 on success, or -1 if the output buffer is too small.
+ */
 static int sprint_ip4(const uint8_t *addr_bytes, char *out, size_t out_size)
 {
     if (out_size < 16)
     {
         return -1;
     }
-    snprintf(out, out_size, "%u.%u.%u.%u",
-             addr_bytes[0], addr_bytes[1], addr_bytes[2], addr_bytes[3]);
+    snprintf(out, out_size, "%u.%u.%u.%u", addr_bytes[0], addr_bytes[1], addr_bytes[2],
+             addr_bytes[3]);
     return 0;
 }
 
+/**
+ * @brief Convert an IPv6 address from binary to string representation.
+ *
+ * @param addr_bytes Pointer to the 16-byte IPv6 address.
+ * @param out Output buffer to store the formatted IPv6 string.
+ * @param out_size Size of the output buffer.
+ * @return 0 on success, or -1 if conversion fails or the buffer is too small.
+ */
 static int sprint_ip6(const uint8_t *addr_bytes, char *out, size_t out_size)
 {
     struct in6_addr in6;
@@ -630,6 +795,14 @@ static int sprint_ip6(const uint8_t *addr_bytes, char *out, size_t out_size)
     return 0;
 }
 
+/**
+ * @brief Convert a port number from binary to string representation.
+ *
+ * @param addr_bytes Pointer to the 2-byte port number.
+ * @param out Output buffer to store the formatted port string.
+ * @param out_size Size of the output buffer.
+ * @return 0 on success, or -1 if the output buffer is too small.
+ */
 static int sprint_port(const uint8_t *addr_bytes, char *out, size_t out_size)
 {
     if (out_size < 6)
@@ -641,19 +814,40 @@ static int sprint_port(const uint8_t *addr_bytes, char *out, size_t out_size)
     return 0;
 }
 
+/**
+ * @brief Convert a peer-to-peer identifier from binary to a base58 encoded
+ * string.
+ *
+ * @param addr_bytes Pointer to the binary p2p identifier.
+ * @param addr_len Length of the p2p identifier.
+ * @param out Output buffer to store the base58 encoded string.
+ * @param out_size Size of the output buffer.
+ * @return 0 on success, or -1 if encoding fails or the buffer is too small.
+ */
 static int sprint_p2p(const uint8_t *addr_bytes, size_t addr_len, char *out, size_t out_size)
 {
     int ret = base58_btc_encode(addr_bytes, addr_len, out, out_size);
-    if (ret < 0) {
+    if (ret < 0)
+    {
         return -1;
     }
-    if ((size_t)ret >= out_size) {
+    if ((size_t)ret >= out_size)
+    {
         return -1;
     }
     out[ret] = '\0';
     return 0;
 }
 
+/**
+ * @brief Convert a multiaddr to its string representation.
+ *
+ * @param addr Pointer to the multiaddr_t structure.
+ * @param err Pointer to an integer to store error codes; set to
+ * MULTIADDR_SUCCESS on success.
+ * @return Pointer to a null-terminated string representing the multiaddr, or
+ * NULL on failure.
+ */
 char *multiaddr_to_str(const multiaddr_t *addr, int *err)
 {
     if (err)
@@ -677,7 +871,8 @@ char *multiaddr_to_str(const multiaddr_t *addr, int *err)
     {
         uint64_t code = 0;
         size_t csize = 0;
-        if (unsigned_varint_decode(addr->bytes + offset, addr->size - offset, &code, &csize) != UNSIGNED_VARINT_OK)
+        if (unsigned_varint_decode(addr->bytes + offset, addr->size - offset, &code, &csize) !=
+            UNSIGNED_VARINT_OK)
         {
             ma_buf_free(&sbuf);
             if (err)
@@ -761,7 +956,8 @@ char *multiaddr_to_str(const multiaddr_t *addr, int *err)
         {
             uint64_t vlen = 0;
             size_t csize2 = 0;
-            if (unsigned_varint_decode(addr->bytes + offset, addr->size - offset, &vlen, &csize2) != UNSIGNED_VARINT_OK)
+            if (unsigned_varint_decode(addr->bytes + offset, addr->size - offset, &vlen, &csize2) !=
+                UNSIGNED_VARINT_OK)
             {
                 goto invalid;
             }
@@ -786,8 +982,8 @@ char *multiaddr_to_str(const multiaddr_t *addr, int *err)
                     goto oom;
                 }
             }
-            else if (code == MULTICODEC_DNS || code == MULTICODEC_DNS4 ||
-                     code == MULTICODEC_DNS6 || code == MULTICODEC_DNSADDR)
+            else if (code == MULTICODEC_DNS || code == MULTICODEC_DNS4 || code == MULTICODEC_DNS6 ||
+                     code == MULTICODEC_DNSADDR)
             {
                 if (ma_buf_append_byte(&sbuf, '/') < 0)
                 {
@@ -828,6 +1024,12 @@ invalid:
     return NULL;
 }
 
+/**
+ * @brief Count the number of protocol components in a multiaddr.
+ *
+ * @param addr Pointer to the multiaddr_t structure.
+ * @return The number of protocols in the multiaddr, or 0 if invalid.
+ */
 size_t multiaddr_nprotocols(const multiaddr_t *addr)
 {
     if (!addr)
@@ -839,7 +1041,8 @@ size_t multiaddr_nprotocols(const multiaddr_t *addr)
     {
         uint64_t code = 0;
         size_t csize = 0;
-        if (unsigned_varint_decode(addr->bytes + offset, addr->size - offset, &code, &csize) != UNSIGNED_VARINT_OK)
+        if (unsigned_varint_decode(addr->bytes + offset, addr->size - offset, &code, &csize) !=
+            UNSIGNED_VARINT_OK)
         {
             return 0;
         }
@@ -861,7 +1064,8 @@ size_t multiaddr_nprotocols(const multiaddr_t *addr)
         {
             uint64_t vlen = 0;
             size_t csize2 = 0;
-            if (unsigned_varint_decode(addr->bytes + offset, addr->size - offset, &vlen, &csize2) != UNSIGNED_VARINT_OK)
+            if (unsigned_varint_decode(addr->bytes + offset, addr->size - offset, &vlen, &csize2) !=
+                UNSIGNED_VARINT_OK)
             {
                 return 0;
             }
@@ -881,7 +1085,15 @@ size_t multiaddr_nprotocols(const multiaddr_t *addr)
     return count;
 }
 
-
+/**
+ * @brief Retrieve the protocol code at a specified index in a multiaddr.
+ *
+ * @param addr Pointer to the multiaddr_t structure.
+ * @param index The index of the protocol to retrieve.
+ * @param proto_out Pointer to store the retrieved protocol code.
+ * @return 0 on success, or an error code if the protocol is not found or data
+ * is invalid.
+ */
 int multiaddr_get_protocol_code(const multiaddr_t *addr, size_t index, uint64_t *proto_out)
 {
     if (!addr || !proto_out)
@@ -893,7 +1105,8 @@ int multiaddr_get_protocol_code(const multiaddr_t *addr, size_t index, uint64_t 
     {
         uint64_t code = 0;
         size_t csize = 0;
-        if (unsigned_varint_decode(addr->bytes + offset, addr->size - offset, &code, &csize) != UNSIGNED_VARINT_OK)
+        if (unsigned_varint_decode(addr->bytes + offset, addr->size - offset, &code, &csize) !=
+            UNSIGNED_VARINT_OK)
         {
             return MULTIADDR_ERR_INVALID_DATA;
         }
@@ -920,7 +1133,8 @@ int multiaddr_get_protocol_code(const multiaddr_t *addr, size_t index, uint64_t 
         {
             uint64_t vlen = 0;
             size_t csize2 = 0;
-            if (unsigned_varint_decode(addr->bytes + offset, addr->size - offset, &vlen, &csize2) != UNSIGNED_VARINT_OK)
+            if (unsigned_varint_decode(addr->bytes + offset, addr->size - offset, &vlen, &csize2) !=
+                UNSIGNED_VARINT_OK)
             {
                 return MULTIADDR_ERR_INVALID_DATA;
             }
@@ -935,9 +1149,19 @@ int multiaddr_get_protocol_code(const multiaddr_t *addr, size_t index, uint64_t 
     return MULTIADDR_ERR_INVALID_DATA;
 }
 
-int multiaddr_get_address_bytes(const multiaddr_t *addr,
-                                size_t index,
-                                uint8_t *buf,
+/**
+ * @brief Retrieve the address bytes for a protocol at a specified index in a
+ * multiaddr.
+ *
+ * @param addr Pointer to the multiaddr_t structure.
+ * @param index The index of the protocol.
+ * @param buf Buffer to store the extracted address bytes.
+ * @param buf_len Pointer to the size of the buffer; updated with the length of
+ * the address bytes.
+ * @return 0 on success, or an error code if extraction fails or the buffer is
+ * too small.
+ */
+int multiaddr_get_address_bytes(const multiaddr_t *addr, size_t index, uint8_t *buf,
                                 size_t *buf_len)
 {
     if (!addr || !buf || !buf_len)
@@ -949,7 +1173,8 @@ int multiaddr_get_address_bytes(const multiaddr_t *addr,
     {
         uint64_t code = 0;
         size_t csize = 0;
-        if (unsigned_varint_decode(addr->bytes + offset, addr->size - offset, &code, &csize) != UNSIGNED_VARINT_OK)
+        if (unsigned_varint_decode(addr->bytes + offset, addr->size - offset, &code, &csize) !=
+            UNSIGNED_VARINT_OK)
         {
             return MULTIADDR_ERR_INVALID_DATA;
         }
@@ -980,7 +1205,8 @@ int multiaddr_get_address_bytes(const multiaddr_t *addr,
             {
                 uint64_t vlen = 0;
                 size_t csize2 = 0;
-                if (unsigned_varint_decode(addr->bytes + offset, addr->size - offset, &vlen, &csize2) != UNSIGNED_VARINT_OK)
+                if (unsigned_varint_decode(addr->bytes + offset, addr->size - offset, &vlen,
+                                           &csize2) != UNSIGNED_VARINT_OK)
                 {
                     return MULTIADDR_ERR_INVALID_DATA;
                 }
@@ -1012,7 +1238,8 @@ int multiaddr_get_address_bytes(const multiaddr_t *addr,
             {
                 uint64_t vlen = 0;
                 size_t csize2 = 0;
-                if (unsigned_varint_decode(addr->bytes + offset, addr->size - offset, &vlen, &csize2) != UNSIGNED_VARINT_OK)
+                if (unsigned_varint_decode(addr->bytes + offset, addr->size - offset, &vlen,
+                                           &csize2) != UNSIGNED_VARINT_OK)
                 {
                     return MULTIADDR_ERR_INVALID_DATA;
                 }
@@ -1028,6 +1255,15 @@ int multiaddr_get_address_bytes(const multiaddr_t *addr,
     return MULTIADDR_ERR_INVALID_DATA;
 }
 
+/**
+ * @brief Encapsulate one multiaddr within another.
+ *
+ * @param addr Pointer to the primary multiaddr_t structure.
+ * @param sub Pointer to the sub multiaddr_t structure to encapsulate.
+ * @param err Pointer to an integer to store error codes; set to
+ * MULTIADDR_SUCCESS on success.
+ * @return Pointer to the new encapsulated multiaddr, or NULL on failure.
+ */
 multiaddr_t *multiaddr_encapsulate(const multiaddr_t *addr, const multiaddr_t *sub, int *err)
 {
     if (err)
@@ -1076,6 +1312,9 @@ multiaddr_t *multiaddr_encapsulate(const multiaddr_t *addr, const multiaddr_t *s
     return m;
 }
 
+/**
+ * @brief Structure representing a multiaddr component.
+ */
 typedef struct
 {
     uint64_t code;
@@ -1083,7 +1322,17 @@ typedef struct
     size_t addr_len;
 } ma_component_t;
 
-static int parse_multiaddr_components(const multiaddr_t *m, ma_component_t **out_list, size_t *count)
+/**
+ * @brief Parse a multiaddr into its component protocols and addresses.
+ *
+ * @param m Pointer to the multiaddr_t structure.
+ * @param out_list Pointer to an array that will be allocated with the parsed
+ * components.
+ * @param count Pointer to store the number of components parsed.
+ * @return 0 on success, or -1 on failure.
+ */
+static int parse_multiaddr_components(const multiaddr_t *m, ma_component_t **out_list,
+                                      size_t *count)
 {
     *out_list = NULL;
     *count = 0;
@@ -1099,7 +1348,8 @@ static int parse_multiaddr_components(const multiaddr_t *m, ma_component_t **out
         if (i == capacity)
         {
             capacity *= 2;
-            ma_component_t *tmp = (ma_component_t *)realloc(list, capacity * sizeof(ma_component_t));
+            ma_component_t *tmp =
+                (ma_component_t *)realloc(list, capacity * sizeof(ma_component_t));
             if (!tmp)
             {
                 free(list);
@@ -1109,7 +1359,8 @@ static int parse_multiaddr_components(const multiaddr_t *m, ma_component_t **out
         }
         uint64_t code = 0;
         size_t csize = 0;
-        if (unsigned_varint_decode(m->bytes + offset, m->size - offset, &code, &csize) != UNSIGNED_VARINT_OK)
+        if (unsigned_varint_decode(m->bytes + offset, m->size - offset, &code, &csize) !=
+            UNSIGNED_VARINT_OK)
         {
             free(list);
             return -1;
@@ -1137,7 +1388,8 @@ static int parse_multiaddr_components(const multiaddr_t *m, ma_component_t **out
         {
             uint64_t vlen = 0;
             size_t csize2 = 0;
-            if (unsigned_varint_decode(m->bytes + offset, m->size - offset, &vlen, &csize2) != UNSIGNED_VARINT_OK)
+            if (unsigned_varint_decode(m->bytes + offset, m->size - offset, &vlen, &csize2) !=
+                UNSIGNED_VARINT_OK)
             {
                 free(list);
                 return -1;
@@ -1159,6 +1411,17 @@ static int parse_multiaddr_components(const multiaddr_t *m, ma_component_t **out
     return 0;
 }
 
+/**
+ * @brief Build a multiaddr from an array of components.
+ *
+ * @param list Array of ma_component_t structures representing the multiaddr
+ * components.
+ * @param count Number of components in the list.
+ * @param err Pointer to an integer to store error codes; set to
+ * MULTIADDR_SUCCESS on success.
+ * @return Pointer to the newly constructed multiaddr_t structure, or NULL on
+ * failure.
+ */
 static multiaddr_t *build_multiaddr_from_components(ma_component_t *list, size_t count, int *err)
 {
     ma_buf_t buf;
@@ -1237,13 +1500,26 @@ static multiaddr_t *build_multiaddr_from_components(ma_component_t *list, size_t
     return m;
 }
 
+/**
+ * @brief Decapsulate a sub multiaddr from a parent multiaddr.
+ *
+ * @param addr Pointer to the parent multiaddr_t structure.
+ * @param sub Pointer to the sub multiaddr_t structure to remove.
+ * @param err Pointer to an integer to store error codes; set to
+ * MULTIADDR_SUCCESS on success.
+ * @return Pointer to the resulting multiaddr after decapsulation, or NULL if no
+ * match is found or on failure.
+ */
 multiaddr_t *multiaddr_decapsulate(const multiaddr_t *addr, const multiaddr_t *sub, int *err)
 {
-    if (err) {
+    if (err)
+    {
         *err = MULTIADDR_SUCCESS;
     }
-    if (!addr || !sub) {
-        if (err) {
+    if (!addr || !sub)
+    {
+        if (err)
+        {
             *err = MULTIADDR_ERR_NULL_POINTER;
         }
         return NULL;
@@ -1253,60 +1529,75 @@ multiaddr_t *multiaddr_decapsulate(const multiaddr_t *addr, const multiaddr_t *s
     if ((parse_multiaddr_components(addr, &alist, &acount) < 0) ||
         (parse_multiaddr_components(sub, &slist, &scount) < 0))
     {
-        if (alist) {
+        if (alist)
+        {
             free(alist);
         }
-        if (slist) {
+        if (slist)
+        {
             free(slist);
         }
-        if (err) {
+        if (err)
+        {
             *err = MULTIADDR_ERR_INVALID_DATA;
         }
         return NULL;
     }
-    if (scount == 0 || scount > acount) {
+    if (scount == 0 || scount > acount)
+    {
         free(alist);
         free(slist);
-        if (err) {
+        if (err)
+        {
             *err = MULTIADDR_ERR_NO_MATCH;
         }
         return NULL;
     }
 
     int bestMatch = -1;
-    for (size_t i = 0; i <= acount - scount; i++) {
+    for (size_t i = 0; i <= acount - scount; i++)
+    {
         int match = 1;
-        for (size_t j = 0; j < scount; j++) {
-            if (alist[i + j].code != slist[j].code ||
-                alist[i + j].addr_len != slist[j].addr_len ||
-                memcmp(alist[i + j].addr, slist[j].addr, alist[i + j].addr_len) != 0) {
+        for (size_t j = 0; j < scount; j++)
+        {
+            if (alist[i + j].code != slist[j].code || alist[i + j].addr_len != slist[j].addr_len ||
+                memcmp(alist[i + j].addr, slist[j].addr, alist[i + j].addr_len) != 0)
+            {
                 match = 0;
                 break;
             }
         }
-        if (match) {
-            bestMatch = (int)i; 
+        if (match)
+        {
+            bestMatch = (int)i;
         }
     }
-    if (bestMatch == -1) {
+    if (bestMatch == -1)
+    {
         free(alist);
         free(slist);
-        if (err) {
+        if (err)
+        {
             *err = MULTIADDR_ERR_NO_MATCH;
         }
         return NULL;
     }
 
     multiaddr_t *res = NULL;
-    if (bestMatch == 0) {
+    if (bestMatch == 0)
+    {
         res = build_multiaddr_from_components(NULL, 0, err);
-    } else {
+    }
+    else
+    {
         res = build_multiaddr_from_components(alist, bestMatch, err);
     }
     free(alist);
     free(slist);
-    if (!res && (err && *err == MULTIADDR_SUCCESS)) {
-        if (err) {
+    if (!res && (err && *err == MULTIADDR_SUCCESS))
+    {
+        if (err)
+        {
             *err = MULTIADDR_ERR_ALLOC_FAILURE;
         }
     }

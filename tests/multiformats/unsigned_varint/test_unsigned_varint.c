@@ -1,8 +1,8 @@
+#include "multiformats/unsigned_varint/unsigned_varint.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "multiformats/unsigned_varint/unsigned_varint.h"
 
 static void print_standard(const char *test_name, const char *details, int passed)
 {
@@ -29,7 +29,8 @@ static int test_encode_decode(uint64_t value, const char *expected_hex)
     if (err != UNSIGNED_VARINT_OK)
     {
         char details[256];
-        sprintf(details, "Encoding error for value=%llu, err=%d", (unsigned long long)value, (int)err);
+        sprintf(details, "Encoding error for value=%llu, err=%d", (unsigned long long)value,
+                (int)err);
         print_standard(test_name, details, 0);
         return 0;
     }
@@ -56,14 +57,16 @@ static int test_encode_decode(uint64_t value, const char *expected_hex)
     err = unsigned_varint_decode(buffer, written, &decoded_val, &read);
     if (err != UNSIGNED_VARINT_OK)
     {
-        sprintf(details, "Decoding error for value=%llu, err=%d", (unsigned long long)value, (int)err);
+        sprintf(details, "Decoding error for value=%llu, err=%d", (unsigned long long)value,
+                (int)err);
         ok = 0;
     }
     else if (decoded_val != value || read != written)
     {
-        sprintf(details,
-                "Decoded value/byte count mismatch: got %llu (%zu bytes), expected %llu (%zu bytes)",
-                (unsigned long long)decoded_val, read, (unsigned long long)value, written);
+        sprintf(
+            details,
+            "Decoded value/byte count mismatch: got %llu (%zu bytes), expected %llu (%zu bytes)",
+            (unsigned long long)decoded_val, read, (unsigned long long)value, written);
         ok = 0;
     }
 
@@ -71,8 +74,8 @@ static int test_encode_decode(uint64_t value, const char *expected_hex)
     return ok;
 }
 
-static int test_decode_failure(const uint8_t *data, size_t data_len, unsigned_varint_err_t expected_err,
-                               const char *test_name)
+static int test_decode_failure(const uint8_t *data, size_t data_len,
+                               unsigned_varint_err_t expected_err, const char *test_name)
 {
     uint64_t decoded_val = 0;
     size_t read = 0;
@@ -88,7 +91,8 @@ static int test_decode_failure(const uint8_t *data, size_t data_len, unsigned_va
     return passed;
 }
 
-static int test_encode_failure(uint64_t value, unsigned_varint_err_t expected_err, const char *test_name)
+static int test_encode_failure(uint64_t value, unsigned_varint_err_t expected_err,
+                               const char *test_name)
 {
     uint8_t buffer[16];
     memset(buffer, 0, sizeof(buffer));
@@ -137,10 +141,11 @@ int main(void)
 
     {
         uint8_t non_minimal_for_1[] = {0x81, 0x00};
-        failures += test_decode_failure(non_minimal_for_1, sizeof(non_minimal_for_1),
-                                        UNSIGNED_VARINT_ERR_NOT_MINIMAL, "Non-minimal encoding for 1")
-                        ? 0
-                        : 1;
+        failures +=
+            test_decode_failure(non_minimal_for_1, sizeof(non_minimal_for_1),
+                                UNSIGNED_VARINT_ERR_NOT_MINIMAL, "Non-minimal encoding for 1")
+                ? 0
+                : 1;
     }
 
     {
@@ -169,14 +174,14 @@ int main(void)
 
     failures += test_encode_failure(0xFFFFFFFFFFFFFFFFULL, UNSIGNED_VARINT_ERR_VALUE_OVERFLOW,
                                     "Encoding >2^63-1")
-                ? 0
-                : 1;
+                    ? 0
+                    : 1;
 
     {
         uint8_t empty[1] = {};
-        failures += test_decode_failure(empty, 0, UNSIGNED_VARINT_ERR_TOO_LONG, "Empty input decode")
-                        ? 0
-                        : 1;
+        failures +=
+            test_decode_failure(empty, 0, UNSIGNED_VARINT_ERR_TOO_LONG, "Empty input decode") ? 0
+                                                                                              : 1;
     }
 
     {
@@ -189,8 +194,8 @@ int main(void)
 
     failures += test_encode_failure(0x8000000000000000ULL, UNSIGNED_VARINT_ERR_VALUE_OVERFLOW,
                                     "Encoding 2^63")
-                ? 0
-                : 1;
+                    ? 0
+                    : 1;
 
     failures += test_unsigned_varint_size(0ULL, 1) ? 0 : 1;
     failures += test_unsigned_varint_size(1ULL, 1) ? 0 : 1;
@@ -198,7 +203,7 @@ int main(void)
     failures += test_unsigned_varint_size(128ULL, 2) ? 0 : 1;
     failures += test_unsigned_varint_size(255ULL, 2) ? 0 : 1;
     failures += test_unsigned_varint_size(300ULL, 2) ? 0 : 1;
-    failures += test_unsigned_varint_size(16383ULL, 2) ? 0 : 1; 
+    failures += test_unsigned_varint_size(16383ULL, 2) ? 0 : 1;
     failures += test_unsigned_varint_size(16384ULL, 3) ? 0 : 1;
     failures += test_unsigned_varint_size(0x7FFFFFFFFFFFFFFFULL, 9) ? 0 : 1;
 

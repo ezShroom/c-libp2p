@@ -97,11 +97,7 @@ int main(void)
         const char *input = tests[i].input;
         size_t input_len = strlen(input);
 
-        // -----------------------
-        // Test for SHA2-256.
-        // -----------------------
         {
-            /* For SHA2-256: 1 byte (code) + 1 byte (length) + 32-byte digest = 34 bytes. */
             size_t binary_buf_size = 34;
             uint8_t *binary_hash = malloc(binary_buf_size);
             if (!binary_hash)
@@ -144,8 +140,7 @@ int main(void)
                     print_standard(test_name, "", 1);
                 }
 
-                /* Test decoding for SHA2-256. */
-                size_t decode_buf_size = 64; /* Sufficient for SHA256 digest (32 bytes) */
+                size_t decode_buf_size = 64; 
                 uint8_t *decoded = malloc(decode_buf_size);
                 if (!decoded)
                 {
@@ -201,12 +196,7 @@ int main(void)
                 free(decoded);
             }
         }
-
-        // -----------------------
-        // Test for SHA2-512.
-        // -----------------------
         {
-            /* For SHA2-512: 1 byte (code) + 1 byte (length) + 64-byte digest = 66 bytes. */
             size_t binary_buf_size = 66;
             uint8_t *binary_hash = malloc(binary_buf_size);
             if (!binary_hash)
@@ -249,8 +239,7 @@ int main(void)
                     print_standard(test_name, "", 1);
                 }
 
-                /* Test decoding for SHA2-512. */
-                size_t decode_buf_size = 128; /* Sufficient for SHA512 digest (64 bytes) */
+                size_t decode_buf_size = 128; 
                 uint8_t *decoded = malloc(decode_buf_size);
                 if (!decoded)
                 {
@@ -306,12 +295,7 @@ int main(void)
                 free(decoded);
             }
         }
-
-        // -----------------------
-        // Test for SHA3-224.
-        // -----------------------
         {
-            /* For SHA3-224: 1 byte (code) + 1 byte (length) + 28-byte digest = 30 bytes. */
             size_t binary_buf_size = 30;
             uint8_t *binary_hash = malloc(binary_buf_size);
             if (!binary_hash)
@@ -354,8 +338,7 @@ int main(void)
                     print_standard(test_name, "", 1);
                 }
 
-                /* Test decoding for SHA3-224. */
-                size_t decode_buf_size = 40; /* Sufficient for SHA3-224 digest (28 bytes) */
+                size_t decode_buf_size = 40;
                 uint8_t *decoded = malloc(decode_buf_size);
                 if (!decoded)
                 {
@@ -384,7 +367,6 @@ int main(void)
                 }
                 else
                 {
-                    /* The expected digest portion starts after the first 4 hex digits (2 bytes for code and length). */
                     const char *expected_digest_hex = tests[i].expected_sha3_224 + 4;
                     uint8_t expected_digest[28];
                     int res = hex_to_bytes(expected_digest_hex, expected_digest, sizeof(expected_digest));
@@ -412,12 +394,7 @@ int main(void)
                 free(decoded);
             }
         }
-
-        // -----------------------
-        // Test for SHA3-256.
-        // -----------------------
         {
-            /* For SHA3-256: 1 byte (code) + 1 byte (length) + 32-byte digest = 34 bytes. */
             size_t binary_buf_size = 34;
             uint8_t *binary_hash = malloc(binary_buf_size);
             if (!binary_hash)
@@ -460,8 +437,7 @@ int main(void)
                     print_standard(test_name, "", 1);
                 }
 
-                /* Test decoding for SHA3-256. */
-                size_t decode_buf_size = 64; /* Sufficient for SHA3-256 digest (32 bytes) */
+                size_t decode_buf_size = 64;
                 uint8_t *decoded = malloc(decode_buf_size);
                 if (!decoded)
                 {
@@ -517,12 +493,7 @@ int main(void)
                 free(decoded);
             }
         }
-
-        // -----------------------
-        // Test for SHA3-384.
-        // -----------------------
         {
-            /* For SHA3-384: 1 byte (code) + 1 byte (length) + 48-byte digest = 50 bytes. */
             size_t binary_buf_size = 50;
             uint8_t *binary_hash = malloc(binary_buf_size);
             if (!binary_hash)
@@ -565,8 +536,7 @@ int main(void)
                     print_standard(test_name, "", 1);
                 }
 
-                /* Test decoding for SHA3-384. */
-                size_t decode_buf_size = 64; /* Sufficient for SHA3-384 digest (48 bytes) */
+                size_t decode_buf_size = 64; 
                 uint8_t *decoded = malloc(decode_buf_size);
                 if (!decoded)
                 {
@@ -622,12 +592,7 @@ int main(void)
                 free(decoded);
             }
         }
-
-        // -----------------------
-        // Test for SHA3-512.
-        // -----------------------
         {
-            /* For SHA3-512: 1 byte (code) + 1 byte (length) + 64-byte digest = 66 bytes. */
             size_t binary_buf_size = 66;
             uint8_t *binary_hash = malloc(binary_buf_size);
             if (!binary_hash)
@@ -670,8 +635,7 @@ int main(void)
                     print_standard(test_name, "", 1);
                 }
 
-                /* Test decoding for SHA3-512. */
-                size_t decode_buf_size = 128; /* Sufficient for SHA3-512 digest (64 bytes) */
+                size_t decode_buf_size = 128; 
                 uint8_t *decoded = malloc(decode_buf_size);
                 if (!decoded)
                 {
@@ -727,14 +691,7 @@ int main(void)
                 free(decoded);
             }
         }
-
-        // -----------------------
-        // Test for Identity.
-        // -----------------------
         {
-            /* For Identity: 1 byte (code) + varint for length + input bytes.
-             * For short inputs (input_len < 0x80) the varint is a single byte.
-             */
             size_t identity_buf_size = 2 + input_len;
             uint8_t *identity_hash = malloc(identity_buf_size);
             if (!identity_hash)
@@ -745,11 +702,6 @@ int main(void)
 
             int ret = multihash_encode(MULTICODEC_IDENTITY, (const uint8_t *)input, input_len, identity_hash, identity_buf_size);
             snprintf(test_name, sizeof(test_name), "MULTIHASH_encode_IDENTITY(\"%s\")", input);
-
-            /* Build the expected hex string.
-             * For inputs shorter than 0x80, expected output is:
-             *    "00" + (2-digit hex of input length) + (hex of input bytes).
-             */
             char expected_identity[256];
             if (input_len < 0x80)
             {
@@ -761,7 +713,6 @@ int main(void)
             }
             else
             {
-                /* For longer inputs, this simple test is not supported */
                 snprintf(expected_identity, sizeof(expected_identity), "unsupported");
             }
 
@@ -796,7 +747,6 @@ int main(void)
                     print_standard(test_name, "", 1);
                 }
 
-                /* Test decoding for Identity */
                 size_t decode_buf_size = identity_buf_size;
                 uint8_t *decoded = malloc(decode_buf_size);
                 if (!decoded)

@@ -5,7 +5,8 @@
 #include <stdint.h>
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /**
@@ -14,11 +15,11 @@ extern "C" {
  */
 typedef enum
 {
-    UNSIGNED_VARINT_OK                 =  0,  /**< No error. */
-    UNSIGNED_VARINT_ERR_BUFFER_OVER    = -1,  /**< The buffer is not large enough. */
-    UNSIGNED_VARINT_ERR_TOO_LONG       = -2,  /**< Exceeded 9-byte (63-bit) practical maximum. */
-    UNSIGNED_VARINT_ERR_NOT_MINIMAL    = -3,  /**< The encoding was not minimal. */
-    UNSIGNED_VARINT_ERR_VALUE_OVERFLOW = -4   /**< The decoded value does not fit in 63 bits. */
+    UNSIGNED_VARINT_OK = 0,                 /**< No error. */
+    UNSIGNED_VARINT_ERR_BUFFER_OVER = -1,   /**< The buffer is not large enough. */
+    UNSIGNED_VARINT_ERR_TOO_LONG = -2,      /**< Exceeded 9-byte (63-bit) practical maximum. */
+    UNSIGNED_VARINT_ERR_NOT_MINIMAL = -3,   /**< The encoding was not minimal. */
+    UNSIGNED_VARINT_ERR_VALUE_OVERFLOW = -4 /**< The decoded value does not fit in 63 bits. */
 } unsigned_varint_err_t;
 
 /**
@@ -38,7 +39,7 @@ typedef enum
  *       valid 63-bit number.
  */
 unsigned_varint_err_t unsigned_varint_encode(uint64_t value, uint8_t *out, size_t out_size,
-                                                size_t *written);
+                                             size_t *written);
 
 /**
  * @brief Decodes a varint from the given buffer into a 64-bit unsigned integer.
@@ -55,7 +56,7 @@ unsigned_varint_err_t unsigned_varint_encode(uint64_t value, uint8_t *out, size_
  *         UNSIGNED_VARINT_ERR_VALUE_OVERFLOW if the value cannot fit in 63 bits.
  */
 unsigned_varint_err_t unsigned_varint_decode(const uint8_t *in, size_t in_size, uint64_t *value,
-                                                size_t *read);
+                                             size_t *read);
 
 /**
  * @brief Returns how many bytes are needed to encode the given 64-bit value as

@@ -1,9 +1,9 @@
+#include "multiformats/multibase/encoding/base16.h"
+#include "multiformats/multibase/multibase.h"
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
-#include "multiformats/multibase/multibase.h"
-#include "multiformats/multibase/encoding/base16.h"
 
 static void print_standard(const char *test_name, const char *details, int passed)
 {
@@ -26,14 +26,13 @@ typedef struct
 int main(void)
 {
     int failures = 0;
-    base16_test_vector tests[] = {
-        {"", ""},
-        {"f", "66"},
-        {"fo", "666f"},
-        {"foo", "666f6f"},
-        {"foob", "666f6f62"},
-        {"fooba", "666f6f6261"},
-        {"foobar", "666f6f626172"}};
+    base16_test_vector tests[] = {{"", ""},
+                                  {"f", "66"},
+                                  {"fo", "666f"},
+                                  {"foo", "666f6f"},
+                                  {"foob", "666f6f62"},
+                                  {"fooba", "666f6f6261"},
+                                  {"foobar", "666f6f626172"}};
     size_t num_tests = sizeof(tests) / sizeof(tests[0]);
 
     for (size_t i = 0; i < num_tests; i++)

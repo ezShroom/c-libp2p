@@ -1,6 +1,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+
 #include "multiformats/multibase/multibase.h"
 
 /* The base32 alphabet (RFC 4648, Table 3) */
@@ -15,8 +16,9 @@ static const char base32_alphabet[32] = "abcdefghijklmnopqrstuvwxyz234567";
  * @param data_len The length of the input data.
  * @param out The buffer to store the Base32 encoded string.
  * @param out_len The size of the output buffer.
- * @return The number of characters written to the output buffer (excluding the null terminator),
- *         or an error code indicating a null pointer or insufficient buffer size.
+ * @return The number of characters written to the output buffer (excluding the
+ * null terminator), or an error code indicating a null pointer or insufficient
+ * buffer size.
  */
 int base32_encode(const uint8_t *data, size_t data_len, char *out, size_t out_len)
 {
@@ -160,7 +162,8 @@ int base32_encode(const uint8_t *data, size_t data_len, char *out, size_t out_le
  * @param out The buffer to store the decoded binary data.
  * @param out_len The size of the output buffer.
  * @return The number of bytes written to the output buffer, or an error
- *         code indicating a null pointer, insufficient buffer size, or invalid input.
+ *         code indicating a null pointer, insufficient buffer size, or invalid
+ * input.
  */
 int base32_decode(const char *in, size_t data_len, uint8_t *out, size_t out_len)
 {

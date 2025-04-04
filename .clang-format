@@ -1,0 +1,13 @@
+BraceWrapping:
+  AfterFunction: true
+  AfterControlStatement: true
+  AfterStruct: true
+BreakBeforeBraces: Allman
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+IndentCaseLabels: true
+IncludeBlocks: Preserve
+SortIncludes: true
+ColumnLimit: 100
+IndentExternBlock: NoIndent

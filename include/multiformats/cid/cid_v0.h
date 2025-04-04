@@ -2,7 +2,8 @@
 #define CID_V0_H
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include <stddef.h>
@@ -17,7 +18,8 @@ extern "C" {
  *   - Implicitly uses base58btc in its string form (leading "Qm...").
  *   - Implicitly uses multicodec = dag-pb.
  *   - Implicitly uses version = 0.
- *   - Always a 32-byte sha2-256 digest in the binary form (34 bytes total: 0x12 0x20 + 32-byte hash).
+ *   - Always a 32-byte sha2-256 digest in the binary form (34 bytes total: 0x12 0x20 + 32-byte
+ * hash).
  */
 
 /** The size of the CIDv0 hash (sha2-256) in bytes. */
@@ -29,12 +31,12 @@ extern "C" {
  */
 typedef enum
 {
-    CIDV0_SUCCESS = 0,               /**< Operation successful. */
-    CIDV0_ERROR_NULL_POINTER = -1,   /**< A required pointer parameter was NULL. */
-    CIDV0_ERROR_INVALID_DIGEST_LENGTH = -2,  /**< The provided digest is not 32 bytes. */
-    CIDV0_ERROR_BUFFER_TOO_SMALL = -3,       /**< Provided buffer is too small for output. */
-    CIDV0_ERROR_ENCODE_FAILURE = -4,         /**< Failed while encoding base58btc. */
-    CIDV0_ERROR_DECODE_FAILURE = -5,         /**< Failed while decoding base58btc. */
+    CIDV0_SUCCESS = 0,                      /**< Operation successful. */
+    CIDV0_ERROR_NULL_POINTER = -1,          /**< A required pointer parameter was NULL. */
+    CIDV0_ERROR_INVALID_DIGEST_LENGTH = -2, /**< The provided digest is not 32 bytes. */
+    CIDV0_ERROR_BUFFER_TOO_SMALL = -3,      /**< Provided buffer is too small for output. */
+    CIDV0_ERROR_ENCODE_FAILURE = -4,        /**< Failed while encoding base58btc. */
+    CIDV0_ERROR_DECODE_FAILURE = -5,        /**< Failed while decoding base58btc. */
 } cidv0_error_t;
 
 /**
@@ -90,7 +92,8 @@ int cid_v0_from_bytes(cid_v0_t *cid, const uint8_t *bytes, size_t bytes_len);
 int cid_v0_to_string(const cid_v0_t *cid, char *out, size_t out_len);
 
 /**
- * @brief Decode a CIDv0 from a Base58 BTC string (must be exactly 46 characters, starting with "Qm").
+ * @brief Decode a CIDv0 from a Base58 BTC string (must be exactly 46 characters, starting with
+ * "Qm").
  *
  * @param[out] cid  Pointer to a cid_v0_t struct to fill.
  * @param[in]  str  Null-terminated string containing the base58-encoded CIDv0.

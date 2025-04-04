@@ -2,12 +2,14 @@
 #define CID_V1_H
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include <stddef.h>
 #include <stdint.h>
-#include "multiformats/multibase/multibase.h"  /* for multibase_t */
+
+#include "multiformats/multibase/multibase.h" /* for multibase_t */
 #include "multiformats/multicodec/multicodec_codes.h"
 
 /**
@@ -31,9 +33,9 @@ extern "C" {
  */
 typedef enum
 {
-    CIDV1_SUCCESS = 0,             /**< Operation successful. */
-    CIDV1_ERROR_NULL_POINTER = -1, /**< A required pointer parameter was NULL. */
-    CIDV1_ERROR_INVALID_ARG = -2,  /**< An invalid argument was passed (e.g., zero length). */
+    CIDV1_SUCCESS = 0,                 /**< Operation successful. */
+    CIDV1_ERROR_NULL_POINTER = -1,     /**< A required pointer parameter was NULL. */
+    CIDV1_ERROR_INVALID_ARG = -2,      /**< An invalid argument was passed (e.g., zero length). */
     CIDV1_ERROR_BUFFER_TOO_SMALL = -3, /**< Output buffer is too small for the required data. */
     CIDV1_ERROR_ENCODE_FAILURE = -4,   /**< Failed to encode the CIDv1 in the chosen base. */
     CIDV1_ERROR_DECODE_FAILURE = -5,   /**< Failed to decode the CIDv1 from binary or string. */
@@ -54,10 +56,10 @@ typedef enum
  */
 typedef struct
 {
-    uint64_t version;        /**< Always 1 for CIDv1. */
-    uint64_t codec;          /**< Numeric multicodec code for the content type. */
-    uint8_t  *multihash;     /**< Dynamically allocated array for the multihash. */
-    size_t   multihash_size; /**< Length of the `multihash` array in bytes. */
+    uint64_t version;      /**< Always 1 for CIDv1. */
+    uint64_t codec;        /**< Numeric multicodec code for the content type. */
+    uint8_t *multihash;    /**< Dynamically allocated array for the multihash. */
+    size_t multihash_size; /**< Length of the `multihash` array in bytes. */
 } cid_v1_t;
 
 /**
@@ -76,7 +78,7 @@ typedef struct
 int cid_v1_init(cid_v1_t *cid, uint64_t content_codec, const uint8_t *mh_data, size_t mh_size);
 
 /**
- * @brief Free memory allocated by cid_v1_init(). 
+ * @brief Free memory allocated by cid_v1_init().
  *
  * After this call, `cid->multihash` will be freed, and `cid->multihash` is set to NULL.
  *
@@ -155,12 +157,7 @@ int cid_v1_from_string(cid_v1_t *cid, const char *str);
  *
  * @return Number of characters (excluding null terminator) on success, or negative error code.
  */
-int cid_v1_to_human(
-    const cid_v1_t *cid,
-    multibase_t base,
-    char *out,
-    size_t out_len
-);
+int cid_v1_to_human(const cid_v1_t *cid, multibase_t base, char *out, size_t out_len);
 
 #ifdef __cplusplus
 }

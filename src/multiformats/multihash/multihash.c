@@ -1,11 +1,11 @@
-#include <string.h>
-#include <stdlib.h>
 #include "multiformats/multihash/multihash.h"
-#include "multiformats/unsigned_varint/unsigned_varint.h"
-#include "multiformats/multicodec/multicodec.h"
 #include "../../../lib/sha3/sha3.h"
 #include "../../../lib/wjcryptlib/lib/WjCryptLib_Sha256.h"
 #include "../../../lib/wjcryptlib/lib/WjCryptLib_Sha512.h"
+#include "multiformats/multicodec/multicodec.h"
+#include "multiformats/unsigned_varint/unsigned_varint.h"
+#include <stdlib.h>
+#include <string.h>
 
 /**
  * @brief Define the sizes of the SHA3 hash functions.
@@ -25,14 +25,22 @@ static size_t expected_digest_size(uint64_t code, size_t data_len)
 {
     switch (code)
     {
-        case MULTICODEC_SHA2_256:     return SHA256_HASH_SIZE;
-        case MULTICODEC_SHA2_512:     return SHA512_HASH_SIZE;
-        case MULTICODEC_SHA3_224:     return SHA3_224_HASH_SIZE;
-        case MULTICODEC_SHA3_256:     return SHA3_256_HASH_SIZE;
-        case MULTICODEC_SHA3_384:     return SHA3_384_HASH_SIZE;
-        case MULTICODEC_SHA3_512:     return SHA3_512_HASH_SIZE;
-        case MULTICODEC_IDENTITY:     return data_len;
-        default:                      return 0;
+        case MULTICODEC_SHA2_256:
+            return SHA256_HASH_SIZE;
+        case MULTICODEC_SHA2_512:
+            return SHA512_HASH_SIZE;
+        case MULTICODEC_SHA3_224:
+            return SHA3_224_HASH_SIZE;
+        case MULTICODEC_SHA3_256:
+            return SHA3_256_HASH_SIZE;
+        case MULTICODEC_SHA3_384:
+            return SHA3_384_HASH_SIZE;
+        case MULTICODEC_SHA3_512:
+            return SHA3_512_HASH_SIZE;
+        case MULTICODEC_IDENTITY:
+            return data_len;
+        default:
+            return 0;
     }
 }
 
@@ -46,12 +54,8 @@ static size_t expected_digest_size(uint64_t code, size_t data_len)
  * @param digest_len Pointer to store the length of the computed digest.
  * @return int Error code indicating success or type of failure.
  */
-static int compute_hash(
-    uint64_t code,
-    const uint8_t *data,
-    size_t data_len,
-    uint8_t *digest_out,
-    size_t *digest_len)
+static int compute_hash(uint64_t code, const uint8_t *data, size_t data_len, uint8_t *digest_out,
+                        size_t *digest_len)
 {
     if (!data || !digest_out || !digest_len)
     {
@@ -70,7 +74,7 @@ static int compute_hash(
         }
         case MULTICODEC_SHA2_512:
         {
-            *digest_len = SHA512_HASH_SIZE; 
+            *digest_len = SHA512_HASH_SIZE;
             SHA512_HASH hash;
             Sha512Context ctx;
             Sha512Initialise(&ctx);
@@ -81,7 +85,7 @@ static int compute_hash(
         }
         case MULTICODEC_SHA3_224:
         {
-            *digest_len = SHA3_224_HASH_SIZE; 
+            *digest_len = SHA3_224_HASH_SIZE;
             sha3_224(data, data_len, digest_out);
             return MULTIHASH_SUCCESS;
         }
@@ -93,19 +97,19 @@ static int compute_hash(
         }
         case MULTICODEC_SHA3_384:
         {
-            *digest_len = SHA3_384_HASH_SIZE; 
+            *digest_len = SHA3_384_HASH_SIZE;
             sha3_384(data, data_len, digest_out);
             return MULTIHASH_SUCCESS;
         }
         case MULTICODEC_SHA3_512:
         {
-            *digest_len = SHA3_512_HASH_SIZE; 
+            *digest_len = SHA3_512_HASH_SIZE;
             sha3_512(data, data_len, digest_out);
             return MULTIHASH_SUCCESS;
         }
         case MULTICODEC_IDENTITY:
         {
-            *digest_len = data_len; 
+            *digest_len = data_len;
             memcpy(digest_out, data, data_len);
             return MULTIHASH_SUCCESS;
         }
@@ -124,12 +128,8 @@ static int compute_hash(
  * @param out_len The size of the output buffer.
  * @return The number of bytes written to the output buffer, or an error code.
  */
-int multihash_encode(
-    uint64_t code,
-    const uint8_t *data,
-    size_t data_len,
-    uint8_t *out,
-    size_t out_len)
+int multihash_encode(uint64_t code, const uint8_t *data, size_t data_len, uint8_t *out,
+                     size_t out_len)
 {
     if (!data || !out)
     {
@@ -202,12 +202,8 @@ int multihash_encode(
  * @param digest_len Pointer to store the length of the decoded digest.
  * @return The number of bytes read from the input buffer, or an error code.
  */
-int multihash_decode(
-    const uint8_t *in,
-    size_t in_len,
-    uint64_t *code,
-    uint8_t *digest,
-    size_t *digest_len)
+int multihash_decode(const uint8_t *in, size_t in_len, uint64_t *code, uint8_t *digest,
+                     size_t *digest_len)
 {
     if (!in || !code || !digest || !digest_len)
     {

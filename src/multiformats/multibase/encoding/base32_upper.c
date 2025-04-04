@@ -1,6 +1,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+
 #include "multiformats/multibase/multibase.h"
 
 /* The upper-case Base32 alphabet (RFC 4648, Table 3) */
@@ -16,7 +17,8 @@ static const char base32_upper_alphabet[32] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
  * @param out The buffer to store the Base32 encoded string.
  * @param out_len The size of the output buffer.
  * @return The number of characters written to the output buffer,
- *         or an error code indicating a null pointer or insufficient buffer size.
+ *         or an error code indicating a null pointer or insufficient buffer
+ * size.
  */
 int base32_upper_encode(const uint8_t *data, size_t data_len, char *out, size_t out_len)
 {
@@ -157,7 +159,8 @@ int base32_upper_encode(const uint8_t *data, size_t data_len, char *out, size_t 
  * @param out The buffer to store the decoded binary data.
  * @param out_len The size of the output buffer.
  * @return The number of bytes written to the output buffer,
- *         or an error code indicating a null pointer, insufficient buffer size, or invalid input.
+ *         or an error code indicating a null pointer, insufficient buffer size,
+ * or invalid input.
  */
 int base32_upper_decode(const char *in, size_t data_len, uint8_t *out, size_t out_len)
 {

@@ -1,9 +1,9 @@
+#include "multiformats/multibase/encoding/base32_upper.h"
+#include "multiformats/multibase/multibase.h"
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
-#include "multiformats/multibase/multibase.h"
-#include "multiformats/multibase/encoding/base32_upper.h"
 
 static void print_standard(const char *test_name, const char *details, int passed)
 {
@@ -26,15 +26,13 @@ typedef struct
 int main(void)
 {
     int failures = 0;
-    base32_test_vector tests[] = {
-        {"", ""},
-        {"f", "MY"},
-        {"fo", "MZXQ"},
-        {"foo", "MZXW6"},
-        {"foob", "MZXW6YQ"},
-        {"fooba", "MZXW6YTB"},
-        {"foobar", "MZXW6YTBOI"}
-    };
+    base32_test_vector tests[] = {{"", ""},
+                                  {"f", "MY"},
+                                  {"fo", "MZXQ"},
+                                  {"foo", "MZXW6"},
+                                  {"foob", "MZXW6YQ"},
+                                  {"fooba", "MZXW6YTB"},
+                                  {"foobar", "MZXW6YTBOI"}};
     size_t num_tests = sizeof(tests) / sizeof(tests[0]);
 
     for (size_t i = 0; i < num_tests; i++)
@@ -67,8 +65,8 @@ int main(void)
             (input_len > 0 && strcmp(encoded, tv.expected) != 0))
         {
             char details[256];
-            sprintf(details, "Encoded result \"%s\", expected \"%s\"",
-                    encoded, (input_len == 0) ? "" : tv.expected);
+            sprintf(details, "Encoded result \"%s\", expected \"%s\"", encoded,
+                    (input_len == 0) ? "" : tv.expected);
             print_standard(test_name, details, 0);
             failures++;
         }

@@ -1,9 +1,9 @@
+#include "multiformats/multibase/encoding/base64.h"
+#include "multiformats/multibase/multibase.h"
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
-#include "multiformats/multibase/multibase.h"
-#include "multiformats/multibase/encoding/base64.h"
 
 static void print_standard(const char *test_name, const char *details, int passed)
 {
@@ -34,7 +34,8 @@ int main(void)
         {"foob", "Zm9vYg"},
         {"fooba", "Zm9vYmE"},
         {"foobar", "Zm9vYmFy"},
-        {"ladies and gentlemen, we are floating in space", "bGFkaWVzIGFuZCBnZW50bGVtZW4sIHdlIGFyZSBmbG9hdGluZyBpbiBzcGFjZQ"}};
+        {"ladies and gentlemen, we are floating in space",
+         "bGFkaWVzIGFuZCBnZW50bGVtZW4sIHdlIGFyZSBmbG9hdGluZyBpbiBzcGFjZQ"}};
     size_t num_tests = sizeof(tests) / sizeof(tests[0]);
 
     for (size_t i = 0; i < num_tests; i++)

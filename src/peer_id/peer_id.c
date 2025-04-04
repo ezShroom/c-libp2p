@@ -1,12 +1,4 @@
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
 #include "peer_id/peer_id.h"
-#include "multiformats/multibase/multibase.h"
-#include "multiformats/multihash/multihash.h"
-#include "multiformats/multicodec/multicodec.h"
-#include "multiformats/multicodec/multicodec_codes.h"
-#include "multiformats/unsigned_varint/unsigned_varint.h"
 #include "multiformats/multibase/encoding/base16.h"
 #include "multiformats/multibase/encoding/base16_upper.h"
 #include "multiformats/multibase/encoding/base32.h"
@@ -15,12 +7,21 @@
 #include "multiformats/multibase/encoding/base64.h"
 #include "multiformats/multibase/encoding/base64_url.h"
 #include "multiformats/multibase/encoding/base64_url_pad.h"
+#include "multiformats/multibase/multibase.h"
+#include "multiformats/multicodec/multicodec.h"
+#include "multiformats/multicodec/multicodec_codes.h"
+#include "multiformats/multihash/multihash.h"
+#include "multiformats/unsigned_varint/unsigned_varint.h"
+#include <ctype.h>
+#include <stdlib.h>
+#include <string.h>
 
 // Constants
 #define PEER_ID_IDENTITY_HASH_MAX_SIZE 42 // Maximum size for using identity multihash
 
 // Helper function to extract just the digest length from a multihash without fully decoding it
-static int extract_multihash_digest_length(const uint8_t *mh_buf, size_t mh_size, size_t *digest_len)
+static int extract_multihash_digest_length(const uint8_t *mh_buf, size_t mh_size,
+                                           size_t *digest_len)
 {
     if (!mh_buf || !digest_len)
     {
@@ -35,7 +36,8 @@ static int extract_multihash_digest_length(const uint8_t *mh_buf, size_t mh_size
     // Decode the hash function code varint
     uint64_t hash_func_code;
     size_t hash_code_size;
-    unsigned_varint_err_t err = unsigned_varint_decode(mh_buf, mh_size, &hash_func_code, &hash_code_size);
+    unsigned_varint_err_t err =
+        unsigned_varint_decode(mh_buf, mh_size, &hash_func_code, &hash_code_size);
     if (err != UNSIGNED_VARINT_OK)
     {
         return -1;
@@ -44,7 +46,8 @@ static int extract_multihash_digest_length(const uint8_t *mh_buf, size_t mh_size
     // Decode the digest length varint
     uint64_t len;
     size_t len_size;
-    err = unsigned_varint_decode(mh_buf + hash_code_size, mh_size - hash_code_size, &len, &len_size);
+    err =
+        unsigned_varint_decode(mh_buf + hash_code_size, mh_size - hash_code_size, &len, &len_size);
     if (err != UNSIGNED_VARINT_OK)
     {
         return -1;
@@ -121,15 +124,15 @@ static multibase_t multibase_from_prefix(char prefix)
  *   - Field 2 is (tag=2, wire type=length-delimited).
  *   - No extra fields remain.
  *   - KeyType is one of {0..3} for RSA, Ed25519, Secp256k1, ECDSA (per the spec).
- *   - Varints are minimally encoded (the `unsigned_varint_decode` function should enforce canonical form).
- *   - On success, sets *out_key_type and the pointer/length for the actual key bytes in *out_key_data, *out_key_data_len.
+ *   - Varints are minimally encoded (the `unsigned_varint_decode` function should enforce canonical
+ * form).
+ *   - On success, sets *out_key_type and the pointer/length for the actual key bytes in
+ * *out_key_data, *out_key_data_len.
  *
  * Returns 0 on success, < 0 on parse error.
  */
-static int parse_public_key_proto(const uint8_t *buf, size_t len,
-                                  uint64_t *out_key_type,
-                                  const uint8_t **out_key_data,
-                                  size_t *out_key_data_len)
+static int parse_public_key_proto(const uint8_t *buf, size_t len, uint64_t *out_key_type,
+                                  const uint8_t **out_key_data, size_t *out_key_data_len)
 {
     if (!buf || !out_key_type || !out_key_data || !out_key_data_len)
     {
@@ -223,8 +226,7 @@ static int parse_public_key_proto(const uint8_t *buf, size_t len,
     return 0;
 }
 
-peer_id_error_t peer_id_create_from_public_key(const uint8_t *pubkey_buf,
-                                               size_t pubkey_len,
+peer_id_error_t peer_id_create_from_public_key(const uint8_t *pubkey_buf, size_t pubkey_len,
                                                peer_id_t *pid)
 {
     if (!pubkey_buf || !pid)
@@ -240,10 +242,8 @@ peer_id_error_t peer_id_create_from_public_key(const uint8_t *pubkey_buf,
     uint64_t key_type;
     const uint8_t *key_data = NULL;
     size_t key_data_len = 0;
-    int parse_result = parse_public_key_proto(pubkey_buf, pubkey_len,
-                                              &key_type,
-                                              &key_data,
-                                              &key_data_len);
+    int parse_result =
+        parse_public_key_proto(pubkey_buf, pubkey_len, &key_type, &key_data, &key_data_len);
     if (parse_result < 0)
     {
         // Parsing or validation failed
@@ -287,7 +287,8 @@ peer_id_error_t peer_id_create_from_public_key(const uint8_t *pubkey_buf,
     }
 
     // 5) Compute the multihash over the *entire* protobuf (pubkey_buf)
-    int result = multihash_encode(hash_function_code, pubkey_buf, pubkey_len, pid->bytes, max_multihash_size);
+    int result = multihash_encode(hash_function_code, pubkey_buf, pubkey_len, pid->bytes,
+                                  max_multihash_size);
     if (result < 0)
     {
         free(pid->bytes);
@@ -297,18 +298,18 @@ peer_id_error_t peer_id_create_from_public_key(const uint8_t *pubkey_buf,
         // Map the multihash error code to a peer_id error code
         switch (result)
         {
-        case MULTIHASH_ERR_NULL_POINTER:
-            return PEER_ID_E_NULL_PTR;
-        case MULTIHASH_ERR_INVALID_INPUT:
-            return PEER_ID_E_INVALID_PROTOBUF;
-        case MULTIHASH_ERR_UNSUPPORTED_FUN:
-            return PEER_ID_E_UNSUPPORTED_KEY;
-        case MULTIHASH_ERR_DIGEST_TOO_LARGE:
-            return PEER_ID_E_BUFFER_TOO_SMALL;
-        case MULTIHASH_ERR_ALLOC_FAILURE:
-            return PEER_ID_E_ALLOC_FAILED;
-        default:
-            return PEER_ID_E_CRYPTO_FAILED;
+            case MULTIHASH_ERR_NULL_POINTER:
+                return PEER_ID_E_NULL_PTR;
+            case MULTIHASH_ERR_INVALID_INPUT:
+                return PEER_ID_E_INVALID_PROTOBUF;
+            case MULTIHASH_ERR_UNSUPPORTED_FUN:
+                return PEER_ID_E_UNSUPPORTED_KEY;
+            case MULTIHASH_ERR_DIGEST_TOO_LARGE:
+                return PEER_ID_E_BUFFER_TOO_SMALL;
+            case MULTIHASH_ERR_ALLOC_FAILURE:
+                return PEER_ID_E_ALLOC_FAILED;
+            default:
+                return PEER_ID_E_CRYPTO_FAILED;
         }
     }
 
@@ -316,8 +317,7 @@ peer_id_error_t peer_id_create_from_public_key(const uint8_t *pubkey_buf,
     return PEER_ID_SUCCESS;
 }
 
-peer_id_error_t peer_id_create_from_private_key(const uint8_t *privkey_buf,
-                                                size_t privkey_len,
+peer_id_error_t peer_id_create_from_private_key(const uint8_t *privkey_buf, size_t privkey_len,
                                                 peer_id_t *pid)
 {
     if (!privkey_buf || !pid)
@@ -339,7 +339,8 @@ peer_id_error_t peer_id_create_from_private_key(const uint8_t *privkey_buf,
     // Parse field #1 header.
     uint64_t field1_header;
     size_t field1_header_size;
-    err = unsigned_varint_decode(privkey_buf + offset, privkey_len - offset, &field1_header, &field1_header_size);
+    err = unsigned_varint_decode(privkey_buf + offset, privkey_len - offset, &field1_header,
+                                 &field1_header_size);
     if (err != UNSIGNED_VARINT_OK || field1_header != 0x08)
     {
         return PEER_ID_E_INVALID_PROTOBUF;
@@ -349,7 +350,8 @@ peer_id_error_t peer_id_create_from_private_key(const uint8_t *privkey_buf,
     // Parse KeyType.
     uint64_t key_type;
     size_t key_type_size;
-    err = unsigned_varint_decode(privkey_buf + offset, privkey_len - offset, &key_type, &key_type_size);
+    err = unsigned_varint_decode(privkey_buf + offset, privkey_len - offset, &key_type,
+                                 &key_type_size);
     if (err != UNSIGNED_VARINT_OK)
     {
         return PEER_ID_E_INVALID_PROTOBUF;
@@ -359,7 +361,8 @@ peer_id_error_t peer_id_create_from_private_key(const uint8_t *privkey_buf,
     // Parse field #2 header.
     uint64_t field2_header;
     size_t field2_header_size;
-    err = unsigned_varint_decode(privkey_buf + offset, privkey_len - offset, &field2_header, &field2_header_size);
+    err = unsigned_varint_decode(privkey_buf + offset, privkey_len - offset, &field2_header,
+                                 &field2_header_size);
     if (err != UNSIGNED_VARINT_OK || field2_header != 0x12)
     {
         return PEER_ID_E_INVALID_PROTOBUF;
@@ -369,7 +372,8 @@ peer_id_error_t peer_id_create_from_private_key(const uint8_t *privkey_buf,
     // Parse the length of the key data.
     uint64_t data_len;
     size_t data_len_size;
-    err = unsigned_varint_decode(privkey_buf + offset, privkey_len - offset, &data_len, &data_len_size);
+    err = unsigned_varint_decode(privkey_buf + offset, privkey_len - offset, &data_len,
+                                 &data_len_size);
     if (err != UNSIGNED_VARINT_OK)
     {
         return PEER_ID_E_INVALID_PROTOBUF;
@@ -397,20 +401,24 @@ peer_id_error_t peer_id_create_from_private_key(const uint8_t *privkey_buf,
 
     switch (key_type)
     {
-    case 0: // RSA
-        ret = peer_id_create_from_private_key_rsa(key_data, key_data_len, &pubkey_buf, &pubkey_len);
-        break;
-    case 1: // Ed25519
-        ret = peer_id_create_from_private_key_ed25519(key_data, key_data_len, &pubkey_buf, &pubkey_len);
-        break;
-    case 2: // Secp256k1
-        ret = peer_id_create_from_private_key_secp256k1(key_data, key_data_len, &pubkey_buf, &pubkey_len);
-        break;
-    case 3: // ECDSA
-        ret = peer_id_create_from_private_key_ecdsa(key_data, key_data_len, &pubkey_buf, &pubkey_len);
-        break;
-    default:
-        return PEER_ID_E_UNSUPPORTED_KEY;
+        case 0: // RSA
+            ret = peer_id_create_from_private_key_rsa(key_data, key_data_len, &pubkey_buf,
+                                                      &pubkey_len);
+            break;
+        case 1: // Ed25519
+            ret = peer_id_create_from_private_key_ed25519(key_data, key_data_len, &pubkey_buf,
+                                                          &pubkey_len);
+            break;
+        case 2: // Secp256k1
+            ret = peer_id_create_from_private_key_secp256k1(key_data, key_data_len, &pubkey_buf,
+                                                            &pubkey_len);
+            break;
+        case 3: // ECDSA
+            ret = peer_id_create_from_private_key_ecdsa(key_data, key_data_len, &pubkey_buf,
+                                                        &pubkey_len);
+            break;
+        default:
+            return PEER_ID_E_UNSUPPORTED_KEY;
     }
 
     if (ret != PEER_ID_SUCCESS)
@@ -464,7 +472,8 @@ peer_id_error_t peer_id_create_from_string(const char *str, peer_id_t *pid)
             return PEER_ID_E_ALLOC_FAILED;
         }
 
-        int result = multibase_decode(MULTIBASE_BASE58_BTC, prefixed_str, decoded, max_decoded_size);
+        int result =
+            multibase_decode(MULTIBASE_BASE58_BTC, prefixed_str, decoded, max_decoded_size);
         free(prefixed_str); // Free the temporary prefixed string
 
         if (result < 0)
@@ -493,7 +502,8 @@ peer_id_error_t peer_id_create_from_string(const char *str, peer_id_t *pid)
         uint64_t hash_func_code;
         size_t actual_digest_len = digest_len;
 
-        int mh_result = multihash_decode(decoded, result, &hash_func_code, digest, &actual_digest_len);
+        int mh_result =
+            multihash_decode(decoded, result, &hash_func_code, digest, &actual_digest_len);
 
         // Free the digest buffer as we only needed it for validation
         free(digest);
@@ -553,7 +563,8 @@ peer_id_error_t peer_id_create_from_string(const char *str, peer_id_t *pid)
         // Extract the multicodec
         uint64_t multicodec_code;
         size_t codec_size;
-        unsigned_varint_err_t varint_result = unsigned_varint_decode(decoded + 1, result - 1, &multicodec_code, &codec_size);
+        unsigned_varint_err_t varint_result =
+            unsigned_varint_decode(decoded + 1, result - 1, &multicodec_code, &codec_size);
         if (varint_result != UNSIGNED_VARINT_OK || multicodec_code != MULTICODEC_LIBP2P_KEY)
         {
             free(decoded);
@@ -570,7 +581,8 @@ peer_id_error_t peer_id_create_from_string(const char *str, peer_id_t *pid)
 
         // Extract the digest length from the multihash to allocate proper buffer size
         size_t digest_len;
-        if (extract_multihash_digest_length(decoded + multihash_offset, result - multihash_offset, &digest_len) < 0)
+        if (extract_multihash_digest_length(decoded + multihash_offset, result - multihash_offset,
+                                            &digest_len) < 0)
         {
             free(decoded);
             return PEER_ID_E_INVALID_STRING;
@@ -620,10 +632,7 @@ peer_id_error_t peer_id_create_from_string(const char *str, peer_id_t *pid)
     }
 }
 
-int peer_id_to_string(const peer_id_t *pid,
-                      peer_id_format_t format,
-                      char *out,
-                      size_t out_size)
+int peer_id_to_string(const peer_id_t *pid, peer_id_format_t format, char *out, size_t out_size)
 {
     if (!pid || !pid->bytes || !out)
     {
@@ -674,7 +683,8 @@ int peer_id_to_string(const peer_id_t *pid,
 
         // Encode the multicodec
         size_t written;
-        unsigned_varint_err_t varint_result = unsigned_varint_encode(MULTICODEC_LIBP2P_KEY, cid + 1, varint_size, &written);
+        unsigned_varint_err_t varint_result =
+            unsigned_varint_encode(MULTICODEC_LIBP2P_KEY, cid + 1, varint_size, &written);
         if (varint_result != UNSIGNED_VARINT_OK)
         {
             free(cid);
@@ -685,7 +695,8 @@ int peer_id_to_string(const peer_id_t *pid,
         memcpy(cid + 1 + written, pid->bytes, pid->size);
 
         // Encode the CID in base32 (default for CIDv1)
-        int result = multibase_encode(MULTIBASE_BASE32, cid, 1 + written + pid->size, out, out_size);
+        int result =
+            multibase_encode(MULTIBASE_BASE32, cid, 1 + written + pid->size, out, out_size);
 
         free(cid);
 

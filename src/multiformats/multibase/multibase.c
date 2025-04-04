@@ -1,8 +1,8 @@
 #include <stddef.h>
 #include <stdint.h>
-#include <string.h>
 #include <stdlib.h>
-#include "multiformats/multibase/multibase.h"
+#include <string.h>
+
 #include "multiformats/multibase/encoding/base16.h"
 #include "multiformats/multibase/encoding/base16_upper.h"
 #include "multiformats/multibase/encoding/base32.h"
@@ -11,6 +11,7 @@
 #include "multiformats/multibase/encoding/base64.h"
 #include "multiformats/multibase/encoding/base64_url.h"
 #include "multiformats/multibase/encoding/base64_url_pad.h"
+#include "multiformats/multibase/multibase.h"
 
 /**
  * @brief Encode data using the specified multibase encoding.
@@ -20,16 +21,11 @@
  * @param data_len The length of the input data.
  * @param out The buffer to store the encoded output.
  * @param out_len The size of the output buffer.
- * @return int The number of bytes written to the output buffer, or a negative error code.
+ * @return int The number of bytes written to the output buffer, or a negative
+ * error code.
  */
-int multibase_encode
-(
-    multibase_t base,
-    const uint8_t *data,
-    size_t data_len,
-    char *out,
-    size_t out_len
-)
+int multibase_encode(multibase_t base, const uint8_t *data, size_t data_len, char *out,
+                     size_t out_len)
 {
     if (data == NULL || out == NULL)
     {
@@ -120,7 +116,7 @@ int multibase_encode
             {
                 return MULTIBASE_ERR_BUFFER_TOO_SMALL;
             }
-            out[0] = BASE64_CHARACTER;  
+            out[0] = BASE64_CHARACTER;
             ret = base64_encode(data, data_len, out + 1, out_len - 1);
             if (ret < 0)
             {
@@ -135,7 +131,7 @@ int multibase_encode
             {
                 return MULTIBASE_ERR_BUFFER_TOO_SMALL;
             }
-            out[0] = BASE64_URL_CHARACTER; 
+            out[0] = BASE64_URL_CHARACTER;
             ret = base64_url_encode(data, data_len, out + 1, out_len - 1);
             if (ret < 0)
             {
@@ -150,7 +146,7 @@ int multibase_encode
             {
                 return MULTIBASE_ERR_BUFFER_TOO_SMALL;
             }
-            out[0] = BASE64_URL_PAD_CHARACTER; 
+            out[0] = BASE64_URL_PAD_CHARACTER;
             ret = base64_url_pad_encode(data, data_len, out + 1, out_len - 1);
             if (ret < 0)
             {
@@ -174,13 +170,7 @@ int multibase_encode
  * @param out_len The size of the output buffer.
  * @return int Error code indicating success or type of failure.
  */
-int multibase_decode
-(
-    multibase_t base,
-    const char *in,
-    uint8_t *out,
-    size_t out_len
-)
+int multibase_decode(multibase_t base, const char *in, uint8_t *out, size_t out_len)
 {
     if (in == NULL || out == NULL)
     {

@@ -3,10 +3,12 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include "multiformats/multicodec/multicodec_codes.h"  /* For codes like MULTICODEC_SHA1, MULTICODEC_SHA2_256, etc. */
+
+#include "multiformats/multicodec/multicodec_codes.h" /* For codes like MULTICODEC_SHA1, MULTICODEC_SHA2_256, etc. */
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /**
@@ -15,12 +17,12 @@ extern "C" {
  */
 typedef enum
 {
-    MULTIHASH_SUCCESS              =  0,  /**< Operation completed successfully. */
-    MULTIHASH_ERR_NULL_POINTER     = -1,  /**< A null pointer was provided. */
-    MULTIHASH_ERR_INVALID_INPUT    = -2,  /**< The input provided is invalid. */
-    MULTIHASH_ERR_UNSUPPORTED_FUN  = -3,  /**< The requested function is unsupported. */
-    MULTIHASH_ERR_DIGEST_TOO_LARGE = -4,  /**< The computed digest exceeds the allowed size. */
-    MULTIHASH_ERR_ALLOC_FAILURE    = -5   /**< Memory allocation failed. */
+    MULTIHASH_SUCCESS = 0,               /**< Operation completed successfully. */
+    MULTIHASH_ERR_NULL_POINTER = -1,     /**< A null pointer was provided. */
+    MULTIHASH_ERR_INVALID_INPUT = -2,    /**< The input provided is invalid. */
+    MULTIHASH_ERR_UNSUPPORTED_FUN = -3,  /**< The requested function is unsupported. */
+    MULTIHASH_ERR_DIGEST_TOO_LARGE = -4, /**< The computed digest exceeds the allowed size. */
+    MULTIHASH_ERR_ALLOC_FAILURE = -5     /**< Memory allocation failed. */
 } multihash_error_t;
 
 /**
@@ -38,13 +40,8 @@ typedef enum
  * @return On success, the total number of bytes written is returned.
  *         On failure, a negative error code is returned.
  */
-int multihash_encode(
-    uint64_t code,
-    const uint8_t *data,
-    size_t data_len,
-    uint8_t *out,
-    size_t out_len
-);
+int multihash_encode(uint64_t code, const uint8_t *data, size_t data_len, uint8_t *out,
+                     size_t out_len);
 
 /**
  * @brief Decode a multihash from the given buffer, extracting the hash function code,
@@ -63,13 +60,8 @@ int multihash_encode(
  * @return On success, the total number of bytes consumed is returned.
  *         On failure, a negative error code is returned.
  */
-int multihash_decode(
-    const uint8_t *in,
-    size_t in_len,
-    uint64_t *code,
-    uint8_t *digest,
-    size_t *digest_len
-);
+int multihash_decode(const uint8_t *in, size_t in_len, uint64_t *code, uint8_t *digest,
+                     size_t *digest_len);
 
 #ifdef __cplusplus
 }

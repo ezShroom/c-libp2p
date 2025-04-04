@@ -1,7 +1,7 @@
-#include <string.h>
 #include "multiformats/multicodec/multicodec.h"
 #include "multiformats/multicodec/multicodec_codes.h"
 #include "multiformats/multicodec/multicodec_mappings.h"
+#include <string.h>
 
 /**
  * @brief The number of mappings in the multicodec_mappings array.

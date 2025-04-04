@@ -598,7 +598,6 @@ static const multicodec_map_t multicodec_mappings[] = {
     {"es384_msig", MULTICODEC_ES384_MSIG},
     {"es521_msig", MULTICODEC_ES521_MSIG},
     {"rs256_msig", MULTICODEC_RS256_MSIG},
-    {"scion", MULTICODEC_SCION}
-};
+    {"scion", MULTICODEC_SCION}};
 
 #endif /* MULTICODEC_MAPPINGS_H */

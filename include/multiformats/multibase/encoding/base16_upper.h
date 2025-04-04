@@ -3,10 +3,12 @@
 
 #include <stddef.h>
 #include <stdint.h>
+
 #include "multiformats/multibase/multibase.h"
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /**

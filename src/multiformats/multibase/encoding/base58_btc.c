@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include "multiformats/multibase/multibase.h"
 
 /* Base58 (Bitcoin) character and Unicode value */
@@ -9,7 +10,8 @@
 #define BASE58_BTC_UNICODE 0x007A
 
 /* The base58 (Bitcoin) alphabet */
-static const char base58_btc_alphabet[58] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+static const char base58_btc_alphabet[58] =
+    "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
 /**
  * @brief Encode data into Base58 (Bitcoin) format.
@@ -18,8 +20,8 @@ static const char base58_btc_alphabet[58] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZab
  * @param data_len The length of the input data.
  * @param out The buffer to store the encoded Base58 string.
  * @param out_len The size of the output buffer.
- * @return The number of characters written to the output buffer, or an error code
- *         indicating a null pointer or insufficient buffer size.
+ * @return The number of characters written to the output buffer, or an error
+ * code indicating a null pointer or insufficient buffer size.
  */
 int base58_btc_encode(const uint8_t *data, size_t data_len, char *out, size_t out_len)
 {
@@ -88,7 +90,8 @@ int base58_btc_encode(const uint8_t *data, size_t data_len, char *out, size_t ou
  * @param out The buffer to store the decoded data.
  * @param out_len The size of the output buffer.
  * @return The number of bytes written to the output buffer, or an error code
- *         indicating a null pointer, invalid character, or insufficient buffer size.
+ *         indicating a null pointer, invalid character, or insufficient buffer
+ * size.
  */
 int base58_btc_decode(const char *in, size_t data_len, uint8_t *out, size_t out_len)
 {

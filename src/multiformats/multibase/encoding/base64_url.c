@@ -1,20 +1,23 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+
 #include "multiformats/multibase/multibase.h"
 
 /* The base64 URL alphabet (RFC 4648, Table 2) */
-static const char base64url_alphabet[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+static const char base64url_alphabet[64] =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 
 /**
- * @brief Encode data into Base64 URL format (no padding) using the URL and filename safe alphabet.
+ * @brief Encode data into Base64 URL format (no padding) using the URL and
+ * filename safe alphabet.
  *
  * @param data The input data to be encoded.
  * @param data_len The length of the input data.
  * @param out The buffer to store the encoded Base64 URL string.
  * @param out_len The size of the output buffer.
- * @return The number of characters written (excluding the null terminator), or an error code
- *         indicating a null pointer or insufficient buffer size.
+ * @return The number of characters written (excluding the null terminator), or
+ * an error code indicating a null pointer or insufficient buffer size.
  */
 int base64_url_encode(const uint8_t *data, size_t data_len, char *out, size_t out_len)
 {
@@ -25,7 +28,7 @@ int base64_url_encode(const uint8_t *data, size_t data_len, char *out, size_t ou
     size_t full_groups = data_len / 3;
     size_t remainder = data_len % 3;
     size_t encoded_len = full_groups * 4;
-    
+
     if (remainder == 1)
     {
         encoded_len += 2;
@@ -44,9 +47,8 @@ int base64_url_encode(const uint8_t *data, size_t data_len, char *out, size_t ou
     size_t j = 0;
     while (i + 3 <= data_len)
     {
-        uint32_t triple = ((uint32_t)data[i] << 16) |
-                          ((uint32_t)data[i + 1] << 8) |
-                           (uint32_t)data[i + 2];
+        uint32_t triple =
+            ((uint32_t)data[i] << 16) | ((uint32_t)data[i + 1] << 8) | (uint32_t)data[i + 2];
         out[j++] = base64url_alphabet[(triple >> 18) & 0x3F];
         out[j++] = base64url_alphabet[(triple >> 12) & 0x3F];
         out[j++] = base64url_alphabet[(triple >> 6) & 0x3F];
@@ -61,8 +63,7 @@ int base64_url_encode(const uint8_t *data, size_t data_len, char *out, size_t ou
     }
     else if (remainder == 2)
     {
-        uint32_t triple = (((uint32_t)data[i]) << 16) |
-                          (((uint32_t)data[i + 1]) << 8);
+        uint32_t triple = (((uint32_t)data[i]) << 16) | (((uint32_t)data[i + 1]) << 8);
         out[j++] = base64url_alphabet[(triple >> 18) & 0x3F];
         out[j++] = base64url_alphabet[(triple >> 12) & 0x3F];
         out[j++] = base64url_alphabet[(triple >> 6) & 0x3F];
@@ -73,14 +74,16 @@ int base64_url_encode(const uint8_t *data, size_t data_len, char *out, size_t ou
 }
 
 /**
- * @brief Decode data from Base64 URL format (no padding) using the URL and filename safe alphabet.
+ * @brief Decode data from Base64 URL format (no padding) using the URL and
+ * filename safe alphabet.
  *
  * @param in The input Base64 URL encoded string.
  * @param data_len The length of the input data.
  * @param out The buffer to store the decoded data.
  * @param out_len The size of the output buffer.
  * @return The number of bytes written to the output buffer, or an error code
- *         indicating a null pointer, invalid input length, invalid character, or insufficient buffer size.
+ *         indicating a null pointer, invalid input length, invalid character,
+ * or insufficient buffer size.
  */
 int base64_url_decode(const char *in, size_t data_len, uint8_t *out, size_t out_len)
 {

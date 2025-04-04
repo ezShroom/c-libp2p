@@ -1,9 +1,9 @@
+#include "multiformats/multibase/encoding/base16_upper.h"
+#include "multiformats/multibase/multibase.h"
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
-#include "multiformats/multibase/multibase.h"
-#include "multiformats/multibase/encoding/base16_upper.h"
 
 static void print_standard(const char *test_name, const char *details, int passed)
 {
@@ -26,14 +26,13 @@ typedef struct
 int main(void)
 {
     int failures = 0;
-    base16_upper_test_vector tests[] = {
-        {"", ""},
-        {"f", "66"},
-        {"fo", "666F"},
-        {"foo", "666F6F"},
-        {"foob", "666F6F62"},
-        {"fooba", "666F6F6261"},
-        {"foobar", "666F6F626172"}};
+    base16_upper_test_vector tests[] = {{"", ""},
+                                        {"f", "66"},
+                                        {"fo", "666F"},
+                                        {"foo", "666F6F"},
+                                        {"foob", "666F6F62"},
+                                        {"fooba", "666F6F6261"},
+                                        {"foobar", "666F6F626172"}};
     size_t num_tests = sizeof(tests) / sizeof(tests[0]);
 
     for (size_t i = 0; i < num_tests; i++)
@@ -82,7 +81,7 @@ int main(void)
             free(encoded);
             exit(EXIT_FAILURE);
         }
-        
+
         int ret_dec = base16_upper_decode(encoded, ret, decoded, decode_buf_size);
         sprintf(test_name, "base16_upper_decode(\"%s\")", encoded);
         if (ret_dec < 0)
