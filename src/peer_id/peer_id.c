@@ -83,28 +83,28 @@ static multibase_t multibase_from_prefix(char prefix)
 {
     switch (prefix)
     {
-    case BASE32_CHARACTER:
-        return MULTIBASE_BASE32;
-    case BASE32_UPPER_CHARACTER:
-        return MULTIBASE_BASE32_UPPER;
-    case BASE58_BTC_CHARACTER:
-        return MULTIBASE_BASE58_BTC;
-    case BASE64_CHARACTER:
-        return MULTIBASE_BASE64;
-    case BASE64_URL_CHARACTER:
-        return MULTIBASE_BASE64_URL;
-    case BASE64_URL_PAD_CHARACTER:
-        return MULTIBASE_BASE64_URL_PAD;
-    case BASE16_CHARACTER:
-        return MULTIBASE_BASE16;
-    case BASE16_UPPER_CHARACTER:
-        return MULTIBASE_BASE16_UPPER;
-    case BASE64_URL_CHARACTER:
-        return MULTIBASE_BASE64_URL;
-    case BASE64_URL_PAD_CHARACTER:
-        return MULTIBASE_BASE64_URL_PAD;
-    default:
-        return (multibase_t)-1; // Invalid or unsupported base
+        case BASE32_CHARACTER:
+            return MULTIBASE_BASE32;
+        case BASE32_UPPER_CHARACTER:
+            return MULTIBASE_BASE32_UPPER;
+        case BASE58_BTC_CHARACTER:
+            return MULTIBASE_BASE58_BTC;
+        case BASE64_CHARACTER:
+            return MULTIBASE_BASE64;
+        case BASE64_URL_CHARACTER:
+            return MULTIBASE_BASE64_URL;
+        case BASE64_URL_PAD_CHARACTER:
+            return MULTIBASE_BASE64_URL_PAD;
+        case BASE16_CHARACTER:
+            return MULTIBASE_BASE16;
+        case BASE16_UPPER_CHARACTER:
+            return MULTIBASE_BASE16_UPPER;
+        case BASE64_URL_CHARACTER:
+            return MULTIBASE_BASE64_URL;
+        case BASE64_URL_PAD_CHARACTER:
+            return MULTIBASE_BASE64_URL_PAD;
+        default:
+            return (multibase_t)-1; // Invalid or unsupported base
     }
 }
 

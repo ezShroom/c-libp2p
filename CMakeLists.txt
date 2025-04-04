@@ -263,5 +263,5 @@ add_module(
     ""
     ""
 )
-target_link_libraries(multiaddr PRIVATE multibase multicodec unsigned_varint)
+target_link_libraries(multiaddr PRIVATE multibase multicodec unsigned_varint base58_btc)
 

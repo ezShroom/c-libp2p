@@ -3,12 +3,13 @@
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
+#include <unistd.h>
 
 #include "multiformats/multiaddr/multiaddr.h"
 #include "multiformats/unsigned_varint/unsigned_varint.h"
 #include "multiformats/multicodec/multicodec.h"
 #include "multiformats/multicodec/multicodec_codes.h"
-#include "multiformats/multibase/multibase.h"
+#include "multiformats/multibase/encoding/base58_btc.h"
 #include "peer_id/peer_id.h"
 
 #ifdef _WIN32
@@ -33,40 +34,40 @@ static int get_protocol_addr_len(uint64_t code)
 {
     switch (code)
     {
-    case MULTICODEC_IP4:
-    {
-        return 4;
-    } /* 4 bytes for IPv4 */
-    case MULTICODEC_IP6:
-    {
-        return 16;
-    } /* 16 bytes for IPv6 */
-    case MULTICODEC_TCP:
-    case MULTICODEC_UDP:
-    {
-        return 2;
-    } /* 2 bytes for port */
-    case MULTICODEC_WS:
-    case MULTICODEC_WSS:
-    case MULTICODEC_QUIC:
-    case MULTICODEC_QUIC_V1:
-    case MULTICODEC_P2P_CIRCUIT:
-    {
-        return 0;
-    } /* no address bytes */
-    case MULTICODEC_DNS:
-    case MULTICODEC_DNS4:
-    case MULTICODEC_DNS6:
-    case MULTICODEC_DNSADDR:
-    case MULTICODEC_P2P:
-    case MULTICODEC_IPFS: /* legacy alias for /p2p/ */
-    {
-        return ADDR_LEN_VARIABLE;
-    }
-    default:
-    {
-        return ADDR_LEN_UNKNOWN;
-    }
+        case MULTICODEC_IP4:
+        {
+            return 4;
+        } /* 4 bytes for IPv4 */
+        case MULTICODEC_IP6:
+        {
+            return 16;
+        } /* 16 bytes for IPv6 */
+        case MULTICODEC_TCP:
+        case MULTICODEC_UDP:
+        {
+            return 2;
+        } /* 2 bytes for port */
+        case MULTICODEC_WS:
+        case MULTICODEC_WSS:
+        case MULTICODEC_QUIC:
+        case MULTICODEC_QUIC_V1:
+        case MULTICODEC_P2P_CIRCUIT:
+        {
+            return 0;
+        } /* no address bytes */
+        case MULTICODEC_DNS:
+        case MULTICODEC_DNS4:
+        case MULTICODEC_DNS6:
+        case MULTICODEC_DNSADDR:
+        case MULTICODEC_P2P:
+        case MULTICODEC_IPFS: /* legacy alias for /p2p/ */
+        {
+            return ADDR_LEN_VARIABLE;
+        }
+        default:
+        {
+            return ADDR_LEN_UNKNOWN;
+        }
     }
 }
 
@@ -183,7 +184,7 @@ static int validate_multiaddr_bytes(const uint8_t *bytes, size_t len)
             offset += addr_len;
         }
         else
-        { /* variable length */
+        { 
             uint64_t addr_size = 0;
             size_t csize2 = 0;
             if (unsigned_varint_decode(bytes + offset, len - offset, &addr_size, &csize2) != UNSIGNED_VARINT_OK)
@@ -204,7 +205,6 @@ static int validate_multiaddr_bytes(const uint8_t *bytes, size_t len)
     }
     return MULTIADDR_SUCCESS;
 }
-
 
 static int parse_ip4(const char *addr_str, uint8_t out[4])
 {
@@ -246,18 +246,17 @@ static int parse_port(const char *addr_str, uint8_t out[2])
     return 0;
 }
 
-
 static int parse_p2p_id(const char *id_str, uint8_t *out_buf, size_t *out_len)
 {
-    int ret = multibase_decode(MULTIBASE_BASE58_BTC, id_str, out_buf, *out_len);
-    if (ret < 0)
+    size_t encoded_len = strlen(id_str);
+    int ret = base58_btc_decode(id_str, encoded_len, out_buf, *out_len);
+    if (ret < 0) 
     {
-        return -1;
+        return -1; // decoding error
     }
-    *out_len = (size_t)ret;
+    *out_len = (size_t) ret;
     return 0;
 }
-
 
 static int parse_and_append_protocol(const char *proto_str,
                                      const char *addr_str,
@@ -341,13 +340,12 @@ static int parse_and_append_protocol(const char *proto_str,
             if (code == MULTICODEC_P2P || code == MULTICODEC_IPFS)
             {
                 tmp_len = sizeof(tmp);
-                if (parse_p2p_id(addr_str, tmp, &tmp_len) < 0)
-                {
+                if (parse_p2p_id(addr_str, tmp, &tmp_len) < 0) {
                     return MULTIADDR_ERR_INVALID_STRING;
                 }
             }
             else if (code == MULTICODEC_DNS || code == MULTICODEC_DNS4 ||
-                     code == MULTICODEC_DNS6 || code == MULTICODEC_DNSADDR)
+                    code == MULTICODEC_DNS6 || code == MULTICODEC_DNSADDR)
             {
                 tmp_len = strlen(addr_str);
                 if (tmp_len > sizeof(tmp))
@@ -376,7 +374,6 @@ static int parse_and_append_protocol(const char *proto_str,
     }
     return MULTIADDR_SUCCESS;
 }
-
 
 multiaddr_t *multiaddr_new_from_str(const char *str, int *err)
 {
@@ -494,7 +491,6 @@ multiaddr_t *multiaddr_new_from_str(const char *str, int *err)
     return m;
 }
 
-
 multiaddr_t *multiaddr_new_from_bytes(const uint8_t *bytes, size_t length, int *err)
 {
     if (err)
@@ -540,7 +536,6 @@ multiaddr_t *multiaddr_new_from_bytes(const uint8_t *bytes, size_t length, int *
     m->size = length;
     return m;
 }
-
 
 multiaddr_t *multiaddr_copy(const multiaddr_t *addr, int *err)
 {
@@ -648,13 +643,11 @@ static int sprint_port(const uint8_t *addr_bytes, char *out, size_t out_size)
 
 static int sprint_p2p(const uint8_t *addr_bytes, size_t addr_len, char *out, size_t out_size)
 {
-    int ret = multibase_encode(MULTIBASE_BASE58_BTC, addr_bytes, addr_len, out, out_size);
-    if (ret < 0)
-    {
+    int ret = base58_btc_encode(addr_bytes, addr_len, out, out_size);
+    if (ret < 0) {
         return -1;
     }
-    if ((size_t)ret >= out_size)
-    {
+    if ((size_t)ret >= out_size) {
         return -1;
     }
     out[ret] = '\0';
@@ -1246,14 +1239,11 @@ static multiaddr_t *build_multiaddr_from_components(ma_component_t *list, size_t
 
 multiaddr_t *multiaddr_decapsulate(const multiaddr_t *addr, const multiaddr_t *sub, int *err)
 {
-    if (err)
-    {
+    if (err) {
         *err = MULTIADDR_SUCCESS;
     }
-    if (!addr || !sub)
-    {
-        if (err)
-        {
+    if (!addr || !sub) {
+        if (err) {
             *err = MULTIADDR_ERR_NULL_POINTER;
         }
         return NULL;
@@ -1263,62 +1253,60 @@ multiaddr_t *multiaddr_decapsulate(const multiaddr_t *addr, const multiaddr_t *s
     if ((parse_multiaddr_components(addr, &alist, &acount) < 0) ||
         (parse_multiaddr_components(sub, &slist, &scount) < 0))
     {
-        if (alist)
-        {
+        if (alist) {
             free(alist);
         }
-        if (slist)
-        {
+        if (slist) {
             free(slist);
         }
-        if (err)
-        {
+        if (err) {
             *err = MULTIADDR_ERR_INVALID_DATA;
         }
         return NULL;
     }
-    if (scount == 0 || scount > acount)
-    {
+    if (scount == 0 || scount > acount) {
         free(alist);
         free(slist);
-        if (err)
-        {
+        if (err) {
             *err = MULTIADDR_ERR_NO_MATCH;
         }
         return NULL;
     }
-    size_t start = acount - scount;
-    for (size_t i = 0; i < scount; i++)
-    {
-        size_t ai = start + i;
-        if ((alist[ai].code != slist[i].code) ||
-            (alist[ai].addr_len != slist[i].addr_len) ||
-            (memcmp(alist[ai].addr, slist[i].addr, alist[ai].addr_len) != 0))
-        {
-            free(alist);
-            free(slist);
-            if (err)
-            {
-                *err = MULTIADDR_ERR_NO_MATCH;
+
+    int bestMatch = -1;
+    for (size_t i = 0; i <= acount - scount; i++) {
+        int match = 1;
+        for (size_t j = 0; j < scount; j++) {
+            if (alist[i + j].code != slist[j].code ||
+                alist[i + j].addr_len != slist[j].addr_len ||
+                memcmp(alist[i + j].addr, slist[j].addr, alist[i + j].addr_len) != 0) {
+                match = 0;
+                break;
             }
-            return NULL;
+        }
+        if (match) {
+            bestMatch = (int)i; 
         }
     }
-    multiaddr_t *res = NULL;
-    if (start == 0)
-    {
-        res = build_multiaddr_from_components(NULL, 0, err);
+    if (bestMatch == -1) {
+        free(alist);
+        free(slist);
+        if (err) {
+            *err = MULTIADDR_ERR_NO_MATCH;
+        }
+        return NULL;
     }
-    else
-    {
-        res = build_multiaddr_from_components(alist, start, err);
+
+    multiaddr_t *res = NULL;
+    if (bestMatch == 0) {
+        res = build_multiaddr_from_components(NULL, 0, err);
+    } else {
+        res = build_multiaddr_from_components(alist, bestMatch, err);
     }
     free(alist);
     free(slist);
-    if (!res && (err && *err == MULTIADDR_SUCCESS))
-    {
-        if (err)
-        {
+    if (!res && (err && *err == MULTIADDR_SUCCESS)) {
+        if (err) {
             *err = MULTIADDR_ERR_ALLOC_FAILURE;
         }
     }
