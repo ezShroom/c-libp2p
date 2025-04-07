@@ -1,6 +1,6 @@
-#include <secp256k1.h>
 #include <stdlib.h>
 
+#include "../../lib/secp256k1/include/secp256k1.h"
 #include "peer_id/peer_id.h"
 
 peer_id_error_t peer_id_create_from_private_key_secp256k1(const uint8_t *key_data,

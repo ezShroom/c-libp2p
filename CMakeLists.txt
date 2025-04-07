@@ -20,9 +20,6 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 # Include public headers.
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
-# Add secp256k1 submodule.
-add_subdirectory(lib/secp256k1)
-
 # ---------------------------------------------
 # Helper function for adding a module.
 # ---------------------------------------------
