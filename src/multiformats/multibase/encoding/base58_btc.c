@@ -23,7 +23,7 @@ static const char base58_btc_alphabet[58] =
  * @return The number of characters written to the output buffer, or an error
  * code indicating a null pointer or insufficient buffer size.
  */
-int base58_btc_encode(const uint8_t *data, size_t data_len, char *out, size_t out_len)
+int multibase_base58_btc_encode(const uint8_t *data, size_t data_len, char *out, size_t out_len)
 {
     if (data == NULL || out == NULL)
     {
@@ -93,7 +93,7 @@ int base58_btc_encode(const uint8_t *data, size_t data_len, char *out, size_t ou
  *         indicating a null pointer, invalid character, or insufficient buffer
  * size.
  */
-int base58_btc_decode(const char *in, size_t data_len, uint8_t *out, size_t out_len)
+int multibase_base58_btc_decode(const char *in, size_t data_len, uint8_t *out, size_t out_len)
 {
     if (in == NULL || out == NULL)
     {

@@ -19,7 +19,7 @@ static const char base64_alphabet[64] =
  * terminator), or an error code indicating a null pointer or insufficient
  * buffer size.
  */
-int base64_encode(const uint8_t *data, size_t data_len, char *out, size_t out_len)
+int multibase_base64_encode(const uint8_t *data, size_t data_len, char *out, size_t out_len)
 {
     if (data == NULL || out == NULL)
     {
@@ -84,7 +84,7 @@ int base64_encode(const uint8_t *data, size_t data_len, char *out, size_t out_le
  *         indicating a null pointer, invalid input length, invalid character,
  * or insufficient buffer size.
  */
-int base64_decode(const char *in, size_t in_len, uint8_t *out, size_t out_len)
+int multibase_base64_decode(const char *in, size_t in_len, uint8_t *out, size_t out_len)
 {
     if (in == NULL || out == NULL)
     {

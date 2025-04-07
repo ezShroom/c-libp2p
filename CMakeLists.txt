@@ -20,6 +20,16 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 # Include public headers.
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
+# Add secp256k1 submodule.
+add_subdirectory(lib/secp256k1)
+
+# Disable libtommath support before adding libtomcrypt.
+# Force disable libtommath support before adding libtomcrypt.
+set(WITH_LTM FALSE CACHE BOOL "Disable libtommath support")
+
+# Add libtomcrypt submodule.
+add_subdirectory(lib/libtomcrypt)
+
 # ---------------------------------------------
 # Helper function for adding a module.
 # ---------------------------------------------
@@ -215,18 +225,6 @@ add_module(
 target_link_libraries(multihash PRIVATE multicodec unsigned_varint wjcryptlib sha3)
 
 # ---------------------------------------------
-# peer_id/peer_id_secp256k1
-# ---------------------------------------------
-add_module(
-    peer_id_secp256k1
-    src/peer_id/peer_id_secp256k1.c
-    ""
-    ""
-    src/peer_id
-)
-target_link_libraries(peer_id_secp256k1 PRIVATE secp256k1)
-
-# ---------------------------------------------
 # multiformats/cid_v0
 # ---------------------------------------------
 add_module(
@@ -262,3 +260,72 @@ add_module(
 )
 target_link_libraries(multiaddr PRIVATE multibase multicodec unsigned_varint base58_btc)
 
+# ---------------------------------------------
+# peer_id/peer_id_proto
+# ---------------------------------------------
+add_module(
+    peer_id_proto
+    src/peer_id/peer_id_proto.c
+    ""
+    ""
+    src/peer_id
+)
+target_link_libraries(peer_id_proto PRIVATE unsigned_varint)
+
+# ---------------------------------------------
+# peer_id/peer_id_secp256k1
+# ---------------------------------------------
+add_module(
+    peer_id_secp256k1
+    src/peer_id/peer_id_secp256k1.c
+    ""
+    ""
+    src/peer_id
+)
+target_link_libraries(peer_id_secp256k1 PRIVATE secp256k1 peer_id_proto)
+
+# ---------------------------------------------
+# peer_id/peer_id_ed25519
+# ---------------------------------------------
+add_module(
+    peer_id_ed25519
+    src/peer_id/peer_id_ed25519.c
+    ""
+    ""
+    src/peer_id
+)
+
+# ---------------------------------------------
+# peer_id/peer_id_ecdsa
+# ---------------------------------------------
+add_module(
+    peer_id_ecdsa
+    src/peer_id/peer_id_ecdsa.c
+    ""
+    ""
+    src/peer_id
+)
+
+# ---------------------------------------------
+# peer_id/peer_id_rsa
+# ---------------------------------------------
+add_module(
+    peer_id_rsa
+    src/peer_id/peer_id_rsa.c
+    ""
+    ""
+    src/peer_id
+)
+target_link_libraries(peer_id_rsa PRIVATE libtomcrypt peer_id_proto)
+
+# ---------------------------------------------
+# peer_id
+# ---------------------------------------------
+add_module(
+    peer_id
+    src/peer_id/peer_id.c
+    tests/peer_id/test_peer_id.c
+    ""
+    ""
+)
+target_link_libraries(peer_id PRIVATE peer_id_secp256k1 peer_id_ed25519 peer_id_ecdsa peer_id_rsa peer_id_proto unsigned_varint multibase multicodec multihash)

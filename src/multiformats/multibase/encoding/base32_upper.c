@@ -20,7 +20,7 @@ static const char base32_upper_alphabet[32] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
  *         or an error code indicating a null pointer or insufficient buffer
  * size.
  */
-int base32_upper_encode(const uint8_t *data, size_t data_len, char *out, size_t out_len)
+int multibase_base32_upper_encode(const uint8_t *data, size_t data_len, char *out, size_t out_len)
 {
     size_t full_blocks, rem;
     size_t i, j;
@@ -162,7 +162,7 @@ int base32_upper_encode(const uint8_t *data, size_t data_len, char *out, size_t 
  *         or an error code indicating a null pointer, insufficient buffer size,
  * or invalid input.
  */
-int base32_upper_decode(const char *in, size_t data_len, uint8_t *out, size_t out_len)
+int multibase_base32_upper_decode(const char *in, size_t data_len, uint8_t *out, size_t out_len)
 {
     size_t pos = 0;
     size_t i, j;

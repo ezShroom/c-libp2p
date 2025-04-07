@@ -20,7 +20,7 @@ static const char base64url_alphabet[64] =
  * @return The number of characters written to the output buffer, or an error
  * code indicating a null pointer or insufficient buffer size.
  */
-int base64_url_pad_encode(const uint8_t *data, size_t data_len, char *out, size_t out_len)
+int multibase_base64_url_pad_encode(const uint8_t *data, size_t data_len, char *out, size_t out_len)
 {
     if (data == NULL || out == NULL)
     {
@@ -81,7 +81,7 @@ int base64_url_pad_encode(const uint8_t *data, size_t data_len, char *out, size_
  *         indicating a null pointer, invalid input length, invalid character,
  * or insufficient buffer size.
  */
-int base64_url_pad_decode(const char *in, size_t data_len, uint8_t *out, size_t out_len)
+int multibase_base64_url_pad_decode(const char *in, size_t data_len, uint8_t *out, size_t out_len)
 {
     if (in == NULL || out == NULL)
     {

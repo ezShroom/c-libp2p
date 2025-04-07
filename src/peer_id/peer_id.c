@@ -16,6 +16,11 @@
 #include "multiformats/multihash/multihash.h"
 #include "multiformats/unsigned_varint/unsigned_varint.h"
 #include "peer_id/peer_id.h"
+#include "peer_id/peer_id_ecdsa.h"
+#include "peer_id/peer_id_ed25519.h"
+#include "peer_id/peer_id_rsa.h"
+#include "peer_id/peer_id_secp256k1.h"
+#include "peer_id/peer_id_proto.h"
 
 // Constants
 #define PEER_ID_IDENTITY_HASH_MAX_SIZE 42 // Maximum size for using identity multihash
@@ -103,128 +108,9 @@ static multibase_t multibase_from_prefix(char prefix)
             return MULTIBASE_BASE16;
         case BASE16_UPPER_CHARACTER:
             return MULTIBASE_BASE16_UPPER;
-        case BASE64_URL_CHARACTER:
-            return MULTIBASE_BASE64_URL;
-        case BASE64_URL_PAD_CHARACTER:
-            return MULTIBASE_BASE64_URL_PAD;
         default:
             return (multibase_t)-1; // Invalid or unsupported base
     }
-}
-
-/*
- * Minimal parser for a PublicKey protobuf message:
- *
- *   message PublicKey {
- *       required KeyType Type = 1;   // varint
- *       required bytes   Data = 2;   // length-delimited
- *   }
- *
- * We parse/verify:
- *   - Field 1 is (tag=1, wire type=varint).
- *   - Field 2 is (tag=2, wire type=length-delimited).
- *   - No extra fields remain.
- *   - KeyType is one of {0..3} for RSA, Ed25519, Secp256k1, ECDSA (per the spec).
- *   - Varints are minimally encoded (the `unsigned_varint_decode` function should enforce canonical
- * form).
- *   - On success, sets *out_key_type and the pointer/length for the actual key bytes in
- * *out_key_data, *out_key_data_len.
- *
- * Returns 0 on success, < 0 on parse error.
- */
-static int parse_public_key_proto(const uint8_t *buf, size_t len, uint64_t *out_key_type,
-                                  const uint8_t **out_key_data, size_t *out_key_data_len)
-{
-    if (!buf || !out_key_type || !out_key_data || !out_key_data_len)
-    {
-        return -1;
-    }
-    if (len == 0)
-    {
-        return -1;
-    }
-
-    unsigned_varint_err_t err;
-    size_t offset = 0;
-
-    /* Parse field #1 header: must be 0x08 (wire type=varint, field=1). */
-    uint64_t field1_header;
-    size_t field1_header_size;
-    err = unsigned_varint_decode(buf + offset, len - offset, &field1_header, &field1_header_size);
-    if (err != UNSIGNED_VARINT_OK)
-    {
-        return -1;
-    }
-    // wire type for "varint" + tag=1 => (1 << 3) + 0 => 0x08
-    if (field1_header != 0x08)
-    {
-        return -1;
-    }
-    offset += field1_header_size;
-
-    /* Parse KeyType (varint). */
-    uint64_t key_type;
-    size_t key_type_size;
-    err = unsigned_varint_decode(buf + offset, len - offset, &key_type, &key_type_size);
-    if (err != UNSIGNED_VARINT_OK)
-    {
-        return -1;
-    }
-    offset += key_type_size;
-
-    // Check that key_type is in {0,1,2,3} for RSA=0, Ed25519=1, Secp256k1=2, ECDSA=3
-    if (key_type > 3)
-    {
-        // Not recognized, or not supported by the spec
-        return -1;
-    }
-
-    /* Parse field #2 header: must be 0x12 (wire type=length-delimited, field=2). */
-    uint64_t field2_header;
-    size_t field2_header_size;
-    err = unsigned_varint_decode(buf + offset, len - offset, &field2_header, &field2_header_size);
-    if (err != UNSIGNED_VARINT_OK)
-    {
-        return -1;
-    }
-    // wire type for "length-delimited" + tag=2 => (2 << 3) + 2 => 0x12
-    if (field2_header != 0x12)
-    {
-        return -1;
-    }
-    offset += field2_header_size;
-
-    /* Parse the length varint for the Data field. */
-    uint64_t data_len;
-    size_t data_len_size;
-    err = unsigned_varint_decode(buf + offset, len - offset, &data_len, &data_len_size);
-    if (err != UNSIGNED_VARINT_OK)
-    {
-        return -1;
-    }
-    offset += data_len_size;
-
-    // Ensure we have enough bytes for that length
-    if (data_len > (len - offset))
-    {
-        return -1;
-    }
-
-    // Set the pointers/length for the actual key bytes
-    *out_key_data = buf + offset;
-    *out_key_data_len = (size_t)data_len;
-
-    offset += data_len;
-
-    // If any bytes remain, it's an error (we want exactly 2 fields).
-    if (offset != len)
-    {
-        return -1;
-    }
-
-    // Success
-    *out_key_type = key_type;
-    return 0;
 }
 
 peer_id_error_t peer_id_create_from_public_key(const uint8_t *pubkey_buf, size_t pubkey_len,
@@ -235,14 +121,15 @@ peer_id_error_t peer_id_create_from_public_key(const uint8_t *pubkey_buf, size_t
         return PEER_ID_E_NULL_PTR;
     }
 
-    // Initialize output structure
+    // Initialize output
     pid->bytes = NULL;
     pid->size = 0;
 
-    // 1) Parse/validate the incoming public key protobuf.
-    uint64_t key_type;
+    // 1) Parse/validate the incoming public key protobuf (now using the moved helper).
+    uint64_t key_type = 0;
     const uint8_t *key_data = NULL;
     size_t key_data_len = 0;
+
     int parse_result =
         parse_public_key_proto(pubkey_buf, pubkey_len, &key_type, &key_data, &key_data_len);
     if (parse_result < 0)
@@ -251,8 +138,7 @@ peer_id_error_t peer_id_create_from_public_key(const uint8_t *pubkey_buf, size_t
         return PEER_ID_E_INVALID_PROTOBUF;
     }
 
-    // 2) Determine the hash function to use based on the *entire* public key protobuf length.
-    //    (The spec states we decide identity vs. sha2-256 based on the total serialized size).
+    // 2) Determine the hash function to use based on the entire public-key protobuf length.
     uint64_t hash_function_code;
     if (pubkey_len <= PEER_ID_IDENTITY_HASH_MAX_SIZE)
     {
@@ -263,31 +149,29 @@ peer_id_error_t peer_id_create_from_public_key(const uint8_t *pubkey_buf, size_t
         hash_function_code = MULTICODEC_SHA2_256;
     }
 
-    // 3) Calculate the maximum size of the multihash.
+    // 3) Calculate max size for the multihash ...
+    //    (unchanged logic)
     size_t max_multihash_size;
     if (hash_function_code == MULTICODEC_IDENTITY)
     {
-        // Identity multihash = varint(identity_code) + varint(length) + data
         size_t hash_code_size = unsigned_varint_size(hash_function_code);
         size_t digest_len_size = unsigned_varint_size(pubkey_len);
         max_multihash_size = hash_code_size + digest_len_size + pubkey_len;
     }
     else
     {
-        // SHA256 multihash = varint(sha256_code) + varint(32) + 32-byte digest
         size_t hash_code_size = unsigned_varint_size(hash_function_code);
         size_t digest_len_size = unsigned_varint_size(32);
         max_multihash_size = hash_code_size + digest_len_size + 32;
     }
 
-    // 4) Allocate memory for the multihash
     pid->bytes = (uint8_t *)malloc(max_multihash_size);
     if (!pid->bytes)
     {
         return PEER_ID_E_ALLOC_FAILED;
     }
 
-    // 5) Compute the multihash over the *entire* protobuf (pubkey_buf)
+    // 4) Compute the multihash over the entire pubkey_buf
     int result = multihash_encode(hash_function_code, pubkey_buf, pubkey_len, pid->bytes,
                                   max_multihash_size);
     if (result < 0)
@@ -296,7 +180,6 @@ peer_id_error_t peer_id_create_from_public_key(const uint8_t *pubkey_buf, size_t
         pid->bytes = NULL;
         pid->size = 0;
 
-        // Map the multihash error code to a peer_id error code
         switch (result)
         {
             case MULTIHASH_ERR_NULL_POINTER:
@@ -326,76 +209,23 @@ peer_id_error_t peer_id_create_from_private_key(const uint8_t *privkey_buf, size
         return PEER_ID_E_NULL_PTR;
     }
 
-    // Initialize output structure.
+    // Initialize output
     pid->bytes = NULL;
     pid->size = 0;
 
-    // Step 1: Parse the private key protobuf.
-    // The expected format is:
-    //   field 1: key type (tag 1, varint, header = 0x08)
-    //   field 2: key data (tag 2, length-delimited, header = 0x12)
-    unsigned_varint_err_t err;
-    size_t offset = 0;
+    // Step 1: Parse the private key protobuf (moved to parse_private_key_proto):
+    uint64_t key_type = 0;
+    const uint8_t *key_data = NULL;
+    size_t key_data_len = 0;
 
-    // Parse field #1 header.
-    uint64_t field1_header;
-    size_t field1_header_size;
-    err = unsigned_varint_decode(privkey_buf + offset, privkey_len - offset, &field1_header,
-                                 &field1_header_size);
-    if (err != UNSIGNED_VARINT_OK || field1_header != 0x08)
-    {
-        return PEER_ID_E_INVALID_PROTOBUF;
-    }
-    offset += field1_header_size;
-
-    // Parse KeyType.
-    uint64_t key_type;
-    size_t key_type_size;
-    err = unsigned_varint_decode(privkey_buf + offset, privkey_len - offset, &key_type,
-                                 &key_type_size);
-    if (err != UNSIGNED_VARINT_OK)
-    {
-        return PEER_ID_E_INVALID_PROTOBUF;
-    }
-    offset += key_type_size;
-
-    // Parse field #2 header.
-    uint64_t field2_header;
-    size_t field2_header_size;
-    err = unsigned_varint_decode(privkey_buf + offset, privkey_len - offset, &field2_header,
-                                 &field2_header_size);
-    if (err != UNSIGNED_VARINT_OK || field2_header != 0x12)
-    {
-        return PEER_ID_E_INVALID_PROTOBUF;
-    }
-    offset += field2_header_size;
-
-    // Parse the length of the key data.
-    uint64_t data_len;
-    size_t data_len_size;
-    err = unsigned_varint_decode(privkey_buf + offset, privkey_len - offset, &data_len,
-                                 &data_len_size);
-    if (err != UNSIGNED_VARINT_OK)
-    {
-        return PEER_ID_E_INVALID_PROTOBUF;
-    }
-    offset += data_len_size;
-    if (data_len > (privkey_len - offset))
+    int parse_result =
+        parse_private_key_proto(privkey_buf, privkey_len, &key_type, &key_data, &key_data_len);
+    if (parse_result < 0)
     {
         return PEER_ID_E_INVALID_PROTOBUF;
     }
 
-    const uint8_t *key_data = privkey_buf + offset;
-    size_t key_data_len = (size_t)data_len;
-    offset += key_data_len;
-
-    // Ensure there are no extra bytes.
-    if (offset != privkey_len)
-    {
-        return PEER_ID_E_INVALID_PROTOBUF;
-    }
-
-    // Step 2: Derive the public key from the private key data using a dummy switch.
+    // Step 2: Derive the public key from the private key data:
     uint8_t *pubkey_buf = NULL;
     size_t pubkey_len = 0;
     peer_id_error_t ret;
@@ -419,6 +249,7 @@ peer_id_error_t peer_id_create_from_private_key(const uint8_t *privkey_buf, size
                                                         &pubkey_len);
             break;
         default:
+            // Out of range => unsupported
             return PEER_ID_E_UNSUPPORTED_KEY;
     }
 
@@ -430,7 +261,7 @@ peer_id_error_t peer_id_create_from_private_key(const uint8_t *privkey_buf, size
     // Step 3: Use the serialized public key to create the peer ID.
     ret = peer_id_create_from_public_key(pubkey_buf, pubkey_len, pid);
 
-    // Free the temporary public key buffer if allocated.
+    // Free the temporary public key buffer
     free(pubkey_buf);
 
     return ret;

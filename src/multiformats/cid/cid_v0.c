@@ -109,7 +109,7 @@ int cid_v0_to_string(const cid_v0_t *cid, char *out, size_t out_len)
     }
 
     /* Encode using the multibase API with base58btc. */
-    int str_written = base58_btc_encode(bin, CIDV0_BINARY_SIZE, out, out_len);
+    int str_written = multibase_base58_btc_encode(bin, CIDV0_BINARY_SIZE, out, out_len);
     if (str_written < 0)
     {
         return CIDV0_ERROR_ENCODE_FAILURE;
@@ -140,7 +140,7 @@ int cid_v0_from_string(cid_v0_t *cid, const char *str)
     }
 
     uint8_t bin[CIDV0_BINARY_SIZE];
-    int decoded_len = base58_btc_decode(str, str_len, bin, sizeof(bin));
+    int decoded_len = multibase_base58_btc_decode(str, str_len, bin, sizeof(bin));
     if (decoded_len < 0)
     {
         return CIDV0_ERROR_DECODE_FAILURE;

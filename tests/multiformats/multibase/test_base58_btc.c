@@ -50,9 +50,9 @@ int main(void)
             exit(EXIT_FAILURE);
         }
 
-        int ret = base58_btc_encode(tv.input, tv.input_len, encoded, out_buf_size - 1);
+        int ret = multibase_base58_btc_encode(tv.input, tv.input_len, encoded, out_buf_size - 1);
         char test_name[128];
-        sprintf(test_name, "base58_btc_encode(\"%s\")", tv.description);
+        sprintf(test_name, "multibase_base58_btc_encode(\"%s\")", tv.description);
         if (ret < 0)
         {
             char details[256];
@@ -85,8 +85,8 @@ int main(void)
             exit(EXIT_FAILURE);
         }
 
-        int ret_dec = base58_btc_decode(encoded, (size_t)ret, decoded, decode_buf_size);
-        sprintf(test_name, "base58_btc_decode(\"%s\")", encoded);
+        int ret_dec = multibase_base58_btc_decode(encoded, (size_t)ret, decoded, decode_buf_size);
+        sprintf(test_name, "multibase_base58_btc_decode(\"%s\")", encoded);
         if (ret_dec < 0)
         {
             char details[256];

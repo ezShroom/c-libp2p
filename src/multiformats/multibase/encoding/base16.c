@@ -95,7 +95,8 @@ static const uint8_t hex_values_table[256] = {
  * @return Number of characters in the output (excluding the NUL),
  *         or an error code.
  */
-int base16_encode(const uint8_t *restrict data, size_t data_len, char *restrict out, size_t out_len)
+int multibase_base16_encode(const uint8_t *restrict data, size_t data_len, char *restrict out,
+                            size_t out_len)
 {
     if (data == NULL || out == NULL)
     {
@@ -149,7 +150,8 @@ int base16_encode(const uint8_t *restrict data, size_t data_len, char *restrict 
  * This table-based decoder only accepts lowercase 'a'–'f' for 10–15
  * and rejects uppercase 'A'–'F'. Adjust if you want uppercase acceptance.
  */
-int base16_decode(const char *restrict in, size_t data_len, uint8_t *restrict out, size_t out_len)
+int multibase_base16_decode(const char *restrict in, size_t data_len, uint8_t *restrict out,
+                            size_t out_len)
 {
     if (in == NULL || out == NULL)
     {

@@ -1,9 +1,9 @@
+#include "multiformats/multibase/encoding/base16.h"
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <string.h>
 #include <time.h>
-#include "multiformats/multibase/encoding/base16.h"
 
 #define _POSIX_C_SOURCE 200809L
 
@@ -39,7 +39,8 @@ int main(void)
 
     for (size_t i = 0; i < N; i++)
     {
-        int ret_encode = base16_encode(input_data, data_len, encoded, encoded_buffer_size);
+        int ret_encode =
+            multibase_base16_encode(input_data, data_len, encoded, encoded_buffer_size);
         if (ret_encode < 0)
         {
             fprintf(stderr, "Encoding error on iteration %zu: %d\n", i, ret_encode);
@@ -47,7 +48,7 @@ int main(void)
         }
         encoded[ret_encode] = '\0';
 
-        int ret_decode = base16_decode(encoded, ret_encode, decoded, data_len);
+        int ret_decode = multibase_base16_decode(encoded, ret_encode, decoded, data_len);
         if (ret_decode < 0)
         {
             fprintf(stderr, "Decoding error on iteration %zu: %d\n", i, ret_decode);

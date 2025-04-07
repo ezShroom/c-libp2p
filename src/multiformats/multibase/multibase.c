@@ -42,7 +42,7 @@ int multibase_encode(multibase_t base, const uint8_t *data, size_t data_len, cha
                 return MULTIBASE_ERR_BUFFER_TOO_SMALL;
             }
             out[0] = BASE16_CHARACTER;
-            ret = base16_encode(data, data_len, out + 1, out_len - 1);
+            ret = multibase_base16_encode(data, data_len, out + 1, out_len - 1);
             if (ret < 0)
             {
                 return ret;
@@ -56,7 +56,7 @@ int multibase_encode(multibase_t base, const uint8_t *data, size_t data_len, cha
                 return MULTIBASE_ERR_BUFFER_TOO_SMALL;
             }
             out[0] = BASE16_UPPER_CHARACTER;
-            ret = base16_upper_encode(data, data_len, out + 1, out_len - 1);
+            ret = multibase_base16_upper_encode(data, data_len, out + 1, out_len - 1);
             if (ret < 0)
             {
                 return ret;
@@ -72,7 +72,7 @@ int multibase_encode(multibase_t base, const uint8_t *data, size_t data_len, cha
                 return MULTIBASE_ERR_BUFFER_TOO_SMALL;
             }
             out[0] = BASE32_CHARACTER;
-            ret = base32_encode(data, data_len, out + 1, out_len - 1);
+            ret = multibase_base32_encode(data, data_len, out + 1, out_len - 1);
             if (ret < 0)
             {
                 return ret;
@@ -88,7 +88,7 @@ int multibase_encode(multibase_t base, const uint8_t *data, size_t data_len, cha
                 return MULTIBASE_ERR_BUFFER_TOO_SMALL;
             }
             out[0] = BASE32_UPPER_CHARACTER;
-            ret = base32_upper_encode(data, data_len, out + 1, out_len - 1);
+            ret = multibase_base32_upper_encode(data, data_len, out + 1, out_len - 1);
             if (ret < 0)
             {
                 return ret;
@@ -102,7 +102,7 @@ int multibase_encode(multibase_t base, const uint8_t *data, size_t data_len, cha
                 return MULTIBASE_ERR_BUFFER_TOO_SMALL;
             }
             out[0] = BASE58_BTC_CHARACTER;
-            ret = base58_btc_encode(data, data_len, out + 1, out_len - 1);
+            ret = multibase_base58_btc_encode(data, data_len, out + 1, out_len - 1);
             if (ret < 0)
             {
                 return ret;
@@ -117,7 +117,7 @@ int multibase_encode(multibase_t base, const uint8_t *data, size_t data_len, cha
                 return MULTIBASE_ERR_BUFFER_TOO_SMALL;
             }
             out[0] = BASE64_CHARACTER;
-            ret = base64_encode(data, data_len, out + 1, out_len - 1);
+            ret = multibase_base64_encode(data, data_len, out + 1, out_len - 1);
             if (ret < 0)
             {
                 return ret;
@@ -132,7 +132,7 @@ int multibase_encode(multibase_t base, const uint8_t *data, size_t data_len, cha
                 return MULTIBASE_ERR_BUFFER_TOO_SMALL;
             }
             out[0] = BASE64_URL_CHARACTER;
-            ret = base64_url_encode(data, data_len, out + 1, out_len - 1);
+            ret = multibase_base64_url_encode(data, data_len, out + 1, out_len - 1);
             if (ret < 0)
             {
                 return ret;
@@ -147,7 +147,7 @@ int multibase_encode(multibase_t base, const uint8_t *data, size_t data_len, cha
                 return MULTIBASE_ERR_BUFFER_TOO_SMALL;
             }
             out[0] = BASE64_URL_PAD_CHARACTER;
-            ret = base64_url_pad_encode(data, data_len, out + 1, out_len - 1);
+            ret = multibase_base64_url_pad_encode(data, data_len, out + 1, out_len - 1);
             if (ret < 0)
             {
                 return ret;
@@ -186,7 +186,7 @@ int multibase_decode(multibase_t base, const char *in, uint8_t *out, size_t out_
                 return MULTIBASE_ERR_INVALID_CHARACTER;
             }
             size_t encoded_len = strlen(in + 1);
-            return base16_decode(in + 1, encoded_len, out, out_len);
+            return multibase_base16_decode(in + 1, encoded_len, out, out_len);
         }
         case MULTIBASE_BASE16_UPPER:
         {
@@ -195,7 +195,7 @@ int multibase_decode(multibase_t base, const char *in, uint8_t *out, size_t out_
                 return MULTIBASE_ERR_INVALID_CHARACTER;
             }
             size_t encoded_len = strlen(in + 1);
-            return base16_upper_decode(in + 1, encoded_len, out, out_len);
+            return multibase_base16_upper_decode(in + 1, encoded_len, out, out_len);
         }
         case MULTIBASE_BASE32:
         {
@@ -204,7 +204,7 @@ int multibase_decode(multibase_t base, const char *in, uint8_t *out, size_t out_
                 return MULTIBASE_ERR_INVALID_CHARACTER;
             }
             size_t encoded_len = strlen(in + 1);
-            return base32_decode(in + 1, encoded_len, out, out_len);
+            return multibase_base32_decode(in + 1, encoded_len, out, out_len);
         }
         case MULTIBASE_BASE32_UPPER:
         {
@@ -213,7 +213,7 @@ int multibase_decode(multibase_t base, const char *in, uint8_t *out, size_t out_
                 return MULTIBASE_ERR_INVALID_CHARACTER;
             }
             size_t encoded_len = strlen(in + 1);
-            return base32_upper_decode(in + 1, encoded_len, out, out_len);
+            return multibase_base32_upper_decode(in + 1, encoded_len, out, out_len);
         }
         case MULTIBASE_BASE58_BTC:
         {
@@ -222,7 +222,7 @@ int multibase_decode(multibase_t base, const char *in, uint8_t *out, size_t out_
                 return MULTIBASE_ERR_INVALID_CHARACTER;
             }
             size_t encoded_len = strlen(in + 1);
-            return base58_btc_decode(in + 1, encoded_len, out, out_len);
+            return multibase_base58_btc_decode(in + 1, encoded_len, out, out_len);
         }
         case MULTIBASE_BASE64:
         {
@@ -231,7 +231,7 @@ int multibase_decode(multibase_t base, const char *in, uint8_t *out, size_t out_
                 return MULTIBASE_ERR_INVALID_CHARACTER;
             }
             size_t encoded_len = strlen(in + 1);
-            return base64_decode(in + 1, encoded_len, out, out_len);
+            return multibase_base64_decode(in + 1, encoded_len, out, out_len);
         }
         case MULTIBASE_BASE64_URL:
         {
@@ -240,7 +240,7 @@ int multibase_decode(multibase_t base, const char *in, uint8_t *out, size_t out_
                 return MULTIBASE_ERR_INVALID_CHARACTER;
             }
             size_t encoded_len = strlen(in + 1);
-            return base64_url_decode(in + 1, encoded_len, out, out_len);
+            return multibase_base64_url_decode(in + 1, encoded_len, out, out_len);
         }
         case MULTIBASE_BASE64_URL_PAD:
         {
@@ -249,7 +249,7 @@ int multibase_decode(multibase_t base, const char *in, uint8_t *out, size_t out_
                 return MULTIBASE_ERR_INVALID_CHARACTER;
             }
             size_t encoded_len = strlen(in + 1);
-            return base64_url_pad_decode(in + 1, encoded_len, out, out_len);
+            return multibase_base64_url_pad_decode(in + 1, encoded_len, out, out_len);
         }
         default:
         {

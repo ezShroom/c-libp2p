@@ -7,7 +7,8 @@
 #include "multiformats/multibase/multibase.h"
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /**
@@ -24,7 +25,7 @@ extern "C" {
  * @param out_len The size of the output buffer.
  * @return The number of characters written to the output buffer, or an error code.
  */
-int base16_encode(const uint8_t *data, size_t data_len, char *out, size_t out_len);
+int multibase_base16_encode(const uint8_t *data, size_t data_len, char *out, size_t out_len);
 
 /**
  * @brief Decode a Base16 (hexadecimal) encoded string using lowercase letters.
@@ -35,7 +36,7 @@ int base16_encode(const uint8_t *data, size_t data_len, char *out, size_t out_le
  * @param out_len The size of the output buffer.
  * @return The number of bytes written to the output buffer, or an error code.
  */
-int base16_decode(const char *in, size_t data_len, uint8_t *out, size_t out_len);
+int multibase_base16_decode(const char *in, size_t data_len, uint8_t *out, size_t out_len);
 
 #ifdef __cplusplus
 }

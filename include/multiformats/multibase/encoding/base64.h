@@ -25,7 +25,7 @@ extern "C"
  * @param out_len The size of the output buffer.
  * @return The number of characters written to the output buffer, or an error code.
  */
-int base64_encode(const uint8_t *data, size_t data_len, char *out, size_t out_len);
+int multibase_base64_encode(const uint8_t *data, size_t data_len, char *out, size_t out_len);
 
 /**
  * @brief Decode a Base64 encoded string (RFC4648) without padding.
@@ -36,7 +36,7 @@ int base64_encode(const uint8_t *data, size_t data_len, char *out, size_t out_le
  * @param out_len The size of the output buffer.
  * @return The number of bytes written to the output buffer, or an error code.
  */
-int base64_decode(const char *in, size_t data_len, uint8_t *out, size_t out_len);
+int multibase_base64_decode(const char *in, size_t data_len, uint8_t *out, size_t out_len);
 
 #ifdef __cplusplus
 }

@@ -47,9 +47,10 @@ int main(void)
             exit(EXIT_FAILURE);
         }
 
-        int ret = base16_upper_encode((const uint8_t *)tv.input, input_len, encoded, out_buf_size);
+        int ret = multibase_base16_upper_encode((const uint8_t *)tv.input, input_len, encoded,
+                                                out_buf_size);
         char test_name[128];
-        sprintf(test_name, "base16_upper_encode(\"%s\")", tv.input);
+        sprintf(test_name, "multibase_base16_upper_encode(\"%s\")", tv.input);
         if (ret < 0)
         {
             char details[256];
@@ -82,8 +83,8 @@ int main(void)
             exit(EXIT_FAILURE);
         }
 
-        int ret_dec = base16_upper_decode(encoded, ret, decoded, decode_buf_size);
-        sprintf(test_name, "base16_upper_decode(\"%s\")", encoded);
+        int ret_dec = multibase_base16_upper_decode(encoded, ret, decoded, decode_buf_size);
+        sprintf(test_name, "multibase_base16_upper_decode(\"%s\")", encoded);
         if (ret_dec < 0)
         {
             char details[256];

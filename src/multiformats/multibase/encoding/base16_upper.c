@@ -98,8 +98,8 @@ static const uint8_t hex_values_upper_table[256] = {
  * @return Number of hex characters written (excluding NUL) on success,
  *         or an error code on failure.
  */
-int base16_upper_encode(const uint8_t *restrict data, size_t data_len, char *restrict out,
-                        size_t out_len)
+int multibase_base16_upper_encode(const uint8_t *restrict data, size_t data_len, char *restrict out,
+                                  size_t out_len)
 {
     if (data == NULL || out == NULL)
     {
@@ -151,8 +151,8 @@ int base16_upper_encode(const uint8_t *restrict data, size_t data_len, char *res
  * @return Number of bytes written to 'out' on success, or error code on
  * failure.
  */
-int base16_upper_decode(const char *restrict in, size_t data_len, uint8_t *restrict out,
-                        size_t out_len)
+int multibase_base16_upper_decode(const char *restrict in, size_t data_len, uint8_t *restrict out,
+                                  size_t out_len)
 {
     if (in == NULL || out == NULL)
     {

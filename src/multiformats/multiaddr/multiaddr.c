@@ -347,7 +347,7 @@ static int parse_port(const char *addr_str, uint8_t out[2])
 static int parse_p2p_id(const char *id_str, uint8_t *out_buf, size_t *out_len)
 {
     size_t encoded_len = strlen(id_str);
-    int ret = base58_btc_decode(id_str, encoded_len, out_buf, *out_len);
+    int ret = multibase_base58_btc_decode(id_str, encoded_len, out_buf, *out_len);
     if (ret < 0)
     {
         return -1; // decoding error
@@ -826,7 +826,7 @@ static int sprint_port(const uint8_t *addr_bytes, char *out, size_t out_size)
  */
 static int sprint_p2p(const uint8_t *addr_bytes, size_t addr_len, char *out, size_t out_size)
 {
-    int ret = base58_btc_encode(addr_bytes, addr_len, out, out_size);
+    int ret = multibase_base58_btc_encode(addr_bytes, addr_len, out, out_size);
     if (ret < 0)
     {
         return -1;
