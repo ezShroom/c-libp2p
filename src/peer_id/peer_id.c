@@ -1,4 +1,7 @@
-#include "peer_id/peer_id.h"
+#include <ctype.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "multiformats/multibase/encoding/base16.h"
 #include "multiformats/multibase/encoding/base16_upper.h"
 #include "multiformats/multibase/encoding/base32.h"
@@ -12,9 +15,7 @@
 #include "multiformats/multicodec/multicodec_codes.h"
 #include "multiformats/multihash/multihash.h"
 #include "multiformats/unsigned_varint/unsigned_varint.h"
-#include <ctype.h>
-#include <stdlib.h>
-#include <string.h>
+#include "peer_id/peer_id.h"
 
 // Constants
 #define PEER_ID_IDENTITY_HASH_MAX_SIZE 42 // Maximum size for using identity multihash

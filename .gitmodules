@@ -7,3 +7,6 @@
 [submodule "lib/sha3"]
 	path = lib/sha3
 	url = https://github.com/pablotron/sha3.git
+[submodule "lib/libtomcrypt"]
+	path = lib/libtomcrypt
+	url = https://github.com/libtom/libtomcrypt.git
