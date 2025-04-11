@@ -44,32 +44,45 @@ int multibase_base32_encode(const uint8_t *data, size_t data_len, char *out, siz
     full_blocks = data_len / 5;
     rem = data_len % 5;
 
+    /* Defensive check: Ensure that multiplying full_blocks by 8 doesn't overflow */
+    if (full_blocks > SIZE_MAX / 8)
+    {
+        return MULTIBASE_ERR_OVERFLOW;
+    }
     size_t out_chars = full_blocks * 8;
+
     if (rem)
     {
+        size_t extra;
         if (rem == 1)
         {
-            out_chars += 2;
+            extra = 2;
         }
         else if (rem == 2)
         {
-            out_chars += 4;
+            extra = 4;
         }
         else if (rem == 3)
         {
-            out_chars += 5;
+            extra = 5;
         }
         else /* rem == 4 */
         {
-            out_chars += 7;
+            extra = 7;
         }
+        /* Check that adding the extra characters will not overflow */
+        if (out_chars > SIZE_MAX - extra)
+        {
+            return MULTIBASE_ERR_OVERFLOW;
+        }
+        out_chars += extra;
     }
+    /* Make sure we can also write the null terminator */
     if (out_len < out_chars + 1)
     {
         return MULTIBASE_ERR_BUFFER_TOO_SMALL;
     }
 
-    /* Process full 5-byte blocks */
     for (i = 0; i < full_blocks; i++)
     {
         const uint8_t *chunk = data + (i * 5);
@@ -125,7 +138,6 @@ int multibase_base32_encode(const uint8_t *data, size_t data_len, char *out, siz
                 }
             }
         }
-
         size_t valid_chars;
         if (rem == 1)
         {
@@ -162,8 +174,8 @@ int multibase_base32_encode(const uint8_t *data, size_t data_len, char *out, siz
  * @param out The buffer to store the decoded binary data.
  * @param out_len The size of the output buffer.
  * @return The number of bytes written to the output buffer, or an error
- *         code indicating a null pointer, insufficient buffer size, or invalid
- * input.
+ *         code indicating a null pointer, insufficient buffer size, invalid
+ *         input, or integer overflow.
  */
 int multibase_base32_decode(const char *in, size_t data_len, uint8_t *out, size_t out_len)
 {
@@ -196,30 +208,42 @@ int multibase_base32_decode(const char *in, size_t data_len, uint8_t *out, size_
 
     size_t full_blocks = data_len / 8;
     size_t rem = data_len % 8;
+
+    /* Defensive check: Ensure that multiplying full_blocks by 5 doesn't overflow */
+    if (full_blocks > SIZE_MAX / 5)
+    {
+        return MULTIBASE_ERR_OVERFLOW;
+    }
     size_t decoded_len = full_blocks * 5;
 
     if (rem)
     {
+        size_t extra;
         if (rem == 2)
         {
-            decoded_len += 1;
+            extra = 1;
         }
         else if (rem == 4)
         {
-            decoded_len += 2;
+            extra = 2;
         }
         else if (rem == 5)
         {
-            decoded_len += 3;
+            extra = 3;
         }
         else if (rem == 7)
         {
-            decoded_len += 4;
+            extra = 4;
         }
         else
         {
             return MULTIBASE_ERR_INVALID_INPUT_LEN;
         }
+        if (decoded_len > SIZE_MAX - extra)
+        {
+            return MULTIBASE_ERR_OVERFLOW;
+        }
+        decoded_len += extra;
     }
 
     if (decoded_len > out_len)

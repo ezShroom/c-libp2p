@@ -410,4 +410,7 @@ minimal_check:
  * @param value The 64-bit unsigned integer to be encoded.
  * @return The number of bytes required to encode the value.
  */
-size_t unsigned_varint_size(uint64_t value) { return varint_size_64(value); }
+size_t unsigned_varint_size(uint64_t value) 
+{ 
+    return varint_size_64(value); 
+}

@@ -55,8 +55,7 @@ peer_id_error_t peer_id_create_from_private_key_secp256k1(const uint8_t *key_dat
 
     secp256k1_context_destroy(ctx);
 
-    peer_id_error_t err =
-        peer_id_build_public_key_protobuf(PEER_ID_SECP256K1_KEY_TYPE, raw_pubkey, len, pubkey_buf,
+    peer_id_error_t err = peer_id_build_public_key_protobuf(PEER_ID_SECP256K1_KEY_TYPE, raw_pubkey, len, pubkey_buf,
                                           pubkey_len);
     return err;
 }
