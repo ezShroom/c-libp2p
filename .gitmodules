@@ -10,3 +10,6 @@
 [submodule "lib/libtomcrypt"]
 	path = lib/libtomcrypt
 	url = https://github.com/libtom/libtomcrypt.git
+[submodule "lib/libtommath"]
+	path = lib/libtommath
+	url = https://github.com/libtom/libtommath.git

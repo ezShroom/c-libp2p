@@ -8,6 +8,9 @@ project(libp2p
     LANGUAGES C
 )
 
+# Add the cmake directory to the module path
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+
 # Set the C standard.
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -23,12 +26,16 @@ include_directories(${PROJECT_SOURCE_DIR}/include)
 # Add secp256k1 submodule.
 add_subdirectory(lib/secp256k1)
 
-# Disable libtommath support before adding libtomcrypt.
-# Force disable libtommath support before adding libtomcrypt.
-set(WITH_LTM FALSE CACHE BOOL "Disable libtommath support")
+# Add libtommath submodule.
+add_subdirectory(lib/libtommath)
+
+# Point to the build directory where libtommath exports its config file.
+set(libtommath_DIR "${CMAKE_BINARY_DIR}/lib/libtommath")
 
 # Add libtomcrypt submodule.
 add_subdirectory(lib/libtomcrypt)
+
+target_compile_definitions(libtomcrypt PRIVATE USE_LTM LTM_DESC)
 
 # ---------------------------------------------
 # Helper function for adding a module.
