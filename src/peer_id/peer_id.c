@@ -218,8 +218,7 @@ peer_id_error_t peer_id_create_from_private_key(const uint8_t *privkey_buf, size
     const uint8_t *key_data = NULL;
     size_t key_data_len = 0;
 
-    int parse_result =
-        parse_private_key_proto(privkey_buf, privkey_len, &key_type, &key_data, &key_data_len);
+    int parse_result = parse_private_key_proto(privkey_buf, privkey_len, &key_type, &key_data, &key_data_len);
     if (parse_result < 0)
     {
         return PEER_ID_E_INVALID_PROTOBUF;

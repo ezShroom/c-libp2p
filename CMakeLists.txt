@@ -301,6 +301,7 @@ add_module(
     ""
     src/peer_id
 )
+target_link_libraries(peer_id_ed25519 PRIVATE libtomcrypt peer_id_proto)
 
 # ---------------------------------------------
 # peer_id/peer_id_ecdsa
@@ -312,6 +313,7 @@ add_module(
     ""
     src/peer_id
 )
+target_link_libraries(peer_id_ecdsa PRIVATE libtomcrypt peer_id_proto)
 
 # ---------------------------------------------
 # peer_id/peer_id_rsa

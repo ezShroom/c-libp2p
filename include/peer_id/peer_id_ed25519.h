@@ -7,7 +7,12 @@ extern "C" {
 
 #include <stddef.h>
 #include <stdint.h>
+
+#include "../../lib/libtomcrypt/src/headers/tomcrypt.h"
+#include "peer_id/peer_id_proto.h"
 #include "peer_id/peer_id.h"
+
+#define PEER_ID_ED25519_KEY_TYPE 1
 
 /**
  * @brief Creates a peer ID from an ed25519 private key.

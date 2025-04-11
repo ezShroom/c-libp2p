@@ -12,6 +12,8 @@ extern "C" {
 #include "peer_id/peer_id_proto.h"
 #include "peer_id/peer_id.h"
 
+#define PEER_ID_SECP256K1_KEY_TYPE 2
+
 /**
  * @brief Creates a peer ID from a secp256k1 private key.
  *

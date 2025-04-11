@@ -5,9 +5,13 @@
 extern "C" {
 #endif
 
-#include <stddef.h>
-#include <stdint.h>
+#include <stdlib.h>
+
+#include "../../lib/libtomcrypt/src/headers/tomcrypt.h"
 #include "peer_id/peer_id.h"
+#include "peer_id/peer_id_proto.h"
+
+#define PEER_ID_ECDSA_KEY_TYPE 3
 
 /**
  * @brief Creates a peer ID from an ECDSA private key.

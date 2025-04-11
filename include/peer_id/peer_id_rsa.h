@@ -12,6 +12,8 @@ extern "C" {
 #include "peer_id/peer_id_proto.h"
 #include "peer_id/peer_id.h"
 
+#define PEER_ID_RSA_KEY_TYPE 0
+
 /**
  * @brief Creates a peer ID from an RSA private key.
  *
