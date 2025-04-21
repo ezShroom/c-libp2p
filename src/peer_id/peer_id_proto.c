@@ -19,7 +19,7 @@ peer_id_error_t peer_id_build_public_key_protobuf(uint64_t key_type,
     }
 
     // 1) Varint-encode the key_type
-    uint8_t key_type_buf[10]; // Enough for varint-encoded key_type
+    uint8_t key_type_buf[10]; 
     size_t key_type_size;
     if (unsigned_varint_encode(key_type, key_type_buf, sizeof(key_type_buf), &key_type_size)
         != UNSIGNED_VARINT_OK)
@@ -28,7 +28,7 @@ peer_id_error_t peer_id_build_public_key_protobuf(uint64_t key_type,
     }
 
     // 2) Varint-encode the length of raw_key_data
-    uint8_t length_buf[10]; // Enough for varint-encoded length
+    uint8_t length_buf[10];
     size_t length_size;
     if (unsigned_varint_encode(raw_key_len, length_buf, sizeof(length_buf), &length_size)
         != UNSIGNED_VARINT_OK)
@@ -36,12 +36,6 @@ peer_id_error_t peer_id_build_public_key_protobuf(uint64_t key_type,
         return PEER_ID_E_INVALID_PROTOBUF;
     }
 
-    // The total size of the protobuf:
-    //   1 byte   for field #1 tag
-    // + key_type_size varint
-    // + 1 byte   for field #2 tag
-    // + length_size varint (length of data)
-    // + raw_key_len
     size_t total = 1 + key_type_size + 1 + length_size + raw_key_len;
 
     uint8_t *buf = (uint8_t *)malloc(total);
@@ -60,7 +54,6 @@ peer_id_error_t peer_id_build_public_key_protobuf(uint64_t key_type,
     offset += length_size;
 
     memcpy(buf + offset, raw_key_data, raw_key_len);
-    offset += raw_key_len;
 
     *out_buf  = buf;
     *out_size = total;

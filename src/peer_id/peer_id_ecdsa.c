@@ -27,11 +27,10 @@ peer_id_error_t peer_id_create_from_private_key_ecdsa(const uint8_t *key_data,
 #else
         return PEER_ID_E_CRYPTO_FAILED;
 #endif
-
-        if (ltc_mp.name == NULL)
-        {
-            return PEER_ID_E_CRYPTO_FAILED;
-        }
+    }
+    if (ltc_mp.name == NULL)
+    {
+        return PEER_ID_E_CRYPTO_FAILED;
     }
 
 #ifdef LTC_MECC
@@ -42,7 +41,6 @@ peer_id_error_t peer_id_create_from_private_key_ecdsa(const uint8_t *key_data,
         return PEER_ID_E_INVALID_PROTOBUF;
     }
 
-    /* Use a minimal initial allocation and let ecc_export_openssl update der_len */
     unsigned long der_len = 1;
     uint8_t *der_buf = malloc(der_len);
     if (!der_buf)

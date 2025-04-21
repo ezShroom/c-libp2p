@@ -1,0 +1,1272 @@
+Checking benchmarks/multiformats/multibase/bench_base16.c ...
+benchmarks/multiformats/multibase/bench_base16.c:1:0: information: Include file: <stdint.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdint.h>
+^
+benchmarks/multiformats/multibase/bench_base16.c:2:0: information: Include file: <stdio.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdio.h>
+^
+benchmarks/multiformats/multibase/bench_base16.c:3:0: information: Include file: <stdlib.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdlib.h>
+^
+benchmarks/multiformats/multibase/bench_base16.c:4:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h>
+^
+benchmarks/multiformats/multibase/bench_base16.c:5:0: information: Include file: <time.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <time.h>
+^
+benchmarks/multiformats/multibase/bench_base16.c:7:0: information: Include file: "multiformats/multibase/encoding/base16.h" not found. [missingInclude]
+#include "multiformats/multibase/encoding/base16.h"
+^
+benchmarks/multiformats/multibase/bench_base16.c:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+1/41 files checked 0% done
+Checking benchmarks/multiformats/multibase/bench_base16_upper.c ...
+benchmarks/multiformats/multibase/bench_base16_upper.c:1:0: information: Include file: <stdint.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdint.h>
+^
+benchmarks/multiformats/multibase/bench_base16_upper.c:2:0: information: Include file: <stdio.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdio.h>
+^
+benchmarks/multiformats/multibase/bench_base16_upper.c:3:0: information: Include file: <stdlib.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdlib.h>
+^
+benchmarks/multiformats/multibase/bench_base16_upper.c:4:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h>
+^
+benchmarks/multiformats/multibase/bench_base16_upper.c:5:0: information: Include file: <time.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <time.h>
+^
+benchmarks/multiformats/multibase/bench_base16_upper.c:7:0: information: Include file: "multiformats/multibase/encoding/base16_upper.h" not found. [missingInclude]
+#include "multiformats/multibase/encoding/base16_upper.h"
+^
+benchmarks/multiformats/multibase/bench_base16_upper.c:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+2/41 files checked 1% done
+Checking benchmarks/multiformats/unsigned_varint/bench_unsigned_varint.c ...
+benchmarks/multiformats/unsigned_varint/bench_unsigned_varint.c:1:0: information: Include file: <inttypes.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <inttypes.h>
+^
+benchmarks/multiformats/unsigned_varint/bench_unsigned_varint.c:2:0: information: Include file: <stdint.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdint.h>
+^
+benchmarks/multiformats/unsigned_varint/bench_unsigned_varint.c:3:0: information: Include file: <stdio.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdio.h>
+^
+benchmarks/multiformats/unsigned_varint/bench_unsigned_varint.c:4:0: information: Include file: <stdlib.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdlib.h>
+^
+benchmarks/multiformats/unsigned_varint/bench_unsigned_varint.c:5:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h>
+^
+benchmarks/multiformats/unsigned_varint/bench_unsigned_varint.c:6:0: information: Include file: <time.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <time.h>
+^
+benchmarks/multiformats/unsigned_varint/bench_unsigned_varint.c:8:0: information: Include file: "multiformats/unsigned_varint/unsigned_varint.h" not found. [missingInclude]
+#include "multiformats/unsigned_varint/unsigned_varint.h"
+^
+benchmarks/multiformats/unsigned_varint/bench_unsigned_varint.c:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+3/41 files checked 1% done
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c ...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: INT_178B;__INTEGRITY...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: MPRAS;_MPRAS...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: SCO_SV;_SCO_SV;sco_sv...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: SDCC;__SDCC_VERSION_MAJOR...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: SDCC;__SDCC_VERSION_MAJOR;__SDCC_VERSION_MAJOR...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: SIMULATE_VERSION_TWEAK...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: WIN32;_WIN32;__WIN32__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: XENIX;_XENIX;__XENIX__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: _ADI_COMPILER...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: _ADI_COMPILER;__VERSIONNUM__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: _AIX;__AIX;__AIX__;__aix;__aix__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: _BEOS;__BEOS__;__BeOS...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: _CRAYC...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: _MSC_BUILD;_MSC_VER...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: _MSC_FULL_VER;_MSC_VER...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: _MSC_VER...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: _MSC_VER;_WIN32...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: _MSC_VER;_WIN32;_M_AMD64;_M_X64...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: _MSC_VER;_WIN32;_M_ARM...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: _MSC_VER;_WIN32;_M_ARM64...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: _MSC_VER;_WIN32;_M_ARM64EC...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: _MSC_VER;_WIN32;_M_ARM;_M_ARM=4...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: _MSC_VER;_WIN32;_M_ARM;_M_ARM=5...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: _MSC_VER;_WIN32;_M_IA64...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: _MSC_VER;_WIN32;_M_IX86...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: _MSC_VER;_WIN32;_M_MIPS...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: _MSC_VER;_WIN32;_M_SH...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: _MSC_VER;__IBMC__;__ibmxl__;__STDC__;__clang__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: _MSC_VER;__ICC;__INTEL_COMPILER...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: _MSC_VER;__INTEL_CLANG_COMPILER;__INTEL_LLVM_COMPILER;__clang__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: _MSC_VER;__apple_build_version__;__clang__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: _MSC_VER;__clang__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: _M_I86;__WATCOMC__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: _M_IX86;__WATCOMC__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: _TMS320C6X;__TMS320C6X__;__TI_COMPILER_VERSION__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: _ULTRIX;__ultrix;__ultrix__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __18CXX...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __ADSPBLACKFIN__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __ADSPSHARC__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __APPLE__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __ARMCC_VERSION;__clang__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __ARMCOMPILER_VERSION;__clang__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __ARM_ARCH;__clang__;__ti__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __ARM__;__ghs__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __BCC__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __BORLANDC__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __BORLANDC__;__CODEGEARC_VERSION__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __C51__;__TASKING__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __CARC__;__TASKING__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __CARM__;__TASKING__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __CLANG_FUJITSU...
+build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c:800:77: error: There is an unknown macro here somewhere. Configuration is required. If __clang_version__ is a macro then please configure it. [unknownMacro]
+char const* info_version_internal = "INFO" ":" "compiler_version_internal[" COMPILER_VERSION_INTERNAL_STR "]";
+                                                                            ^
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __CLASSIC_C__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __CMCS__;__TASKING__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __COMPILER_VER__;__IBMC__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __CPCP__;__TASKING__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __CPTC__;__CTC__;__TASKING__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __CRAYXT_COMPUTE_LINUX_TARGET...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __CYGWIN__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __DECC...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __DOS__;__WATCOMC__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __FCC_VERSION;__FUJITSU...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __FCC_major__;__FUJITSU...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __FCC_version__;__FUJITSU...
+build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c:772:28: error: syntax error [syntaxError]
+char const* info_version = "INFO" ":" "compiler_version[" COMPILER_VERSION "]";
+                           ^
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __FUJITSU...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __FUJITSU;__fcc_version...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __FreeBSD;__FreeBSD__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __GHS_VERSION_NUMBER;__ghs__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __GNUC_MINOR__;__GNUC__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __GNUC_MINOR__;__GNUC__;__GNUC_PATCHLEVEL__;__GNUC__;__GNUG__;__LCC__;__MCST__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __GNUC_MINOR__;__GNUC__;__GNUC__;__GNUG__;__LCC__;__MCST__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __GNUC_MINOR__;__ICC;__INTEL_COMPILER...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __GNUC_MINOR__;__INTEL_CLANG_COMPILER;__INTEL_LLVM_COMPILER;__clang__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __GNUC_PATCHLEVEL__;__GNUC__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __GNUC_PATCHLEVEL__;__ICC;__INTEL_COMPILER...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __GNUC_PATCHLEVEL__;__INTEL_CLANG_COMPILER;__INTEL_LLVM_COMPILER;__clang__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __GNUC__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __GNUC__;__GNUG__;__LCC__;__MCST__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __GNUC__;__GNUG__;__LCC__;__MCST__;__LCC_MINOR__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __GNUC__;__ICC;__INTEL_COMPILER...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __GNUC__;__INTEL_CLANG_COMPILER;__INTEL_LLVM_COMPILER;__clang__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __GNUC__;__STRICT_ANSI__;__TI_COMPILER_VERSION__;__clang__;__xlC__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __GNUG__;__ICC;__INTEL_COMPILER...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __GNUG__;__INTEL_CLANG_COMPILER;__INTEL_LLVM_COMPILER;__clang__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __HAIKU__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __HP_cc...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __IAR_SYSTEMS_ICC;__IAR_SYSTEMS_ICC__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __IAR_SYSTEMS_ICC;__IAR_SYSTEMS_ICC__;__ICC430__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __IAR_SYSTEMS_ICC;__IAR_SYSTEMS_ICC__;__ICC430__;__ICC8051__;__ICCAVR__;__ICCRH850__;__ICCRISCV__;__ICCRL78__;__ICCRX__;__ICCSTM8__;__ICCV850__;__VER__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __IAR_SYSTEMS_ICC;__IAR_SYSTEMS_ICC__;__ICC8051__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __IAR_SYSTEMS_ICC;__IAR_SYSTEMS_ICC__;__ICCARM__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __IAR_SYSTEMS_ICC;__IAR_SYSTEMS_ICC__;__ICCARM__;__VER__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __IAR_SYSTEMS_ICC;__IAR_SYSTEMS_ICC__;__ICCAVR__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __IAR_SYSTEMS_ICC;__IAR_SYSTEMS_ICC__;__ICCRH850__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __IAR_SYSTEMS_ICC;__IAR_SYSTEMS_ICC__;__ICCRISCV__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __IAR_SYSTEMS_ICC;__IAR_SYSTEMS_ICC__;__ICCRL78__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __IAR_SYSTEMS_ICC;__IAR_SYSTEMS_ICC__;__ICCRX__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __IAR_SYSTEMS_ICC;__IAR_SYSTEMS_ICC__;__ICCSTM8__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __IAR_SYSTEMS_ICC;__IAR_SYSTEMS_ICC__;__ICCV850__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __ICC;__INTEL_COMPILER...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __ICC;__INTEL_COMPILER;__INTEL_COMPILER_BUILD_DATE...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __ICC;__INTEL_COMPILER;__INTEL_COMPILER_UPDATE...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __INTEGRITY...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __INTEL_CLANG_COMPILER;__INTEL_LLVM_COMPILER;__clang__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __LINUX__;__WATCOMC__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __MINGW32__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __MSP430__;__TI_COMPILER_VERSION__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __MSYS__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __NVCOMPILER...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __NVCOMPILER;__NVCOMPILER_PATCHLEVEL__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __NetBSD;__NetBSD__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __OPENBSD;__OpenBSD__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __ORANGEC__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __OS2__;__WATCOMC__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __PATHCC_PATCHLEVEL__;__PATHCC__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __PATHCC__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __PGI...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __PGI;__PGIC_PATCHLEVEL__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __PPC64__;__ghs__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __QNXNTO__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __QNXNTO__;__QNX__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __SCO_VERSION__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __SINIX__;__sinix;__sinix__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __STDC_VERSION__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __STDC__;__clang__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __SUNPRO_C...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __TASKING__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __TINYC__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __TI_ARM__;__TI_COMPILER_VERSION__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __TI_COMPILER_VERSION__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __TI_COMPILER_VERSION__;__TMS320C28XX__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __TRU64__;__tru64;_tru64...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __UNIX_SV__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __VXWORKS__;__WATCOMC__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __WATCOMC__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __WATCOMC__;__WINDOWS__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __apple_build_version__;__clang__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __bsdos__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __clang__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __clang__;__cray__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __clang__;__ibmxl__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __clang__;__open_xl__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __clang__;__ti__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __ghs__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __ghs__;__i386__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __ghs__;__ppc__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __ghs__;__x86_64__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __has_include...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __hpua;__hpux...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __hpux;__hpux__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __linux;__linux__;linux...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __osf;__osf__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __riscos;__riscos__...
+Checking build/CMakeFiles/3.31.4/CompilerIdC/CMakeCCompilerId.c: __sun;sun...
+4/41 files checked 8% done
+Checking src/multiformats/cid/cid_v0.c ...
+src/multiformats/cid/cid_v0.c:1:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h>
+^
+src/multiformats/cid/cid_v0.c:3:0: information: Include file: "multiformats/cid/cid_v0.h" not found. [missingInclude]
+#include "multiformats/cid/cid_v0.h"
+^
+src/multiformats/cid/cid_v0.c:4:0: information: Include file: "multiformats/multibase/encoding/base58_btc.h" not found. [missingInclude]
+#include "multiformats/multibase/encoding/base58_btc.h"
+^
+src/multiformats/cid/cid_v0.c:5:0: information: Include file: "multiformats/multicodec/multicodec_codes.h" not found. [missingInclude]
+#include "multiformats/multicodec/multicodec_codes.h"
+^
+5/41 files checked 9% done
+Checking src/multiformats/cid/cid_v1.c ...
+src/multiformats/cid/cid_v1.c:1:0: information: Include file: <inttypes.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <inttypes.h>
+^
+src/multiformats/cid/cid_v1.c:2:0: information: Include file: <stdio.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdio.h>
+^
+src/multiformats/cid/cid_v1.c:3:0: information: Include file: <stdlib.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdlib.h>
+^
+src/multiformats/cid/cid_v1.c:4:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h>
+^
+src/multiformats/cid/cid_v1.c:6:0: information: Include file: "multiformats/cid/cid_v1.h" not found. [missingInclude]
+#include "multiformats/cid/cid_v1.h"
+^
+src/multiformats/cid/cid_v1.c:7:0: information: Include file: "multiformats/multibase/encoding/base16.h" not found. [missingInclude]
+#include "multiformats/multibase/encoding/base16.h"
+^
+src/multiformats/cid/cid_v1.c:8:0: information: Include file: "multiformats/multibase/encoding/base32.h" not found. [missingInclude]
+#include "multiformats/multibase/encoding/base32.h"
+^
+src/multiformats/cid/cid_v1.c:9:0: information: Include file: "multiformats/multibase/encoding/base58_btc.h" not found. [missingInclude]
+#include "multiformats/multibase/encoding/base58_btc.h"
+^
+src/multiformats/cid/cid_v1.c:10:0: information: Include file: "multiformats/multibase/encoding/base64.h" not found. [missingInclude]
+#include "multiformats/multibase/encoding/base64.h"
+^
+src/multiformats/cid/cid_v1.c:11:0: information: Include file: "multiformats/multibase/encoding/base64_url.h" not found. [missingInclude]
+#include "multiformats/multibase/encoding/base64_url.h"
+^
+src/multiformats/cid/cid_v1.c:12:0: information: Include file: "multiformats/multibase/encoding/base64_url_pad.h" not found. [missingInclude]
+#include "multiformats/multibase/encoding/base64_url_pad.h"
+^
+src/multiformats/cid/cid_v1.c:13:0: information: Include file: "multiformats/multibase/multibase.h" not found. [missingInclude]
+#include "multiformats/multibase/multibase.h"
+^
+src/multiformats/cid/cid_v1.c:14:0: information: Include file: "multiformats/multicodec/multicodec_codes.h" not found. [missingInclude]
+#include "multiformats/multicodec/multicodec_codes.h"
+^
+src/multiformats/cid/cid_v1.c:15:0: information: Include file: "multiformats/multicodec/multicodec_mappings.h" not found. [missingInclude]
+#include "multiformats/multicodec/multicodec_mappings.h"
+^
+src/multiformats/cid/cid_v1.c:16:0: information: Include file: "multiformats/unsigned_varint/unsigned_varint.h" not found. [missingInclude]
+#include "multiformats/unsigned_varint/unsigned_varint.h"
+^
+src/multiformats/cid/cid_v1.c:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+6/41 files checked 13% done
+Checking src/multiformats/multiaddr/multiaddr.c ...
+src/multiformats/multiaddr/multiaddr.c:1:0: information: Include file: <ctype.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <ctype.h>
+^
+src/multiformats/multiaddr/multiaddr.c:2:0: information: Include file: <errno.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <errno.h>
+^
+src/multiformats/multiaddr/multiaddr.c:3:0: information: Include file: <stdio.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdio.h>
+^
+src/multiformats/multiaddr/multiaddr.c:4:0: information: Include file: <stdlib.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdlib.h>
+^
+src/multiformats/multiaddr/multiaddr.c:5:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h>
+^
+src/multiformats/multiaddr/multiaddr.c:6:0: information: Include file: <unistd.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <unistd.h>
+^
+src/multiformats/multiaddr/multiaddr.c:8:0: information: Include file: "multiformats/multiaddr/multiaddr.h" not found. [missingInclude]
+#include "multiformats/multiaddr/multiaddr.h"
+^
+src/multiformats/multiaddr/multiaddr.c:9:0: information: Include file: "multiformats/multibase/encoding/base58_btc.h" not found. [missingInclude]
+#include "multiformats/multibase/encoding/base58_btc.h"
+^
+src/multiformats/multiaddr/multiaddr.c:10:0: information: Include file: "multiformats/multicodec/multicodec.h" not found. [missingInclude]
+#include "multiformats/multicodec/multicodec.h"
+^
+src/multiformats/multiaddr/multiaddr.c:11:0: information: Include file: "multiformats/multicodec/multicodec_codes.h" not found. [missingInclude]
+#include "multiformats/multicodec/multicodec_codes.h"
+^
+src/multiformats/multiaddr/multiaddr.c:12:0: information: Include file: "multiformats/unsigned_varint/unsigned_varint.h" not found. [missingInclude]
+#include "multiformats/unsigned_varint/unsigned_varint.h"
+^
+src/multiformats/multiaddr/multiaddr.c:13:0: information: Include file: "peer_id/peer_id.h" not found. [missingInclude]
+#include "peer_id/peer_id.h"
+^
+src/multiformats/multiaddr/multiaddr.c:18:0: information: Include file: <arpa/inet.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <arpa/inet.h> /* for inet_pton, inet_ntop */
+^
+src/multiformats/multiaddr/multiaddr.c:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+src/multiformats/multiaddr/multiaddr.c:16:0: information: Include file: <Ws2tcpip.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <Ws2tcpip.h> /* for inet_pton on Windows */
+^
+Checking src/multiformats/multiaddr/multiaddr.c: _WIN32...
+7/41 files checked 23% done
+Checking src/multiformats/multibase/encoding/base16.c ...
+src/multiformats/multibase/encoding/base16.c:1:0: information: Include file: <stddef.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stddef.h>
+^
+src/multiformats/multibase/encoding/base16.c:2:0: information: Include file: <stdint.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdint.h>
+^
+src/multiformats/multibase/encoding/base16.c:3:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h>
+^
+src/multiformats/multibase/encoding/base16.c:5:0: information: Include file: "multiformats/multibase/multibase.h" not found. [missingInclude]
+#include "multiformats/multibase/multibase.h"
+^
+src/multiformats/multibase/encoding/base16.c:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+Checking src/multiformats/multibase/encoding/base16.c: REQUIRE_STRICT_ALIGNMENT...
+Checking src/multiformats/multibase/encoding/base16.c: __BYTE_ORDER__...
+8/41 files checked 26% done
+Checking src/multiformats/multibase/encoding/base16_upper.c ...
+src/multiformats/multibase/encoding/base16_upper.c:1:0: information: Include file: <stddef.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stddef.h>
+^
+src/multiformats/multibase/encoding/base16_upper.c:2:0: information: Include file: <stdint.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdint.h>
+^
+src/multiformats/multibase/encoding/base16_upper.c:3:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h>
+^
+src/multiformats/multibase/encoding/base16_upper.c:5:0: information: Include file: "multiformats/multibase/multibase.h" not found. [missingInclude]
+#include "multiformats/multibase/multibase.h"
+^
+src/multiformats/multibase/encoding/base16_upper.c:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+Checking src/multiformats/multibase/encoding/base16_upper.c: REQUIRE_STRICT_ALIGNMENT...
+Checking src/multiformats/multibase/encoding/base16_upper.c: __BYTE_ORDER__...
+9/41 files checked 29% done
+Checking src/multiformats/multibase/encoding/base32.c ...
+src/multiformats/multibase/encoding/base32.c:1:0: information: Include file: <stddef.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stddef.h>
+^
+src/multiformats/multibase/encoding/base32.c:2:0: information: Include file: <stdint.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdint.h>
+^
+src/multiformats/multibase/encoding/base32.c:3:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h>
+^
+src/multiformats/multibase/encoding/base32.c:5:0: information: Include file: "multiformats/multibase/multibase.h" not found. [missingInclude]
+#include "multiformats/multibase/multibase.h"
+^
+src/multiformats/multibase/encoding/base32.c:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+10/41 files checked 31% done
+Checking src/multiformats/multibase/encoding/base32_upper.c ...
+src/multiformats/multibase/encoding/base32_upper.c:1:0: information: Include file: <stddef.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stddef.h>
+^
+src/multiformats/multibase/encoding/base32_upper.c:2:0: information: Include file: <stdint.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdint.h>
+^
+src/multiformats/multibase/encoding/base32_upper.c:3:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h>
+^
+src/multiformats/multibase/encoding/base32_upper.c:5:0: information: Include file: "multiformats/multibase/multibase.h" not found. [missingInclude]
+#include "multiformats/multibase/multibase.h"
+^
+src/multiformats/multibase/encoding/base32_upper.c:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+11/41 files checked 33% done
+Checking src/multiformats/multibase/encoding/base58_btc.c ...
+src/multiformats/multibase/encoding/base58_btc.c:1:0: information: Include file: <limits.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <limits.h>
+^
+src/multiformats/multibase/encoding/base58_btc.c:2:0: information: Include file: <stddef.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stddef.h>
+^
+src/multiformats/multibase/encoding/base58_btc.c:3:0: information: Include file: <stdint.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdint.h>
+^
+src/multiformats/multibase/encoding/base58_btc.c:4:0: information: Include file: <stdlib.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdlib.h>
+^
+src/multiformats/multibase/encoding/base58_btc.c:5:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h>
+^
+src/multiformats/multibase/encoding/base58_btc.c:7:0: information: Include file: "multiformats/multibase/multibase.h" not found. [missingInclude]
+#include "multiformats/multibase/multibase.h"
+^
+src/multiformats/multibase/encoding/base58_btc.c:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+12/41 files checked 35% done
+Checking src/multiformats/multibase/encoding/base64.c ...
+src/multiformats/multibase/encoding/base64.c:1:0: information: Include file: <limits.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <limits.h>
+^
+src/multiformats/multibase/encoding/base64.c:2:0: information: Include file: <stddef.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stddef.h>
+^
+src/multiformats/multibase/encoding/base64.c:3:0: information: Include file: <stdint.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdint.h>
+^
+src/multiformats/multibase/encoding/base64.c:5:0: information: Include file: "multiformats/multibase/multibase.h" not found. [missingInclude]
+#include "multiformats/multibase/multibase.h"
+^
+src/multiformats/multibase/encoding/base64.c:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+13/41 files checked 36% done
+Checking src/multiformats/multibase/encoding/base64_url.c ...
+src/multiformats/multibase/encoding/base64_url.c:1:0: information: Include file: <limits.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <limits.h>
+^
+src/multiformats/multibase/encoding/base64_url.c:2:0: information: Include file: <stddef.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stddef.h>
+^
+src/multiformats/multibase/encoding/base64_url.c:3:0: information: Include file: <stdint.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdint.h>
+^
+src/multiformats/multibase/encoding/base64_url.c:5:0: information: Include file: "multiformats/multibase/multibase.h" not found. [missingInclude]
+#include "multiformats/multibase/multibase.h"
+^
+src/multiformats/multibase/encoding/base64_url.c:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+14/41 files checked 38% done
+Checking src/multiformats/multibase/encoding/base64_url_pad.c ...
+src/multiformats/multibase/encoding/base64_url_pad.c:1:0: information: Include file: <limits.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <limits.h>
+^
+src/multiformats/multibase/encoding/base64_url_pad.c:2:0: information: Include file: <stddef.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stddef.h>
+^
+src/multiformats/multibase/encoding/base64_url_pad.c:3:0: information: Include file: <stdint.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdint.h>
+^
+src/multiformats/multibase/encoding/base64_url_pad.c:5:0: information: Include file: "multiformats/multibase/multibase.h" not found. [missingInclude]
+#include "multiformats/multibase/multibase.h"
+^
+src/multiformats/multibase/encoding/base64_url_pad.c:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+15/41 files checked 39% done
+Checking src/multiformats/multibase/multibase.c ...
+src/multiformats/multibase/multibase.c:1:0: information: Include file: <stddef.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stddef.h>
+^
+src/multiformats/multibase/multibase.c:2:0: information: Include file: <stdint.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdint.h>
+^
+src/multiformats/multibase/multibase.c:3:0: information: Include file: <stdlib.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdlib.h>
+^
+src/multiformats/multibase/multibase.c:4:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h>
+^
+src/multiformats/multibase/multibase.c:6:0: information: Include file: "multiformats/multibase/encoding/base16.h" not found. [missingInclude]
+#include "multiformats/multibase/encoding/base16.h"
+^
+src/multiformats/multibase/multibase.c:7:0: information: Include file: "multiformats/multibase/encoding/base16_upper.h" not found. [missingInclude]
+#include "multiformats/multibase/encoding/base16_upper.h"
+^
+src/multiformats/multibase/multibase.c:8:0: information: Include file: "multiformats/multibase/encoding/base32.h" not found. [missingInclude]
+#include "multiformats/multibase/encoding/base32.h"
+^
+src/multiformats/multibase/multibase.c:9:0: information: Include file: "multiformats/multibase/encoding/base32_upper.h" not found. [missingInclude]
+#include "multiformats/multibase/encoding/base32_upper.h"
+^
+src/multiformats/multibase/multibase.c:10:0: information: Include file: "multiformats/multibase/encoding/base58_btc.h" not found. [missingInclude]
+#include "multiformats/multibase/encoding/base58_btc.h"
+^
+src/multiformats/multibase/multibase.c:11:0: information: Include file: "multiformats/multibase/encoding/base64.h" not found. [missingInclude]
+#include "multiformats/multibase/encoding/base64.h"
+^
+src/multiformats/multibase/multibase.c:12:0: information: Include file: "multiformats/multibase/encoding/base64_url.h" not found. [missingInclude]
+#include "multiformats/multibase/encoding/base64_url.h"
+^
+src/multiformats/multibase/multibase.c:13:0: information: Include file: "multiformats/multibase/encoding/base64_url_pad.h" not found. [missingInclude]
+#include "multiformats/multibase/encoding/base64_url_pad.h"
+^
+src/multiformats/multibase/multibase.c:14:0: information: Include file: "multiformats/multibase/multibase.h" not found. [missingInclude]
+#include "multiformats/multibase/multibase.h"
+^
+16/41 files checked 42% done
+Checking src/multiformats/multicodec/multicodec.c ...
+src/multiformats/multicodec/multicodec.c:1:0: information: Include file: "multiformats/multicodec/multicodec.h" not found. [missingInclude]
+#include "multiformats/multicodec/multicodec.h"
+^
+src/multiformats/multicodec/multicodec.c:2:0: information: Include file: "multiformats/multicodec/multicodec_codes.h" not found. [missingInclude]
+#include "multiformats/multicodec/multicodec_codes.h"
+^
+src/multiformats/multicodec/multicodec.c:3:0: information: Include file: "multiformats/multicodec/multicodec_mappings.h" not found. [missingInclude]
+#include "multiformats/multicodec/multicodec_mappings.h"
+^
+src/multiformats/multicodec/multicodec.c:4:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h>
+^
+17/41 files checked 42% done
+Checking src/multiformats/multihash/multihash.c ...
+src/multiformats/multihash/multihash.c:1:0: information: Include file: <stdlib.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdlib.h>
+^
+src/multiformats/multihash/multihash.c:2:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h>
+^
+lib/sha3/sha3.h:33:0: information: Include file: <stddef.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stddef.h> // size_t
+^
+lib/sha3/sha3.h:34:0: information: Include file: <stdint.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdint.h> // uint8_t, uint64_t
+^
+lib/wjcryptlib/lib/WjCryptLib_Sha256.h:17:0: information: Include file: <stdint.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdint.h>
+^
+lib/wjcryptlib/lib/WjCryptLib_Sha256.h:18:0: information: Include file: <stdio.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdio.h>
+^
+lib/wjcryptlib/lib/WjCryptLib_Sha512.h:17:0: information: Include file: <stdint.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdint.h>
+^
+lib/wjcryptlib/lib/WjCryptLib_Sha512.h:18:0: information: Include file: <stdio.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdio.h>
+^
+src/multiformats/multihash/multihash.c:8:0: information: Include file: "multiformats/multicodec/multicodec.h" not found. [missingInclude]
+#include "multiformats/multicodec/multicodec.h"
+^
+src/multiformats/multihash/multihash.c:9:0: information: Include file: "multiformats/multihash/multihash.h" not found. [missingInclude]
+#include "multiformats/multihash/multihash.h"
+^
+src/multiformats/multihash/multihash.c:10:0: information: Include file: "multiformats/unsigned_varint/unsigned_varint.h" not found. [missingInclude]
+#include "multiformats/unsigned_varint/unsigned_varint.h"
+^
+src/multiformats/multihash/multihash.c:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+18/41 files checked 44% done
+Checking src/multiformats/unsigned_varint/unsigned_varint.c ...
+src/multiformats/unsigned_varint/unsigned_varint.c:1:0: information: Include file: "multiformats/unsigned_varint/unsigned_varint.h" not found. [missingInclude]
+#include "multiformats/unsigned_varint/unsigned_varint.h"
+^
+src/multiformats/unsigned_varint/unsigned_varint.c:2:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h>
+^
+src/multiformats/unsigned_varint/unsigned_varint.c:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+19/41 files checked 47% done
+Checking src/peer_id/peer_id.c ...
+src/peer_id/peer_id.c:1:0: information: Include file: <ctype.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <ctype.h>
+^
+src/peer_id/peer_id.c:2:0: information: Include file: <stdlib.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdlib.h>
+^
+src/peer_id/peer_id.c:3:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h>
+^
+src/peer_id/peer_id.c:5:0: information: Include file: "multiformats/multibase/encoding/base16.h" not found. [missingInclude]
+#include "multiformats/multibase/encoding/base16.h"
+^
+src/peer_id/peer_id.c:6:0: information: Include file: "multiformats/multibase/encoding/base16_upper.h" not found. [missingInclude]
+#include "multiformats/multibase/encoding/base16_upper.h"
+^
+src/peer_id/peer_id.c:7:0: information: Include file: "multiformats/multibase/encoding/base32.h" not found. [missingInclude]
+#include "multiformats/multibase/encoding/base32.h"
+^
+src/peer_id/peer_id.c:8:0: information: Include file: "multiformats/multibase/encoding/base32_upper.h" not found. [missingInclude]
+#include "multiformats/multibase/encoding/base32_upper.h"
+^
+src/peer_id/peer_id.c:9:0: information: Include file: "multiformats/multibase/encoding/base58_btc.h" not found. [missingInclude]
+#include "multiformats/multibase/encoding/base58_btc.h"
+^
+src/peer_id/peer_id.c:10:0: information: Include file: "multiformats/multibase/encoding/base64.h" not found. [missingInclude]
+#include "multiformats/multibase/encoding/base64.h"
+^
+src/peer_id/peer_id.c:11:0: information: Include file: "multiformats/multibase/encoding/base64_url.h" not found. [missingInclude]
+#include "multiformats/multibase/encoding/base64_url.h"
+^
+src/peer_id/peer_id.c:12:0: information: Include file: "multiformats/multibase/encoding/base64_url_pad.h" not found. [missingInclude]
+#include "multiformats/multibase/encoding/base64_url_pad.h"
+^
+src/peer_id/peer_id.c:13:0: information: Include file: "multiformats/multibase/multibase.h" not found. [missingInclude]
+#include "multiformats/multibase/multibase.h"
+^
+src/peer_id/peer_id.c:14:0: information: Include file: "multiformats/multicodec/multicodec.h" not found. [missingInclude]
+#include "multiformats/multicodec/multicodec.h"
+^
+src/peer_id/peer_id.c:15:0: information: Include file: "multiformats/multicodec/multicodec_codes.h" not found. [missingInclude]
+#include "multiformats/multicodec/multicodec_codes.h"
+^
+src/peer_id/peer_id.c:16:0: information: Include file: "multiformats/multihash/multihash.h" not found. [missingInclude]
+#include "multiformats/multihash/multihash.h"
+^
+src/peer_id/peer_id.c:17:0: information: Include file: "multiformats/unsigned_varint/unsigned_varint.h" not found. [missingInclude]
+#include "multiformats/unsigned_varint/unsigned_varint.h"
+^
+src/peer_id/peer_id.c:18:0: information: Include file: "peer_id/peer_id.h" not found. [missingInclude]
+#include "peer_id/peer_id.h"
+^
+src/peer_id/peer_id.c:19:0: information: Include file: "peer_id/peer_id_ecdsa.h" not found. [missingInclude]
+#include "peer_id/peer_id_ecdsa.h"
+^
+src/peer_id/peer_id.c:20:0: information: Include file: "peer_id/peer_id_ed25519.h" not found. [missingInclude]
+#include "peer_id/peer_id_ed25519.h"
+^
+src/peer_id/peer_id.c:21:0: information: Include file: "peer_id/peer_id_rsa.h" not found. [missingInclude]
+#include "peer_id/peer_id_rsa.h"
+^
+src/peer_id/peer_id.c:22:0: information: Include file: "peer_id/peer_id_secp256k1.h" not found. [missingInclude]
+#include "peer_id/peer_id_secp256k1.h"
+^
+src/peer_id/peer_id.c:23:0: information: Include file: "peer_id/peer_id_proto.h" not found. [missingInclude]
+#include "peer_id/peer_id_proto.h"
+^
+src/peer_id/peer_id.c:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+20/41 files checked 51% done
+Checking src/peer_id/peer_id_ecdsa.c ...
+src/peer_id/peer_id_ecdsa.c:1:0: information: Include file: <stdlib.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdlib.h>
+^
+lib/libtomcrypt/src/headers/tomcrypt.h:6:0: information: Include file: <assert.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <assert.h>
+^
+lib/libtomcrypt/src/headers/tomcrypt.h:7:0: information: Include file: <stdio.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdio.h>
+^
+lib/libtomcrypt/src/headers/tomcrypt.h:8:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h>
+^
+lib/libtomcrypt/src/headers/tomcrypt.h:9:0: information: Include file: <stdlib.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdlib.h>
+^
+lib/libtomcrypt/src/headers/tomcrypt.h:10:0: information: Include file: <stddef.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stddef.h>
+^
+lib/libtomcrypt/src/headers/tomcrypt.h:11:0: information: Include file: <time.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <time.h>
+^
+lib/libtomcrypt/src/headers/tomcrypt.h:12:0: information: Include file: <ctype.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <ctype.h>
+^
+lib/libtomcrypt/src/headers/tomcrypt.h:13:0: information: Include file: <limits.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <limits.h>
+^
+lib/libtomcrypt/src/headers/tomcrypt_pk.h:869:0: information: Include file: <wchar.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+      #include <wchar.h>
+^
+lib/libtomcrypt/src/headers/tomcrypt_argchk.h:10:0: information: Include file: <signal.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <signal.h>
+^
+src/peer_id/peer_id_ecdsa.c:4:0: information: Include file: "peer_id/peer_id.h" not found. [missingInclude]
+#include "peer_id/peer_id.h"
+^
+src/peer_id/peer_id_ecdsa.c:5:0: information: Include file: "peer_id/peer_id_proto.h" not found. [missingInclude]
+#include "peer_id/peer_id_proto.h"
+^
+Checking src/peer_id/peer_id_ecdsa.c: INTEL_CC;LTC_NO_ASM;__GNUC__;__STRICT_ANSI__;__i386__;__x86_64__...
+src/peer_id/peer_id_ecdsa.c:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+src/peer_id/peer_id_ecdsa.c:31:21: style: The if condition is the same as the previous if condition [duplicateCondition]
+    if (ltc_mp.name == NULL)
+                    ^
+src/peer_id/peer_id_ecdsa.c:19:21: note: First condition
+    if (ltc_mp.name == NULL)
+                    ^
+src/peer_id/peer_id_ecdsa.c:31:21: note: Second condition
+    if (ltc_mp.name == NULL)
+                    ^
+Checking src/peer_id/peer_id_ecdsa.c: INTEL_CC;LTC_NO_ASM;__GNUC__;__STRICT_ANSI__;__x86_64__...
+Checking src/peer_id/peer_id_ecdsa.c: LTC_PPC32;__STRICT_ANSI__...
+lib/libtomcrypt/src/headers/tomcrypt_custom.h:716:0: information: Include file: <pthread.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <pthread.h>
+^
+Checking src/peer_id/peer_id_ecdsa.c: __GNUC__;__x86_64__...
+21/41 files checked 51% done
+Checking src/peer_id/peer_id_ed25519.c ...
+src/peer_id/peer_id_ed25519.c:1:0: information: Include file: <stdlib.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdlib.h>
+^
+src/peer_id/peer_id_ed25519.c:4:0: information: Include file: "peer_id/peer_id.h" not found. [missingInclude]
+#include "peer_id/peer_id.h"
+^
+src/peer_id/peer_id_ed25519.c:5:0: information: Include file: "peer_id/peer_id_proto.h" not found. [missingInclude]
+#include "peer_id/peer_id_proto.h"
+^
+src/peer_id/peer_id_ed25519.c:6:0: information: Include file: "peer_id/peer_id_ed25519.h" not found. [missingInclude]
+#include "peer_id/peer_id_ed25519.h"
+^
+Checking src/peer_id/peer_id_ed25519.c: INTEL_CC;LTC_NO_ASM;__GNUC__;__STRICT_ANSI__;__i386__;__x86_64__...
+src/peer_id/peer_id_ed25519.c:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+src/peer_id/peer_id_ed25519.c:30:21: style: The if condition is the same as the previous if condition [duplicateCondition]
+    if (ltc_mp.name == NULL)
+                    ^
+src/peer_id/peer_id_ed25519.c:18:21: note: First condition
+    if (ltc_mp.name == NULL)
+                    ^
+src/peer_id/peer_id_ed25519.c:30:21: note: Second condition
+    if (ltc_mp.name == NULL)
+                    ^
+Checking src/peer_id/peer_id_ed25519.c: INTEL_CC;LTC_NO_ASM;__GNUC__;__STRICT_ANSI__;__x86_64__...
+Checking src/peer_id/peer_id_ed25519.c: LTC_PPC32;__STRICT_ANSI__...
+Checking src/peer_id/peer_id_ed25519.c: __GNUC__;__x86_64__...
+22/41 files checked 52% done
+Checking src/peer_id/peer_id_proto.c ...
+src/peer_id/peer_id_proto.c:1:0: information: Include file: <stdlib.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdlib.h>
+^
+src/peer_id/peer_id_proto.c:2:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h>
+^
+src/peer_id/peer_id_proto.c:4:0: information: Include file: "peer_id/peer_id_proto.h" not found. [missingInclude]
+#include "peer_id/peer_id_proto.h"
+^
+src/peer_id/peer_id_proto.c:5:0: information: Include file: "multiformats/unsigned_varint/unsigned_varint.h" not found. [missingInclude]
+#include "multiformats/unsigned_varint/unsigned_varint.h"
+^
+src/peer_id/peer_id_proto.c:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+23/41 files checked 54% done
+Checking src/peer_id/peer_id_rsa.c ...
+src/peer_id/peer_id_rsa.c:1:0: information: Include file: <stdlib.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdlib.h>
+^
+src/peer_id/peer_id_rsa.c:4:0: information: Include file: "peer_id/peer_id.h" not found. [missingInclude]
+#include "peer_id/peer_id.h"
+^
+src/peer_id/peer_id_rsa.c:5:0: information: Include file: "peer_id/peer_id_proto.h" not found. [missingInclude]
+#include "peer_id/peer_id_proto.h"
+^
+src/peer_id/peer_id_rsa.c:6:0: information: Include file: "peer_id/peer_id_rsa.h" not found. [missingInclude]
+#include "peer_id/peer_id_rsa.h"
+^
+Checking src/peer_id/peer_id_rsa.c: INTEL_CC;LTC_NO_ASM;__GNUC__;__STRICT_ANSI__;__i386__;__x86_64__...
+src/peer_id/peer_id_rsa.c:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+src/peer_id/peer_id_rsa.c:28:21: style: The if condition is the same as the previous if condition [duplicateCondition]
+    if (ltc_mp.name == NULL)
+                    ^
+src/peer_id/peer_id_rsa.c:16:21: note: First condition
+    if (ltc_mp.name == NULL)
+                    ^
+src/peer_id/peer_id_rsa.c:28:21: note: Second condition
+    if (ltc_mp.name == NULL)
+                    ^
+Checking src/peer_id/peer_id_rsa.c: INTEL_CC;LTC_NO_ASM;__GNUC__;__STRICT_ANSI__;__x86_64__...
+Checking src/peer_id/peer_id_rsa.c: LTC_PPC32;__STRICT_ANSI__...
+Checking src/peer_id/peer_id_rsa.c: __GNUC__;__x86_64__...
+24/41 files checked 54% done
+Checking src/peer_id/peer_id_secp256k1.c ...
+src/peer_id/peer_id_secp256k1.c:1:0: information: Include file: <stdlib.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdlib.h>
+^
+src/peer_id/peer_id_secp256k1.c:2:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h>
+^
+lib/secp256k1/include/secp256k1.h:8:0: information: Include file: <stddef.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stddef.h>
+^
+src/peer_id/peer_id_secp256k1.c:5:0: information: Include file: "peer_id/peer_id.h" not found. [missingInclude]
+#include "peer_id/peer_id.h"
+^
+src/peer_id/peer_id_secp256k1.c:6:0: information: Include file: "peer_id/peer_id_proto.h" not found. [missingInclude]
+#include "peer_id/peer_id_proto.h"
+^
+src/peer_id/peer_id_secp256k1.c:7:0: information: Include file: "peer_id/peer_id_secp256k1.h" not found. [missingInclude]
+#include "peer_id/peer_id_secp256k1.h"
+^
+src/peer_id/peer_id_secp256k1.c:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+Checking src/peer_id/peer_id_secp256k1.c: DLL_EXPORT;SECP256K1_DLL_EXPORT;SECP256K1_BUILD;_WIN32...
+Checking src/peer_id/peer_id_secp256k1.c: SECP256K1_BUILD;_WIN32...
+Checking src/peer_id/peer_id_secp256k1.c: SECP256K1_BUILD;__GNUC__...
+Checking src/peer_id/peer_id_secp256k1.c: SECP256K1_BUILD;__has_attribute...
+Checking src/peer_id/peer_id_secp256k1.c: SECP256K1_GNUC_PREREQ...
+Checking src/peer_id/peer_id_secp256k1.c: SECP256K1_GNUC_PREREQ;__GNUC_MINOR__;__GNUC__...
+Checking src/peer_id/peer_id_secp256k1.c: SECP256K1_STATIC;_WIN32...
+Checking src/peer_id/peer_id_secp256k1.c: _WIN32...
+Checking src/peer_id/peer_id_secp256k1.c: __GNUC__...
+25/41 files checked 55% done
+Checking tests/multiformats/cid/test_cid_v0.c ...
+tests/multiformats/cid/test_cid_v0.c:1:0: information: Include file: "multiformats/cid/cid_v0.h" not found. [missingInclude]
+#include "multiformats/cid/cid_v0.h"
+^
+tests/multiformats/cid/test_cid_v0.c:2:0: information: Include file: "multiformats/multibase/multibase.h" not found. [missingInclude]
+#include "multiformats/multibase/multibase.h"
+^
+tests/multiformats/cid/test_cid_v0.c:3:0: information: Include file: "multiformats/multicodec/multicodec_codes.h" not found. [missingInclude]
+#include "multiformats/multicodec/multicodec_codes.h"
+^
+tests/multiformats/cid/test_cid_v0.c:4:0: information: Include file: <stdint.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdint.h>
+^
+tests/multiformats/cid/test_cid_v0.c:5:0: information: Include file: <stdio.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdio.h>
+^
+tests/multiformats/cid/test_cid_v0.c:6:0: information: Include file: <stdlib.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdlib.h>
+^
+tests/multiformats/cid/test_cid_v0.c:7:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h>
+^
+tests/multiformats/cid/test_cid_v0.c:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+26/41 files checked 59% done
+Checking tests/multiformats/cid/test_cid_v1.c ...
+tests/multiformats/cid/test_cid_v1.c:1:0: information: Include file: "multiformats/cid/cid_v1.h" not found. [missingInclude]
+#include "multiformats/cid/cid_v1.h"
+^
+tests/multiformats/cid/test_cid_v1.c:2:0: information: Include file: "multiformats/multibase/multibase.h" not found. [missingInclude]
+#include "multiformats/multibase/multibase.h"
+^
+tests/multiformats/cid/test_cid_v1.c:3:0: information: Include file: "multiformats/multicodec/multicodec_codes.h" not found. [missingInclude]
+#include "multiformats/multicodec/multicodec_codes.h"
+^
+tests/multiformats/cid/test_cid_v1.c:4:0: information: Include file: <stdint.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdint.h>
+^
+tests/multiformats/cid/test_cid_v1.c:5:0: information: Include file: <stdio.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdio.h>
+^
+tests/multiformats/cid/test_cid_v1.c:6:0: information: Include file: <stdlib.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdlib.h>
+^
+tests/multiformats/cid/test_cid_v1.c:7:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h>
+^
+tests/multiformats/cid/test_cid_v1.c:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+tests/multiformats/cid/test_cid_v1.c:468:21: style: The scope of the variable 'expected_human' can be reduced. [variableScope]
+        const char *expected_human = "base32 - cidv1 - dag_pb - "
+                    ^
+tests/multiformats/cid/test_cid_v1.c:471:14: style: The scope of the variable 'human' can be reduced. [variableScope]
+        char human[256];
+             ^
+tests/multiformats/cid/test_cid_v1.c:509:14: style: The scope of the variable 'human' can be reduced. [variableScope]
+        char human[256];
+             ^
+27/41 files checked 63% done
+Checking tests/multiformats/multiaddr/test_multiaddr.c ...
+tests/multiformats/multiaddr/test_multiaddr.c:1:0: information: Include file: "multiformats/multiaddr/multiaddr.h" not found. [missingInclude]
+#include "multiformats/multiaddr/multiaddr.h"
+^
+tests/multiformats/multiaddr/test_multiaddr.c:2:0: information: Include file: "multiformats/multibase/multibase.h" not found. [missingInclude]
+#include "multiformats/multibase/multibase.h"
+^
+tests/multiformats/multiaddr/test_multiaddr.c:3:0: information: Include file: "multiformats/multicodec/multicodec_codes.h" not found. [missingInclude]
+#include "multiformats/multicodec/multicodec_codes.h"
+^
+tests/multiformats/multiaddr/test_multiaddr.c:4:0: information: Include file: <stdint.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdint.h>
+^
+tests/multiformats/multiaddr/test_multiaddr.c:5:0: information: Include file: <stdio.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdio.h>
+^
+tests/multiformats/multiaddr/test_multiaddr.c:6:0: information: Include file: <stdlib.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdlib.h>
+^
+tests/multiformats/multiaddr/test_multiaddr.c:7:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h>
+^
+tests/multiformats/multiaddr/test_multiaddr.c:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+28/41 files checked 69% done
+Checking tests/multiformats/multibase/test_base16.c ...
+tests/multiformats/multibase/test_base16.c:1:0: information: Include file: "multiformats/multibase/encoding/base16.h" not found. [missingInclude]
+#include "multiformats/multibase/encoding/base16.h"
+^
+tests/multiformats/multibase/test_base16.c:2:0: information: Include file: "multiformats/multibase/multibase.h" not found. [missingInclude]
+#include "multiformats/multibase/multibase.h"
+^
+tests/multiformats/multibase/test_base16.c:3:0: information: Include file: <stdint.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdint.h>
+^
+tests/multiformats/multibase/test_base16.c:4:0: information: Include file: <stdio.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdio.h>
+^
+tests/multiformats/multibase/test_base16.c:5:0: information: Include file: <stdlib.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdlib.h>
+^
+tests/multiformats/multibase/test_base16.c:6:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h>
+^
+tests/multiformats/multibase/test_base16.c:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+29/41 files checked 70% done
+Checking tests/multiformats/multibase/test_base16_upper.c ...
+tests/multiformats/multibase/test_base16_upper.c:1:0: information: Include file: "multiformats/multibase/encoding/base16_upper.h" not found. [missingInclude]
+#include "multiformats/multibase/encoding/base16_upper.h"
+^
+tests/multiformats/multibase/test_base16_upper.c:2:0: information: Include file: "multiformats/multibase/multibase.h" not found. [missingInclude]
+#include "multiformats/multibase/multibase.h"
+^
+tests/multiformats/multibase/test_base16_upper.c:3:0: information: Include file: <stdint.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdint.h>
+^
+tests/multiformats/multibase/test_base16_upper.c:4:0: information: Include file: <stdio.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdio.h>
+^
+tests/multiformats/multibase/test_base16_upper.c:5:0: information: Include file: <stdlib.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdlib.h>
+^
+tests/multiformats/multibase/test_base16_upper.c:6:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h>
+^
+tests/multiformats/multibase/test_base16_upper.c:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+30/41 files checked 71% done
+Checking tests/multiformats/multibase/test_base32.c ...
+tests/multiformats/multibase/test_base32.c:1:0: information: Include file: "multiformats/multibase/encoding/base32.h" not found. [missingInclude]
+#include "multiformats/multibase/encoding/base32.h"
+^
+tests/multiformats/multibase/test_base32.c:2:0: information: Include file: "multiformats/multibase/multibase.h" not found. [missingInclude]
+#include "multiformats/multibase/multibase.h"
+^
+tests/multiformats/multibase/test_base32.c:3:0: information: Include file: <stdint.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdint.h>
+^
+tests/multiformats/multibase/test_base32.c:4:0: information: Include file: <stdio.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdio.h>
+^
+tests/multiformats/multibase/test_base32.c:5:0: information: Include file: <stdlib.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdlib.h>
+^
+tests/multiformats/multibase/test_base32.c:6:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h>
+^
+tests/multiformats/multibase/test_base32.c:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+31/41 files checked 72% done
+Checking tests/multiformats/multibase/test_base32_upper.c ...
+tests/multiformats/multibase/test_base32_upper.c:1:0: information: Include file: "multiformats/multibase/encoding/base32_upper.h" not found. [missingInclude]
+#include "multiformats/multibase/encoding/base32_upper.h"
+^
+tests/multiformats/multibase/test_base32_upper.c:2:0: information: Include file: "multiformats/multibase/multibase.h" not found. [missingInclude]
+#include "multiformats/multibase/multibase.h"
+^
+tests/multiformats/multibase/test_base32_upper.c:3:0: information: Include file: <stdint.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdint.h>
+^
+tests/multiformats/multibase/test_base32_upper.c:4:0: information: Include file: <stdio.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdio.h>
+^
+tests/multiformats/multibase/test_base32_upper.c:5:0: information: Include file: <stdlib.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdlib.h>
+^
+tests/multiformats/multibase/test_base32_upper.c:6:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h>
+^
+tests/multiformats/multibase/test_base32_upper.c:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+32/41 files checked 73% done
+Checking tests/multiformats/multibase/test_base58_btc.c ...
+tests/multiformats/multibase/test_base58_btc.c:1:0: information: Include file: "multiformats/multibase/encoding/base58_btc.h" not found. [missingInclude]
+#include "multiformats/multibase/encoding/base58_btc.h"
+^
+tests/multiformats/multibase/test_base58_btc.c:2:0: information: Include file: "multiformats/multibase/multibase.h" not found. [missingInclude]
+#include "multiformats/multibase/multibase.h"
+^
+tests/multiformats/multibase/test_base58_btc.c:3:0: information: Include file: <stdint.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdint.h>
+^
+tests/multiformats/multibase/test_base58_btc.c:4:0: information: Include file: <stdio.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdio.h>
+^
+tests/multiformats/multibase/test_base58_btc.c:5:0: information: Include file: <stdlib.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdlib.h>
+^
+tests/multiformats/multibase/test_base58_btc.c:6:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h>
+^
+tests/multiformats/multibase/test_base58_btc.c:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+33/41 files checked 74% done
+Checking tests/multiformats/multibase/test_base64.c ...
+tests/multiformats/multibase/test_base64.c:1:0: information: Include file: "multiformats/multibase/encoding/base64.h" not found. [missingInclude]
+#include "multiformats/multibase/encoding/base64.h"
+^
+tests/multiformats/multibase/test_base64.c:2:0: information: Include file: "multiformats/multibase/multibase.h" not found. [missingInclude]
+#include "multiformats/multibase/multibase.h"
+^
+tests/multiformats/multibase/test_base64.c:3:0: information: Include file: <stdint.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdint.h>
+^
+tests/multiformats/multibase/test_base64.c:4:0: information: Include file: <stdio.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdio.h>
+^
+tests/multiformats/multibase/test_base64.c:5:0: information: Include file: <stdlib.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdlib.h>
+^
+tests/multiformats/multibase/test_base64.c:6:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h>
+^
+tests/multiformats/multibase/test_base64.c:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+34/41 files checked 75% done
+Checking tests/multiformats/multibase/test_base64_url.c ...
+tests/multiformats/multibase/test_base64_url.c:1:0: information: Include file: "multiformats/multibase/encoding/base64_url.h" not found. [missingInclude]
+#include "multiformats/multibase/encoding/base64_url.h"
+^
+tests/multiformats/multibase/test_base64_url.c:2:0: information: Include file: "multiformats/multibase/multibase.h" not found. [missingInclude]
+#include "multiformats/multibase/multibase.h"
+^
+tests/multiformats/multibase/test_base64_url.c:3:0: information: Include file: <stdint.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdint.h>
+^
+tests/multiformats/multibase/test_base64_url.c:4:0: information: Include file: <stdio.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdio.h>
+^
+tests/multiformats/multibase/test_base64_url.c:5:0: information: Include file: <stdlib.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdlib.h>
+^
+tests/multiformats/multibase/test_base64_url.c:6:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h>
+^
+tests/multiformats/multibase/test_base64_url.c:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+35/41 files checked 76% done
+Checking tests/multiformats/multibase/test_base64_url_pad.c ...
+tests/multiformats/multibase/test_base64_url_pad.c:1:0: information: Include file: "multiformats/multibase/encoding/base64_url_pad.h" not found. [missingInclude]
+#include "multiformats/multibase/encoding/base64_url_pad.h"
+^
+tests/multiformats/multibase/test_base64_url_pad.c:2:0: information: Include file: "multiformats/multibase/multibase.h" not found. [missingInclude]
+#include "multiformats/multibase/multibase.h"
+^
+tests/multiformats/multibase/test_base64_url_pad.c:3:0: information: Include file: <stdint.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdint.h>
+^
+tests/multiformats/multibase/test_base64_url_pad.c:4:0: information: Include file: <stdio.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdio.h>
+^
+tests/multiformats/multibase/test_base64_url_pad.c:5:0: information: Include file: <stdlib.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdlib.h>
+^
+tests/multiformats/multibase/test_base64_url_pad.c:6:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h>
+^
+tests/multiformats/multibase/test_base64_url_pad.c:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+36/41 files checked 77% done
+Checking tests/multiformats/multibase/test_multibase.c ...
+tests/multiformats/multibase/test_multibase.c:1:0: information: Include file: <stdio.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdio.h>
+^
+tests/multiformats/multibase/test_multibase.c:2:0: information: Include file: <stdlib.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdlib.h>
+^
+tests/multiformats/multibase/test_multibase.c:3:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h>
+^
+tests/multiformats/multibase/test_multibase.c:4:0: information: Include file: <stdint.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdint.h>
+^
+tests/multiformats/multibase/test_multibase.c:5:0: information: Include file: "multiformats/multibase/multibase.h" not found. [missingInclude]
+#include "multiformats/multibase/multibase.h"
+^
+tests/multiformats/multibase/test_multibase.c:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+37/41 files checked 79% done
+Checking tests/multiformats/multicodec/test_multicodec.c ...
+tests/multiformats/multicodec/test_multicodec.c:1:0: information: Include file: "multiformats/multicodec/multicodec.h" not found. [missingInclude]
+#include "multiformats/multicodec/multicodec.h"
+^
+tests/multiformats/multicodec/test_multicodec.c:2:0: information: Include file: "multiformats/multicodec/multicodec_mappings.h" not found. [missingInclude]
+#include "multiformats/multicodec/multicodec_mappings.h"
+^
+tests/multiformats/multicodec/test_multicodec.c:3:0: information: Include file: <stdint.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdint.h>
+^
+tests/multiformats/multicodec/test_multicodec.c:4:0: information: Include file: <stdio.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdio.h>
+^
+tests/multiformats/multicodec/test_multicodec.c:5:0: information: Include file: <stdlib.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdlib.h>
+^
+tests/multiformats/multicodec/test_multicodec.c:6:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h>
+^
+38/41 files checked 79% done
+Checking tests/multiformats/multihash/test_multihash.c ...
+tests/multiformats/multihash/test_multihash.c:1:0: information: Include file: <stdio.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdio.h>
+^
+tests/multiformats/multihash/test_multihash.c:2:0: information: Include file: <stdlib.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdlib.h>
+^
+tests/multiformats/multihash/test_multihash.c:3:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h>
+^
+tests/multiformats/multihash/test_multihash.c:4:0: information: Include file: <stdint.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdint.h>
+^
+tests/multiformats/multihash/test_multihash.c:5:0: information: Include file: "multiformats/multihash/multihash.h" not found. [missingInclude]
+#include "multiformats/multihash/multihash.h"
+^
+tests/multiformats/multihash/test_multihash.c:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+tests/multiformats/multihash/test_multihash.c:55:17: style: struct member 'test_vector::expected_sha1' is never used. [unusedStructMember]
+    const char *expected_sha1;     // Expected multihash in hex for SHA1.
+                ^
+39/41 files checked 88% done
+Checking tests/multiformats/unsigned_varint/test_unsigned_varint.c ...
+tests/multiformats/unsigned_varint/test_unsigned_varint.c:1:0: information: Include file: "multiformats/unsigned_varint/unsigned_varint.h" not found. [missingInclude]
+#include "multiformats/unsigned_varint/unsigned_varint.h"
+^
+tests/multiformats/unsigned_varint/test_unsigned_varint.c:2:0: information: Include file: <stdint.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdint.h>
+^
+tests/multiformats/unsigned_varint/test_unsigned_varint.c:3:0: information: Include file: <stdio.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdio.h>
+^
+tests/multiformats/unsigned_varint/test_unsigned_varint.c:4:0: information: Include file: <stdlib.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdlib.h>
+^
+tests/multiformats/unsigned_varint/test_unsigned_varint.c:5:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h>
+^
+tests/multiformats/unsigned_varint/test_unsigned_varint.c:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+tests/multiformats/unsigned_varint/test_unsigned_varint.c:364:17: style: Variable 'empty' can be declared as const array [constVariable]
+        uint8_t empty[1] = {};
+                ^
+Checking tests/multiformats/unsigned_varint/test_unsigned_varint.c: _MSC_VER...
+40/41 files checked 91% done
+Checking tests/peer_id/test_peer_id.c ...
+tests/peer_id/test_peer_id.c:1:0: information: Include file: <ctype.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <ctype.h>
+^
+tests/peer_id/test_peer_id.c:2:0: information: Include file: <stdio.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdio.h>
+^
+tests/peer_id/test_peer_id.c:3:0: information: Include file: <stdlib.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdlib.h>
+^
+tests/peer_id/test_peer_id.c:4:0: information: Include file: <string.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <string.h>
+^
+tests/peer_id/test_peer_id.c:5:0: information: Include file: <stdint.h> not found. Please note: Cppcheck does not need standard library headers to get proper results. [missingIncludeSystem]
+#include <stdint.h>
+^
+tests/peer_id/test_peer_id.c:7:0: information: Include file: "peer_id/peer_id.h" not found. [missingInclude]
+#include "peer_id/peer_id.h"
+^
+tests/peer_id/test_peer_id.c:8:0: information: Include file: "peer_id/peer_id_secp256k1.h" not found. [missingInclude]
+#include "peer_id/peer_id_secp256k1.h"
+^
+tests/peer_id/test_peer_id.c:9:0: information: Include file: "peer_id/peer_id_ed25519.h" not found. [missingInclude]
+#include "peer_id/peer_id_ed25519.h"
+^
+tests/peer_id/test_peer_id.c:10:0: information: Include file: "peer_id/peer_id_ecdsa.h" not found. [missingInclude]
+#include "peer_id/peer_id_ecdsa.h"
+^
+tests/peer_id/test_peer_id.c:11:0: information: Include file: "peer_id/peer_id_rsa.h" not found. [missingInclude]
+#include "peer_id/peer_id_rsa.h"
+^
+tests/peer_id/test_peer_id.c:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+tests/peer_id/test_peer_id.c:366:13: style: Variable 'err' is reassigned a value before the old one has been used. [redundantAssignment]
+        err = peer_id_create_from_public_key(pubkey, pubkey_len, &pid2);
+            ^
+tests/peer_id/test_peer_id.c:365:13: note: err is assigned
+        err = peer_id_create_from_public_key(pubkey, pubkey_len, &pid1);
+            ^
+tests/peer_id/test_peer_id.c:366:13: note: err is overwritten
+        err = peer_id_create_from_public_key(pubkey, pubkey_len, &pid2);
+            ^
+tests/peer_id/test_peer_id.c:409:13: style: Variable 'err' is reassigned a value before the old one has been used. [redundantAssignment]
+        err = peer_id_create_from_public_key(pubkey, pubkey_len, &pid);
+            ^
+tests/peer_id/test_peer_id.c:366:13: note: err is assigned
+        err = peer_id_create_from_public_key(pubkey, pubkey_len, &pid2);
+            ^
+tests/peer_id/test_peer_id.c:409:13: note: err is overwritten
+        err = peer_id_create_from_public_key(pubkey, pubkey_len, &pid);
+            ^
+tests/peer_id/test_peer_id.c:435:13: style: Variable 'err' is reassigned a value before the old one has been used. [redundantAssignment]
+        err = peer_id_create_from_public_key(ed_pubkey, pubkey_len, &pid_ed_pub);
+            ^
+tests/peer_id/test_peer_id.c:409:13: note: err is assigned
+        err = peer_id_create_from_public_key(pubkey, pubkey_len, &pid);
+            ^
+tests/peer_id/test_peer_id.c:435:13: note: err is overwritten
+        err = peer_id_create_from_public_key(ed_pubkey, pubkey_len, &pid_ed_pub);
+            ^
+tests/peer_id/test_peer_id.c:44:14: style: Variable 'byte_str' can be declared as const array [constVariable]
+        char byte_str[3] = { hex[i * 2], hex[i * 2 + 1], '\0' };
+             ^
+41/41 files checked 100% done
+lib/libtomcrypt/src/headers/tomcrypt_macros.h:264:0: style: The function 'ROL' is never used. [unusedFunction]
+static inline ulong32 ROL(ulong32 word, int i)
+^
+lib/libtomcrypt/src/headers/tomcrypt_macros.h:272:0: style: The function 'ROR' is never used. [unusedFunction]
+static inline ulong32 ROR(ulong32 word, int i)
+^
+lib/libtomcrypt/src/headers/tomcrypt_macros.h:382:0: style: The function 'ROL64' is never used. [unusedFunction]
+static inline ulong64 ROL64(ulong64 word, int i)
+^
+lib/libtomcrypt/src/headers/tomcrypt_macros.h:390:0: style: The function 'ROR64' is never used. [unusedFunction]
+static inline ulong64 ROR64(ulong64 word, int i)
+^
+nofile:0:0: information: Active checkers: There was critical errors (use --checkers-report=<filename> to see details) [checkersReport]
+

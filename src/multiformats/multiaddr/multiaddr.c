@@ -548,7 +548,7 @@ multiaddr_t *multiaddr_new_from_str(const char *str, int *err)
             break;
         }
 
-        char *addr_candidate = NULL;
+        const char *addr_candidate = NULL;
         if (alen != 0)
         {
             addr_candidate = strtok_r(NULL, "/", &saveptr);
@@ -561,14 +561,7 @@ multiaddr_t *multiaddr_new_from_str(const char *str, int *err)
             break;
         }
 
-        if (alen == 0)
-        {
-            token = strtok_r(NULL, "/", &saveptr);
-        }
-        else
-        {
-            token = strtok_r(NULL, "/", &saveptr);
-        }
+        token = strtok_r(NULL, "/", &saveptr);
     }
 
     free(temp);
@@ -1422,7 +1415,7 @@ static int parse_multiaddr_components(const multiaddr_t *m, ma_component_t **out
  * @return Pointer to the newly constructed multiaddr_t structure, or NULL on
  * failure.
  */
-static multiaddr_t *build_multiaddr_from_components(ma_component_t *list, size_t count, int *err)
+static multiaddr_t *build_multiaddr_from_components(const ma_component_t *list, size_t count, int *err)
 {
     ma_buf_t buf;
     ma_buf_init(&buf);
@@ -1596,10 +1589,7 @@ multiaddr_t *multiaddr_decapsulate(const multiaddr_t *addr, const multiaddr_t *s
     free(slist);
     if (!res && (err && *err == MULTIADDR_SUCCESS))
     {
-        if (err)
-        {
-            *err = MULTIADDR_ERR_ALLOC_FAILURE;
-        }
+        *err = MULTIADDR_ERR_ALLOC_FAILURE;
     }
     return res;
 }

@@ -10,8 +10,6 @@ static const char base32_alphabet[32] = "abcdefghijklmnopqrstuvwxyz234567";
 /**
  * @brief Encode data into a Base32 format using lowercase letters.
  *
- * This version is agnostic of Multibase prefixing.
- *
  * @param data The input data to be encoded.
  * @param data_len The length of the input data.
  * @param out The buffer to store the Base32 encoded string.
@@ -23,7 +21,7 @@ static const char base32_alphabet[32] = "abcdefghijklmnopqrstuvwxyz234567";
 int multibase_base32_encode(const uint8_t *data, size_t data_len, char *out, size_t out_len)
 {
     size_t full_blocks, rem;
-    size_t i, j;
+    size_t i;
     size_t pos = 0;
 
     if (!data || !out)
@@ -44,7 +42,6 @@ int multibase_base32_encode(const uint8_t *data, size_t data_len, char *out, siz
     full_blocks = data_len / 5;
     rem = data_len % 5;
 
-    /* Defensive check: Ensure that multiplying full_blocks by 8 doesn't overflow */
     if (full_blocks > SIZE_MAX / 8)
     {
         return MULTIBASE_ERR_OVERFLOW;
@@ -70,14 +67,14 @@ int multibase_base32_encode(const uint8_t *data, size_t data_len, char *out, siz
         {
             extra = 7;
         }
-        /* Check that adding the extra characters will not overflow */
+
         if (out_chars > SIZE_MAX - extra)
         {
             return MULTIBASE_ERR_OVERFLOW;
         }
         out_chars += extra;
     }
-    /* Make sure we can also write the null terminator */
+    
     if (out_len < out_chars + 1)
     {
         return MULTIBASE_ERR_BUFFER_TOO_SMALL;
@@ -108,7 +105,7 @@ int multibase_base32_encode(const uint8_t *data, size_t data_len, char *out, siz
     if (rem)
     {
         uint8_t tail[5] = {0, 0, 0, 0, 0};
-        for (j = 0; j < rem; j++)
+        for (size_t j = 0; j < rem; j++)
         {
             tail[j] = data[full_blocks * 5 + j];
         }
@@ -156,7 +153,7 @@ int multibase_base32_encode(const uint8_t *data, size_t data_len, char *out, siz
             valid_chars = 7;
         }
 
-        for (j = 0; j < valid_chars; j++)
+        for (size_t j = 0; j < valid_chars; j++)
         {
             out[pos++] = base32_alphabet[indices[j]];
         }
@@ -209,7 +206,6 @@ int multibase_base32_decode(const char *in, size_t data_len, uint8_t *out, size_
     size_t full_blocks = data_len / 8;
     size_t rem = data_len % 8;
 
-    /* Defensive check: Ensure that multiplying full_blocks by 5 doesn't overflow */
     if (full_blocks > SIZE_MAX / 5)
     {
         return MULTIBASE_ERR_OVERFLOW;

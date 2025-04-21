@@ -131,11 +131,11 @@ int multibase_base64_url_pad_decode(const char *in, size_t data_len, uint8_t *ou
     }
 
     size_t pad_count = 0;
-    if (data_len >= 1 && in[data_len - 1] == '=')
+    if (in[data_len - 1] == '=')
     {
         pad_count++;
     }
-    if (data_len >= 2 && in[data_len - 2] == '=')
+    if (in[data_len - 2] == '=')
     {
         pad_count++;
     }

@@ -5,16 +5,6 @@
 #include "peer_id/peer_id_proto.h"
 #include "peer_id/peer_id_rsa.h"
 
-#if defined(LTM_DESC)
-extern const ltc_math_descriptor ltm_desc;
-#endif
-#if defined(TFM_DESC)
-extern const ltc_math_descriptor tfm_desc;
-#endif
-#if defined(GMP_DESC)
-extern const ltc_math_descriptor gmp_desc;
-#endif
-
 peer_id_error_t peer_id_create_from_private_key_rsa(const uint8_t *key_data, size_t key_data_len,
                                                     uint8_t **pubkey_buf, size_t *pubkey_len)
 {
@@ -34,11 +24,10 @@ peer_id_error_t peer_id_create_from_private_key_rsa(const uint8_t *key_data, siz
 #else
         return PEER_ID_E_CRYPTO_FAILED;
 #endif
-
-        if (ltc_mp.name == NULL)
-        {
-            return PEER_ID_E_CRYPTO_FAILED;
-        }
+    }
+    if (ltc_mp.name == NULL)
+    {
+        return PEER_ID_E_CRYPTO_FAILED;
     }
 
     rsa_key key;

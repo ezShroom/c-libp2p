@@ -1,12 +1,13 @@
-#define _POSIX_C_SOURCE 200809L
-
+#include <inttypes.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
-#include <inttypes.h>
-#include <time.h>
 #include <string.h>
+#include <time.h>
+
 #include "multiformats/unsigned_varint/unsigned_varint.h"
+
+#define _POSIX_C_SOURCE 200809L
 
 /*
  * Benchmark 10e6 (1e7) iterations to match the JavaScript code.
@@ -18,10 +19,7 @@
 #define M 10
 #define MAX_VALUE 0x01fffffffffffffULL
 
-static double timespec_to_ms(const struct timespec *ts)
-{
-    return (double)ts->tv_sec * 1000.0 + (double)ts->tv_nsec / 1000000.0;
-}
+static double timespec_to_ms(const struct timespec *ts) { return (double)ts->tv_sec * 1000.0 + (double)ts->tv_nsec / 1000000.0; }
 
 int main(void)
 {
@@ -72,8 +70,7 @@ int main(void)
             }
             if (out != value)
             {
-                fprintf(stderr, "Decode was incorrect: expected=%" PRIu64 ", got=%" PRIu64 "\n",
-                        value, out);
+                fprintf(stderr, "Decode was incorrect: expected=%" PRIu64 ", got=%" PRIu64 "\n", value, out);
                 return 1;
             }
         }

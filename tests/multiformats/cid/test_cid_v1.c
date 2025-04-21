@@ -39,13 +39,10 @@ int main(void)
     char test_name[128];
 
     cid_v1_test_vector tests[] = {
-        {"Incremental bytes", {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15,
-                               16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31}},
-        {"All zeros", {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
-        {"All 0xFF", {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                      0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                      0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}}};
+        {"Incremental bytes", {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31}},
+        {"All zeros", {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+        {"All 0xFF", {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+                      0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}}};
     size_t num_tests = sizeof(tests) / sizeof(tests[0]);
     for (size_t i = 0; i < num_tests; i++)
     {
@@ -116,8 +113,7 @@ int main(void)
             print_standard(test_name, details, 0);
             failures++;
         }
-        else if (cid_from_bytes.version != 1 || cid_from_bytes.codec != MULTICODEC_RAW ||
-                 cid_from_bytes.multihash_size != CIDV1_MULTIHASH_SIZE ||
+        else if (cid_from_bytes.version != 1 || cid_from_bytes.codec != MULTICODEC_RAW || cid_from_bytes.multihash_size != CIDV1_MULTIHASH_SIZE ||
                  memcmp(cid_from_bytes.multihash, mh, CIDV1_MULTIHASH_SIZE) != 0)
         {
             char details[256];
@@ -161,13 +157,11 @@ int main(void)
             print_standard(test_name, details, 0);
             failures++;
         }
-        else if (cid_from_str.version != 1 || cid_from_str.codec != MULTICODEC_RAW ||
-                 cid_from_str.multihash_size != CIDV1_MULTIHASH_SIZE ||
+        else if (cid_from_str.version != 1 || cid_from_str.codec != MULTICODEC_RAW || cid_from_str.multihash_size != CIDV1_MULTIHASH_SIZE ||
                  memcmp(cid_from_str.multihash, mh, CIDV1_MULTIHASH_SIZE) != 0)
         {
             char details[256];
-            sprintf(details, "Decoded CID from string does not match original for %s",
-                    tests[i].description);
+            sprintf(details, "Decoded CID from string does not match original for %s", tests[i].description);
             print_standard(test_name, details, 0);
             failures++;
         }
@@ -191,8 +185,7 @@ int main(void)
             else if (strstr(human, "cidv1") == NULL)
             {
                 char details[256];
-                sprintf(details, "Human-readable CID does not contain 'cidv1' for %s",
-                        tests[i].description);
+                sprintf(details, "Human-readable CID does not contain 'cidv1' for %s", tests[i].description);
                 print_standard(test_name, details, 0);
                 failures++;
             }
@@ -472,9 +465,8 @@ int main(void)
     }
     {
         const char *cid_str = "bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi";
-        const char *expected_human =
-            "base32 - cidv1 - dag_pb - "
-            "sha2_256-c3c4733ec8affd06cf9e9ff50ffc6bcd2ec85a6170004bb709669c31de94391a";
+        const char *expected_human = "base32 - cidv1 - dag_pb - "
+                                     "sha2_256-c3c4733ec8affd06cf9e9ff50ffc6bcd2ec85a6170004bb709669c31de94391a";
         cid_v1_t cid;
         char human[256];
 
@@ -513,9 +505,6 @@ int main(void)
     }
     {
         const char *cid_str = "zb2rhe5P4gXftAwvA4eXQ5HJwsER2owDyS9sKaQRRVQPn93bA";
-        const char *expected_human =
-            "base58btc - cidv1 - raw - "
-            "sha2_256-6e6ff7950a36187a801613426e858dce686cd7d7e3c0fc42ee0330072d245c95";
         cid_v1_t cid;
         char human[256];
 
@@ -530,6 +519,8 @@ int main(void)
         }
         else
         {
+            const char *expected_human = "base58btc - cidv1 - raw - "
+                                         "sha2_256-6e6ff7950a36187a801613426e858dce686cd7d7e3c0fc42ee0330072d245c95";
             ret = cid_v1_to_human(&cid, MULTIBASE_BASE58_BTC, human, sizeof(human));
             if (ret < 0)
             {

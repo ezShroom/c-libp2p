@@ -462,7 +462,8 @@ static int test_get_address_bytes(void)
         return 1;
     }
     uint8_t buf[32];
-    size_t buf_len = sizeof(buf);
+    size_t buf_len;  // Removed the redundant initialization.
+
     buf_len = 2;
     int ret = multiaddr_get_address_bytes(ma, 0, buf, &buf_len);
     if (ret != MULTIADDR_ERR_BUFFER_TOO_SMALL || buf_len != 4)
@@ -475,6 +476,7 @@ static int test_get_address_bytes(void)
     {
         print_standard("multiaddr_get_address_bytes small buffer", "", 1);
     }
+
     buf_len = 4;
     ret = multiaddr_get_address_bytes(ma, 0, buf, &buf_len);
     if (ret != 0)
@@ -485,7 +487,7 @@ static int test_get_address_bytes(void)
     }
     else
     {
-        uint8_t expected[4] = {127, 0, 0, 1};
+        const uint8_t expected[4] = {127, 0, 0, 1};
         if (memcmp(buf, expected, 4) != 0)
         {
             print_standard("multiaddr_get_address_bytes index 0",
@@ -510,6 +512,7 @@ static int test_get_address_bytes(void)
     {
         print_standard("multiaddr_get_address_bytes small buffer index 1", "", 1);
     }
+
     buf_len = 2;
     ret = multiaddr_get_address_bytes(ma, 1, buf, &buf_len);
     if (ret != 0)
@@ -520,7 +523,7 @@ static int test_get_address_bytes(void)
     }
     else
     {
-        uint8_t expected[2] = {0, 80};
+        const uint8_t expected[2] = {0, 80};
         if (memcmp(buf, expected, 2) != 0)
         {
             print_standard("multiaddr_get_address_bytes index 1",

@@ -1,9 +1,10 @@
-#include "multiformats/multibase/encoding/base16_upper.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+
+#include "multiformats/multibase/encoding/base16_upper.h"
 
 #define _POSIX_C_SOURCE 200809L
 
@@ -40,8 +41,7 @@ int main(void)
 
     for (size_t i = 0; i < N; i++)
     {
-        int ret_encode =
-            multibase_base16_upper_encode(input_data, data_len, encoded, encoded_buffer_size);
+        int ret_encode = multibase_base16_upper_encode(input_data, data_len, encoded, encoded_buffer_size);
         if (ret_encode < 0)
         {
             fprintf(stderr, "Encoding error on iteration %zu: %d\n", i, ret_encode);
@@ -68,7 +68,7 @@ int main(void)
     double ops_per_ms = (N * 2) / elapsed_ms;
 
     printf("=== Benchmark Results for base16_upper ===\n");
-    printf("Total iterations        : %lu\n", N);
+    printf("Total iterations        : %zu\n", N);
     printf("Elapsed time (ms)       : %.2f\n", elapsed_ms);
     printf("Ops (encode+decode) per ms: %.2f\n", ops_per_ms);
 

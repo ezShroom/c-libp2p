@@ -7,10 +7,21 @@
 /* The upper-case Base32 alphabet (RFC 4648, Table 3) */
 static const char base32_upper_alphabet[32] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 
+/**
+ * @brief Encode data into a Base32 format using uppercase letters.
+ *
+ * @param data The input data to be encoded.
+ * @param data_len The length of the input data.
+ * @param out The buffer to store the Base32 encoded string.
+ * @param out_len The size of the output buffer.
+ * @return The number of characters written to the output buffer (excluding the
+ * null terminator), or an error code indicating a null pointer or insufficient
+ * buffer size.
+ */
 int multibase_base32_upper_encode(const uint8_t *data, size_t data_len, char *out, size_t out_len)
 {
     size_t full_blocks, rem;
-    size_t i, j;
+    size_t i;
     size_t pos = 0;
 
     if (!data || !out)
@@ -93,7 +104,7 @@ int multibase_base32_upper_encode(const uint8_t *data, size_t data_len, char *ou
     if (rem)
     {
         uint8_t tail[5] = {0, 0, 0, 0, 0};
-        for (j = 0; j < rem; j++)
+        for (size_t j = 0; j < rem; j++)
         {
             tail[j] = data[full_blocks * 5 + j];
         }
@@ -141,7 +152,7 @@ int multibase_base32_upper_encode(const uint8_t *data, size_t data_len, char *ou
             valid_chars = 7;
         }
 
-        for (j = 0; j < valid_chars; j++)
+        for (size_t j = 0; j < valid_chars; j++)
         {
             out[pos++] = base32_upper_alphabet[indices[j]];
         }
