@@ -1,5 +1,6 @@
-#include "multiformats/unsigned_varint/unsigned_varint.h"
 #include <string.h>
+
+#include "multiformats/unsigned_varint/unsigned_varint.h"
 
 /**
  * @brief Calculate the number of bytes required to encode a 64-bit unsigned integer as a varint.

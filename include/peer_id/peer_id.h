@@ -37,6 +37,7 @@ typedef enum peer_id_error
     PEER_ID_SUCCESS = 0,        /**< Operation completed successfully. */
     PEER_ID_E_NULL_PTR,         /**< A null pointer was passed where it is not allowed. */
     PEER_ID_E_INVALID_PROTOBUF, /**< Could not parse or handle the given protobuf data. */
+    PEER_ID_E_INVALID_RANGE,     /**< Value outside allowed range / overflow risk */
     PEER_ID_E_UNSUPPORTED_KEY,  /**< Unsupported key type in the protobuf. */
     PEER_ID_E_CRYPTO_FAILED,    /**< Underlying crypto library failed. */
     PEER_ID_E_ENCODING_FAILED,  /**< Could not encode or decode. */

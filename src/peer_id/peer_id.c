@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -18,16 +19,25 @@
 #include "peer_id/peer_id.h"
 #include "peer_id/peer_id_ecdsa.h"
 #include "peer_id/peer_id_ed25519.h"
+#include "peer_id/peer_id_proto.h"
 #include "peer_id/peer_id_rsa.h"
 #include "peer_id/peer_id_secp256k1.h"
-#include "peer_id/peer_id_proto.h"
 
-// Constants
-#define PEER_ID_IDENTITY_HASH_MAX_SIZE 42 // Maximum size for using identity multihash
+/* Constants */
+#define PEER_ID_IDENTITY_HASH_MAX_SIZE 42
+#define PEER_ID_MAX_PUBKEY_LEN (64 * 1024)
 
-// Helper function to extract just the digest length from a multihash without fully decoding it
-static int extract_multihash_digest_length(const uint8_t *mh_buf, size_t mh_size,
-                                           size_t *digest_len)
+/**
+ * @brief Extract the length of the multihash digest from a buffer.
+ *
+ * This function decodes the multihash buffer to determine the length of the digest.
+ *
+ * @param mh_buf The buffer containing the multihash data.
+ * @param mh_size The size of the multihash buffer.
+ * @param digest_len Pointer to store the extracted digest length.
+ * @return 0 on success, -1 on failure (e.g., invalid buffer or decoding error).
+ */
+static int extract_multihash_digest_length(const uint8_t *mh_buf, size_t mh_size, size_t *digest_len)
 {
     if (!mh_buf || !digest_len)
     {
@@ -35,31 +45,26 @@ static int extract_multihash_digest_length(const uint8_t *mh_buf, size_t mh_size
     }
 
     if (mh_size < 2)
-    { // Need at least hash function code and digest length
+    {
         return -1;
     }
 
-    // Decode the hash function code varint
     uint64_t hash_func_code;
     size_t hash_code_size;
-    unsigned_varint_err_t err =
-        unsigned_varint_decode(mh_buf, mh_size, &hash_func_code, &hash_code_size);
+    unsigned_varint_err_t err = unsigned_varint_decode(mh_buf, mh_size, &hash_func_code, &hash_code_size);
     if (err != UNSIGNED_VARINT_OK)
     {
         return -1;
     }
 
-    // Decode the digest length varint
     uint64_t len;
     size_t len_size;
-    err =
-        unsigned_varint_decode(mh_buf + hash_code_size, mh_size - hash_code_size, &len, &len_size);
+    err = unsigned_varint_decode(mh_buf + hash_code_size, mh_size - hash_code_size, &len, &len_size);
     if (err != UNSIGNED_VARINT_OK)
     {
         return -1;
     }
 
-    // Ensure the digest length fits within the provided buffer
     if (hash_code_size + len_size + len > mh_size)
     {
         return -1;
@@ -69,6 +74,15 @@ static int extract_multihash_digest_length(const uint8_t *mh_buf, size_t mh_size
     return 0;
 }
 
+/**
+ * @brief Check if a string starts with a given prefix.
+ *
+ * This function checks whether the provided string begins with the specified prefix.
+ *
+ * @param str The string to be checked.
+ * @param prefix The prefix to check against the string.
+ * @return 1 if the string starts with the prefix, 0 otherwise.
+ */
 static int starts_with(const char *str, const char *prefix)
 {
     if (!str || !prefix)
@@ -87,7 +101,15 @@ static int starts_with(const char *str, const char *prefix)
     return strncmp(str, prefix, prefix_len) == 0;
 }
 
-// Helper function to get the multibase encoding type from a prefix character
+/**
+ * @brief Determine the multibase type from a given prefix character.
+ *
+ * This function maps a prefix character to its corresponding multibase type.
+ * If the prefix character does not match any known multibase type, it returns -1.
+ *
+ * @param prefix The character representing the multibase prefix.
+ * @return The corresponding multibase type, or -1 if the prefix is unrecognized.
+ */
 static multibase_t multibase_from_prefix(char prefix)
 {
     switch (prefix)
@@ -109,36 +131,48 @@ static multibase_t multibase_from_prefix(char prefix)
         case BASE16_UPPER_CHARACTER:
             return MULTIBASE_BASE16_UPPER;
         default:
-            return (multibase_t)-1; // Invalid or unsupported base
+            return (multibase_t)-1;
     }
 }
 
-peer_id_error_t peer_id_create_from_public_key(const uint8_t *pubkey_buf, size_t pubkey_len,
-                                               peer_id_t *pid)
+/**
+ * @brief Create a peer ID from a public key.
+ *
+ * This function generates a peer ID based on the provided public key buffer.
+ * It validates the input parameters and initializes the peer ID structure.
+ *
+ * @param pubkey_buf The buffer containing the public key.
+ * @param pubkey_len The length of the public key buffer.
+ * @param pid Pointer to the peer ID structure to be initialized.
+ * @return peer_id_error_t Error code indicating success or type of failure.
+ */
+peer_id_error_t peer_id_create_from_public_key(const uint8_t *pubkey_buf, size_t pubkey_len, peer_id_t *pid)
 {
     if (!pubkey_buf || !pid)
     {
         return PEER_ID_E_NULL_PTR;
     }
 
+    if (pubkey_len > PEER_ID_MAX_PUBKEY_LEN)
+    {
+        return PEER_ID_E_BUFFER_TOO_SMALL;
+    }
+
     // Initialize output
     pid->bytes = NULL;
     pid->size = 0;
 
-    // 1) Parse/validate the incoming public key protobuf (now using the moved helper).
+    // Parse the public-key protobuf
     uint64_t key_type = 0;
     const uint8_t *key_data = NULL;
     size_t key_data_len = 0;
-
-    int parse_result =
-        parse_public_key_proto(pubkey_buf, pubkey_len, &key_type, &key_data, &key_data_len);
+    int parse_result = parse_public_key_proto(pubkey_buf, pubkey_len, &key_type, &key_data, &key_data_len);
     if (parse_result < 0)
     {
-        // Parsing or validation failed
         return PEER_ID_E_INVALID_PROTOBUF;
     }
 
-    // 2) Determine the hash function to use based on the entire public-key protobuf length.
+    // Choose hash function code
     uint64_t hash_function_code;
     if (pubkey_len <= PEER_ID_IDENTITY_HASH_MAX_SIZE)
     {
@@ -149,21 +183,16 @@ peer_id_error_t peer_id_create_from_public_key(const uint8_t *pubkey_buf, size_t
         hash_function_code = MULTICODEC_SHA2_256;
     }
 
-    // 3) Calculate max size for the multihash ...
-    //    (unchanged logic)
-    size_t max_multihash_size;
-    if (hash_function_code == MULTICODEC_IDENTITY)
+    // Compute varint sizes
+    size_t hash_code_size = unsigned_varint_size(hash_function_code);
+    size_t digest_len_size = unsigned_varint_size((hash_function_code == MULTICODEC_IDENTITY) ? pubkey_len : 32);
+    size_t payload_len = (hash_function_code == MULTICODEC_IDENTITY) ? pubkey_len : 32;
+    if (payload_len > SIZE_MAX - hash_code_size - digest_len_size)
     {
-        size_t hash_code_size = unsigned_varint_size(hash_function_code);
-        size_t digest_len_size = unsigned_varint_size(pubkey_len);
-        max_multihash_size = hash_code_size + digest_len_size + pubkey_len;
+        return PEER_ID_E_BUFFER_TOO_SMALL;
     }
-    else
-    {
-        size_t hash_code_size = unsigned_varint_size(hash_function_code);
-        size_t digest_len_size = unsigned_varint_size(32);
-        max_multihash_size = hash_code_size + digest_len_size + 32;
-    }
+
+    size_t max_multihash_size = hash_code_size + digest_len_size + ((hash_function_code == MULTICODEC_IDENTITY) ? pubkey_len : 32);
 
     pid->bytes = (uint8_t *)malloc(max_multihash_size);
     if (!pid->bytes)
@@ -171,15 +200,12 @@ peer_id_error_t peer_id_create_from_public_key(const uint8_t *pubkey_buf, size_t
         return PEER_ID_E_ALLOC_FAILED;
     }
 
-    // 4) Compute the multihash over the entire pubkey_buf
-    int result = multihash_encode(hash_function_code, pubkey_buf, pubkey_len, pid->bytes,
-                                  max_multihash_size);
+    int result = multihash_encode(hash_function_code, pubkey_buf, pubkey_len, pid->bytes, max_multihash_size);
     if (result < 0)
     {
         free(pid->bytes);
         pid->bytes = NULL;
         pid->size = 0;
-
         switch (result)
         {
             case MULTIHASH_ERR_NULL_POINTER:
@@ -201,54 +227,56 @@ peer_id_error_t peer_id_create_from_public_key(const uint8_t *pubkey_buf, size_t
     return PEER_ID_SUCCESS;
 }
 
-peer_id_error_t peer_id_create_from_private_key(const uint8_t *privkey_buf, size_t privkey_len,
-                                                peer_id_t *pid)
+/**
+ * @brief Create a peer ID from a private key.
+ *
+ * This function generates a peer ID from a given private key buffer. It supports
+ * multiple key types, including RSA, Ed25519, secp256k1, and ECDSA. The function
+ * first parses the private key to determine its type and then derives the corresponding
+ * public key. Finally, it creates a peer ID from the public key.
+ *
+ * @param privkey_buf The buffer containing the private key.
+ * @param privkey_len The length of the private key buffer.
+ * @param pid Pointer to the peer_id_t structure where the resulting peer ID will be stored.
+ * @return peer_id_error_t Error code indicating success or type of failure.
+ */
+peer_id_error_t peer_id_create_from_private_key(const uint8_t *privkey_buf, size_t privkey_len, peer_id_t *pid)
 {
     if (!privkey_buf || !pid)
     {
         return PEER_ID_E_NULL_PTR;
     }
 
-    // Initialize output
     pid->bytes = NULL;
     pid->size = 0;
 
-    // Step 1: Parse the private key protobuf (moved to parse_private_key_proto):
     uint64_t key_type = 0;
     const uint8_t *key_data = NULL;
     size_t key_data_len = 0;
-
     int parse_result = parse_private_key_proto(privkey_buf, privkey_len, &key_type, &key_data, &key_data_len);
     if (parse_result < 0)
     {
         return PEER_ID_E_INVALID_PROTOBUF;
     }
 
-    // Step 2: Derive the public key from the private key data:
     uint8_t *pubkey_buf = NULL;
     size_t pubkey_len = 0;
     peer_id_error_t ret;
-
     switch (key_type)
     {
-        case 0: // RSA
-            ret = peer_id_create_from_private_key_rsa(key_data, key_data_len, &pubkey_buf,
-                                                      &pubkey_len);
+        case 0:
+            ret = peer_id_create_from_private_key_rsa(key_data, key_data_len, &pubkey_buf, &pubkey_len);
             break;
-        case 1: // Ed25519
-            ret = peer_id_create_from_private_key_ed25519(key_data, key_data_len, &pubkey_buf,
-                                                          &pubkey_len);
+        case 1:
+            ret = peer_id_create_from_private_key_ed25519(key_data, key_data_len, &pubkey_buf, &pubkey_len);
             break;
-        case 2: // Secp256k1
-            ret = peer_id_create_from_private_key_secp256k1(key_data, key_data_len, &pubkey_buf,
-                                                            &pubkey_len);
+        case 2:
+            ret = peer_id_create_from_private_key_secp256k1(key_data, key_data_len, &pubkey_buf, &pubkey_len);
             break;
-        case 3: // ECDSA
-            ret = peer_id_create_from_private_key_ecdsa(key_data, key_data_len, &pubkey_buf,
-                                                        &pubkey_len);
+        case 3:
+            ret = peer_id_create_from_private_key_ecdsa(key_data, key_data_len, &pubkey_buf, &pubkey_len);
             break;
         default:
-            // Out of range => unsupported
             return PEER_ID_E_UNSUPPORTED_KEY;
     }
 
@@ -257,15 +285,25 @@ peer_id_error_t peer_id_create_from_private_key(const uint8_t *privkey_buf, size
         return ret;
     }
 
-    // Step 3: Use the serialized public key to create the peer ID.
     ret = peer_id_create_from_public_key(pubkey_buf, pubkey_len, pid);
-
-    // Free the temporary public key buffer
     free(pubkey_buf);
-
     return ret;
 }
 
+/**
+ * @brief Encode a peer ID into a specified format.
+ *
+ * This function encodes a given peer ID into a specified format, such as
+ * multibase or CIDv1. It handles different encoding scenarios and ensures
+ * that the output buffer is appropriately sized and populated.
+ *
+ * @param pid The peer ID to be encoded.
+ * @param format The format to encode the peer ID into.
+ * @param out The buffer to store the encoded peer ID.
+ * @param out_size The size of the output buffer.
+ * @return int The size of the encoded peer ID, or an error code indicating
+ *         the type of failure.
+ */
 peer_id_error_t peer_id_create_from_string(const char *str, peer_id_t *pid)
 {
     if (!str || !pid)
@@ -273,19 +311,19 @@ peer_id_error_t peer_id_create_from_string(const char *str, peer_id_t *pid)
         return PEER_ID_E_NULL_PTR;
     }
 
-    // Initialize output structure
     pid->bytes = NULL;
     pid->size = 0;
 
-    // Check if it's a legacy base58btc multihash (starts with "Qm" or "1")
     if (starts_with(str, "Qm") || starts_with(str, "1"))
     {
-        // Legacy base58btc multihash format
-
-        // For legacy format, we need to add the BASE58_BTC_CHARACTER multibase prefix for base58btc
-        // since our multibase_decode function expects a multibase prefixed string
         size_t input_len = strlen(str);
-        char *prefixed_str = (char *)malloc(input_len + 2); // +1 for prefix, +1 for null terminator
+
+        if (input_len > SIZE_MAX - 2)
+        {
+            return PEER_ID_E_BUFFER_TOO_SMALL;
+        }
+
+        char *prefixed_str = (char *)malloc(input_len + 2);
         if (!prefixed_str)
         {
             return PEER_ID_E_ALLOC_FAILED;
@@ -294,8 +332,7 @@ peer_id_error_t peer_id_create_from_string(const char *str, peer_id_t *pid)
         prefixed_str[0] = BASE58_BTC_CHARACTER;
         strcpy(prefixed_str + 1, str);
 
-        // Decode the base58btc string
-        size_t max_decoded_size = input_len; // Base58 decoding produces a smaller output
+        size_t max_decoded_size = input_len;
         uint8_t *decoded = (uint8_t *)malloc(max_decoded_size);
         if (!decoded)
         {
@@ -303,17 +340,14 @@ peer_id_error_t peer_id_create_from_string(const char *str, peer_id_t *pid)
             return PEER_ID_E_ALLOC_FAILED;
         }
 
-        int result =
-            multibase_decode(MULTIBASE_BASE58_BTC, prefixed_str, decoded, max_decoded_size);
-        free(prefixed_str); // Free the temporary prefixed string
-
+        int result = multibase_decode(MULTIBASE_BASE58_BTC, prefixed_str, decoded, max_decoded_size);
+        free(prefixed_str);
         if (result < 0)
         {
             free(decoded);
             return PEER_ID_E_ENCODING_FAILED;
         }
 
-        // Extract the digest length from the multihash to allocate proper buffer size
         size_t digest_len;
         if (extract_multihash_digest_length(decoded, result, &digest_len) < 0)
         {
@@ -321,7 +355,6 @@ peer_id_error_t peer_id_create_from_string(const char *str, peer_id_t *pid)
             return PEER_ID_E_INVALID_STRING;
         }
 
-        // Allocate a buffer of the exact size needed for the digest
         uint8_t *digest = (uint8_t *)malloc(digest_len);
         if (!digest)
         {
@@ -329,23 +362,16 @@ peer_id_error_t peer_id_create_from_string(const char *str, peer_id_t *pid)
             return PEER_ID_E_ALLOC_FAILED;
         }
 
-        // Validate that the decoded data is a valid multihash
         uint64_t hash_func_code;
         size_t actual_digest_len = digest_len;
-
-        int mh_result =
-            multihash_decode(decoded, result, &hash_func_code, digest, &actual_digest_len);
-
-        // Free the digest buffer as we only needed it for validation
+        int mh_result = multihash_decode(decoded, result, &hash_func_code, digest, &actual_digest_len);
         free(digest);
-
         if (mh_result < 0)
         {
             free(decoded);
             return PEER_ID_E_INVALID_STRING;
         }
 
-        // Allocate memory for the peer ID and copy the decoded multihash
         pid->bytes = (uint8_t *)malloc(result);
         if (!pid->bytes)
         {
@@ -355,22 +381,19 @@ peer_id_error_t peer_id_create_from_string(const char *str, peer_id_t *pid)
 
         memcpy(pid->bytes, decoded, result);
         pid->size = result;
-
         free(decoded);
         return PEER_ID_SUCCESS;
     }
     else if (isalnum((unsigned char)str[0]))
     {
-        // Check if it's a multibase encoded CIDv1
         multibase_t base = multibase_from_prefix(str[0]);
         if (base == (multibase_t)-1)
         {
             return PEER_ID_E_INVALID_STRING;
         }
 
-        // Decode the multibase-encoded string
         size_t input_len = strlen(str);
-        size_t max_decoded_size = input_len; // Multibase decoding produces a smaller output
+        size_t max_decoded_size = input_len;
         uint8_t *decoded = (uint8_t *)malloc(max_decoded_size);
         if (!decoded)
         {
@@ -384,25 +407,21 @@ peer_id_error_t peer_id_create_from_string(const char *str, peer_id_t *pid)
             return PEER_ID_E_ENCODING_FAILED;
         }
 
-        // Check if the decoded data is a valid CIDv1
         if (result < 2 || decoded[0] != MULTICODEC_CIDV1)
-        { // CIDv1 starts with MULTICODEC_CIDV1
+        {
             free(decoded);
             return PEER_ID_E_INVALID_STRING;
         }
 
-        // Extract the multicodec
         uint64_t multicodec_code;
         size_t codec_size;
-        unsigned_varint_err_t varint_result =
-            unsigned_varint_decode(decoded + 1, result - 1, &multicodec_code, &codec_size);
+        unsigned_varint_err_t varint_result = unsigned_varint_decode(decoded + 1, result - 1, &multicodec_code, &codec_size);
         if (varint_result != UNSIGNED_VARINT_OK || multicodec_code != MULTICODEC_LIBP2P_KEY)
         {
             free(decoded);
             return PEER_ID_E_INVALID_STRING;
         }
 
-        // Extract the multihash
         size_t multihash_offset = 1 + codec_size;
         if (multihash_offset >= result)
         {
@@ -410,16 +429,13 @@ peer_id_error_t peer_id_create_from_string(const char *str, peer_id_t *pid)
             return PEER_ID_E_INVALID_STRING;
         }
 
-        // Extract the digest length from the multihash to allocate proper buffer size
         size_t digest_len;
-        if (extract_multihash_digest_length(decoded + multihash_offset, result - multihash_offset,
-                                            &digest_len) < 0)
+        if (extract_multihash_digest_length(decoded + multihash_offset, result - multihash_offset, &digest_len) < 0)
         {
             free(decoded);
             return PEER_ID_E_INVALID_STRING;
         }
 
-        // Allocate a buffer of the exact size needed for the digest
         uint8_t *digest = (uint8_t *)malloc(digest_len);
         if (!digest)
         {
@@ -427,33 +443,26 @@ peer_id_error_t peer_id_create_from_string(const char *str, peer_id_t *pid)
             return PEER_ID_E_ALLOC_FAILED;
         }
 
-        // Validate that the extracted bytes form a valid multihash
         uint64_t hash_func_code;
         size_t actual_digest_len = digest_len;
-
-        int mh_result = multihash_decode(decoded + multihash_offset, result - multihash_offset,
-                                         &hash_func_code, digest, &actual_digest_len);
-
-        // Free the digest buffer as we only needed it for validation
+        int mh_result = multihash_decode(decoded + multihash_offset, result - multihash_offset, &hash_func_code, digest, &actual_digest_len);
         free(digest);
-
         if (mh_result < 0)
         {
             free(decoded);
             return PEER_ID_E_INVALID_STRING;
         }
 
-        // Allocate memory for the peer ID and copy the extracted multihash
-        pid->bytes = (uint8_t *)malloc(result - multihash_offset);
+        size_t peerid_len = result - multihash_offset;
+        pid->bytes = (uint8_t *)malloc(peerid_len);
         if (!pid->bytes)
         {
             free(decoded);
             return PEER_ID_E_ALLOC_FAILED;
         }
 
-        memcpy(pid->bytes, decoded + multihash_offset, result - multihash_offset);
-        pid->size = result - multihash_offset;
-
+        memcpy(pid->bytes, decoded + multihash_offset, peerid_len);
+        pid->size = peerid_len;
         free(decoded);
         return PEER_ID_SUCCESS;
     }
@@ -463,13 +472,24 @@ peer_id_error_t peer_id_create_from_string(const char *str, peer_id_t *pid)
     }
 }
 
+/**
+ * @brief Convert a peer ID to a string representation.
+ *
+ * This function converts a peer ID into a string format based on the specified
+ * format type. It supports different encoding formats such as Base58 and Multibase CIDv1.
+ *
+ * @param pid Pointer to the peer_id_t structure containing the peer ID.
+ * @param format The desired output format for the peer ID string.
+ * @param out The buffer to store the resulting string representation of the peer ID.
+ * @param out_size The size of the output buffer.
+ * @return int Error code indicating success or type of failure.
+ */
 int peer_id_to_string(const peer_id_t *pid, peer_id_format_t format, char *out, size_t out_size)
 {
     if (!pid || !pid->bytes || !out)
     {
         return PEER_ID_E_NULL_PTR;
     }
-
     if (out_size == 0)
     {
         return PEER_ID_E_BUFFER_TOO_SMALL;
@@ -477,65 +497,50 @@ int peer_id_to_string(const peer_id_t *pid, peer_id_format_t format, char *out, 
 
     if (format == PEER_ID_FMT_BASE58_LEGACY)
     {
-        // Encode to base58btc with multibase prefix
         int result = multibase_encode(MULTIBASE_BASE58_BTC, pid->bytes, pid->size, out, out_size);
         if (result < 0)
         {
             return PEER_ID_E_ENCODING_FAILED;
         }
-
-        // Remove the multibase prefix (assuming it's 1 character)
         if (result > 1 && out[0] == BASE58_BTC_CHARACTER)
         {
             memmove(out, out + 1, result);
-            out[result - 1] = '\0'; // Ensure null termination
+            out[result - 1] = '\0';
             return result - 1;
         }
-
         return result;
     }
     else if (format == PEER_ID_FMT_MULTIBASE_CIDv1)
     {
-        // Convert to CIDv1 multibase encoded with multicodec = libp2p-key
-
-        // Calculate the size of the CID: 1 byte for version + varint for multicodec + multihash
         size_t varint_size = unsigned_varint_size(MULTICODEC_LIBP2P_KEY);
-        size_t cid_size = 1 + varint_size + pid->size;
 
-        // Create a temporary buffer for the CID
+        if (pid->size > SIZE_MAX - 1 - varint_size)
+        {
+            return PEER_ID_E_BUFFER_TOO_SMALL;
+        }
+
+        size_t cid_size = 1 + varint_size + pid->size;
         uint8_t *cid = (uint8_t *)malloc(cid_size);
         if (!cid)
         {
             return PEER_ID_E_ALLOC_FAILED;
         }
 
-        // Set CIDv1 version
         cid[0] = MULTICODEC_CIDV1;
-
-        // Encode the multicodec
         size_t written;
-        unsigned_varint_err_t varint_result =
-            unsigned_varint_encode(MULTICODEC_LIBP2P_KEY, cid + 1, varint_size, &written);
-        if (varint_result != UNSIGNED_VARINT_OK)
+        if (unsigned_varint_encode(MULTICODEC_LIBP2P_KEY, cid + 1, varint_size, &written) != UNSIGNED_VARINT_OK)
         {
             free(cid);
             return PEER_ID_E_ENCODING_FAILED;
         }
-
-        // Copy the multihash
         memcpy(cid + 1 + written, pid->bytes, pid->size);
 
-        // Encode the CID in base32 (default for CIDv1)
-        int result =
-            multibase_encode(MULTIBASE_BASE32, cid, 1 + written + pid->size, out, out_size);
-
+        int result = multibase_encode(MULTIBASE_BASE32, cid, 1 + written + pid->size, out, out_size);
         free(cid);
-
         if (result < 0)
         {
             return PEER_ID_E_ENCODING_FAILED;
         }
-
         return result;
     }
     else
@@ -544,21 +549,46 @@ int peer_id_to_string(const peer_id_t *pid, peer_id_format_t format, char *out, 
     }
 }
 
+/**
+ * @brief Compare two peer IDs for equality.
+ *
+ * This function checks if two peer IDs are equal by comparing their byte arrays.
+ * It performs a constant-time comparison to prevent timing attacks.
+ *
+ * @param a The first peer ID to compare.
+ * @param b The second peer ID to compare.
+ * @return int Returns 1 if the peer IDs are equal, 0 if they are not, and -1 if
+ *         either of the peer IDs is invalid (e.g., null pointers or uninitialized bytes).
+ */
 int peer_id_equals(const peer_id_t *a, const peer_id_t *b)
 {
     if (!a || !b || !a->bytes || !b->bytes)
     {
-        return -1; // Invalid input
+        return -1;
     }
-
     if (a->size != b->size)
     {
-        return 0; // Different sizes, cannot be equal
+        return 0;
     }
 
-    return memcmp(a->bytes, b->bytes, a->size) == 0 ? 1 : 0;
+    uint8_t diff = 0;
+    for (size_t i = 0; i < a->size; i++)
+    {
+        diff |= a->bytes[i] ^ b->bytes[i];
+    }
+    return diff == 0;
 }
 
+/**
+ * @brief Destroy a peer ID.
+ *
+ * This function deallocates the memory associated with a peer ID's byte array
+ * and resets its size to zero. It ensures that the peer ID is properly cleaned up
+ * to prevent memory leaks.
+ *
+ * @param pid Pointer to the peer ID to be destroyed. If the pointer or its byte array
+ *            is NULL, the function does nothing.
+ */
 void peer_id_destroy(peer_id_t *pid)
 {
     if (pid && pid->bytes)
