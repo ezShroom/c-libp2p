@@ -182,13 +182,13 @@ static int test_null_parameters(void)
 
         char details[256];
         memset(details, 0, sizeof(details));
-        int passed = (err == UNSIGNED_VARINT_ERR_BUFFER_OVER);
+        int passed = (err == UNSIGNED_VARINT_ERR_NULL_PTR);
         if (!passed)
         {
 #ifdef _MSC_VER
-            sprintf_s(details, sizeof(details), "Expected BUFFER_OVER, got %d", (int)err);
+            sprintf_s(details, sizeof(details), "Expected NULL_PTR, got %d", (int)err);
 #else
-            sprintf(details, "Expected BUFFER_OVER, got %d", (int)err);
+            sprintf(details, "Expected NULL_PTR, got %d", (int)err);
 #endif
         }
         print_standard(test_name, details, passed);
@@ -203,13 +203,13 @@ static int test_null_parameters(void)
 
         char details[256];
         memset(details, 0, sizeof(details));
-        int passed = (err == UNSIGNED_VARINT_ERR_BUFFER_OVER);
+        int passed = (err == UNSIGNED_VARINT_ERR_NULL_PTR);
         if (!passed)
         {
 #ifdef _MSC_VER
-            sprintf_s(details, sizeof(details), "Expected BUFFER_OVER, got %d", (int)err);
+            sprintf_s(details, sizeof(details), "Expected NULL_PTR, got %d", (int)err);
 #else
-            sprintf(details, "Expected BUFFER_OVER, got %d", (int)err);
+            sprintf(details, "Expected NULL_PTR, got %d", (int)err);
 #endif
         }
         print_standard(test_name, details, passed);
@@ -225,13 +225,13 @@ static int test_null_parameters(void)
 
         char details[256];
         memset(details, 0, sizeof(details));
-        int passed = (err == UNSIGNED_VARINT_ERR_BUFFER_OVER);
+        int passed = (err == UNSIGNED_VARINT_ERR_NULL_PTR);
         if (!passed)
         {
 #ifdef _MSC_VER
-            sprintf_s(details, sizeof(details), "Expected BUFFER_OVER, got %d", (int)err);
+            sprintf_s(details, sizeof(details), "Expected NULL_PTR, got %d", (int)err);
 #else
-            sprintf(details, "Expected BUFFER_OVER, got %d", (int)err);
+            sprintf(details, "Expected NULL_PTR, got %d", (int)err);
 #endif
         }
         print_standard(test_name, details, passed);
@@ -247,13 +247,13 @@ static int test_null_parameters(void)
 
         char details[256];
         memset(details, 0, sizeof(details));
-        int passed = (err == UNSIGNED_VARINT_ERR_BUFFER_OVER);
+        int passed = (err == UNSIGNED_VARINT_ERR_NULL_PTR);
         if (!passed)
         {
 #ifdef _MSC_VER
-            sprintf_s(details, sizeof(details), "Expected BUFFER_OVER, got %d", (int)err);
+            sprintf_s(details, sizeof(details), "Expected NULL_PTR, got %d", (int)err);
 #else
-            sprintf(details, "Expected BUFFER_OVER, got %d", (int)err);
+            sprintf(details, "Expected NULL_PTR, got %d", (int)err);
 #endif
         }
         print_standard(test_name, details, passed);
@@ -269,13 +269,13 @@ static int test_null_parameters(void)
 
         char details[256];
         memset(details, 0, sizeof(details));
-        int passed = (err == UNSIGNED_VARINT_ERR_BUFFER_OVER);
+        int passed = (err == UNSIGNED_VARINT_ERR_NULL_PTR);
         if (!passed)
         {
 #ifdef _MSC_VER
-            sprintf_s(details, sizeof(details), "Expected BUFFER_OVER, got %d", (int)err);
+            sprintf_s(details, sizeof(details), "Expected NULL_PTR, got %d", (int)err);
 #else
-            sprintf(details, "Expected BUFFER_OVER, got %d", (int)err);
+            sprintf(details, "Expected NULL_PTR, got %d", (int)err);
 #endif
         }
         print_standard(test_name, details, passed);
@@ -329,7 +329,7 @@ int main(void)
 
     {
         const uint8_t empty[1] = {};
-        failures += test_decode_failure(empty, 0, UNSIGNED_VARINT_ERR_TOO_LONG, "Empty input decode") ? 0 : 1;
+        failures += test_decode_failure(empty, 0, UNSIGNED_VARINT_ERR_EMPTY_INPUT, "Empty input decode") ? 0 : 1;
     }
 
     {
