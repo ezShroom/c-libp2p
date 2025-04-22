@@ -1,9 +1,10 @@
-#include "multiformats/multicodec/multicodec.h"
-#include "multiformats/multicodec/multicodec_mappings.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "multiformats/multicodec/multicodec.h"
+#include "multiformats/multicodec/multicodec_table.h"
 
 static void print_standard(const char *test_name, const char *details, int passed)
 {
@@ -21,13 +22,13 @@ int main(void)
 {
     int failures = 0;
 
-    const int num_mappings = sizeof(multicodec_mappings) / sizeof(multicodec_map_t);
+    const int num_mappings = multicodec_table_len;
     if (num_mappings != 591)
     {
         char details[256];
         sprintf(details,
                 "Expected 591 total mappings, but found %d. Either update your "
-                "multicodec_mappings.h with all entries, or adjust this check.",
+                "multicodec_table.h with all entries, or adjust this check.",
                 num_mappings);
         print_standard("Mapping count check", details, 0);
         failures++;
@@ -39,8 +40,8 @@ int main(void)
 
     for (int i = 0; i < num_mappings; i++)
     {
-        const char *expected_name = multicodec_mappings[i].name;
-        uint64_t expected_code = multicodec_mappings[i].code;
+        const char *expected_name = multicodec_table[i].name;
+        uint64_t expected_code = multicodec_table[i].code;
 
         uint64_t actual_code = multicodec_code_from_name(expected_name);
         char test_name[128];
@@ -48,8 +49,7 @@ int main(void)
         if (actual_code != expected_code)
         {
             char details[256];
-            sprintf(details, "returned 0x%llx, expected 0x%llx", (unsigned long long)actual_code,
-                    (unsigned long long)expected_code);
+            sprintf(details, "returned 0x%llx, expected 0x%llx", (unsigned long long)actual_code, (unsigned long long)expected_code);
             print_standard(test_name, details, 0);
             failures++;
         }
@@ -63,8 +63,7 @@ int main(void)
         if (!actual_name || strcmp(expected_name, actual_name) != 0)
         {
             char details[256];
-            sprintf(details, "returned \"%s\", expected \"%s\"",
-                    actual_name ? actual_name : "(null)", expected_name);
+            sprintf(details, "returned \"%s\", expected \"%s\"", actual_name ? actual_name : "(null)", expected_name);
             print_standard(test_name, details, 0);
             failures++;
         }

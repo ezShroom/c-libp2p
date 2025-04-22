@@ -168,9 +168,6 @@ static int test_unsigned_varint_size(uint64_t value, size_t expected_size)
     return passed;
 }
 
-/**
- * Test that passing NULL pointers into encode/decode triggers the correct error.
- */
 static int test_null_parameters(void)
 {
     int ok = 1;

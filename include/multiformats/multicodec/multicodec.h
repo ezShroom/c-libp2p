@@ -21,7 +21,7 @@ typedef struct
  * @brief Look up the numerical code for a given codec name.
  *
  * @param[in] name A null-terminated string (e.g. "identity", "ip4").
- * @return The matching numeric code (e.g. 0x00 for "identity"), or 0 if not found.
+ * @return The matching numeric code (e.g. 0x00 for "identity"), or UINT64_MAX if not found.
  */
 uint64_t multicodec_code_from_name(const char *name);
 

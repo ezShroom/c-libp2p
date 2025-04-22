@@ -91,6 +91,18 @@ add_module(
     src/multiformats/unsigned_varint
 )
 
+
+# ---------------------------------------------
+# multiformats/multicodec/multicodec_table
+# ---------------------------------------------
+add_module(
+    multicodec_table
+    src/multiformats/multicodec/multicodec_table.c
+    ""
+    ""
+    ""
+)
+
 # ---------------------------------------------
 # multiformats/multicodec
 # ---------------------------------------------
@@ -101,6 +113,7 @@ add_module(
     ""
     ""
 )
+target_link_libraries(multicodec PUBLIC multicodec_table)
 
 # ---------------------------------------------
 # multiformats/multibase/encoding/base16
