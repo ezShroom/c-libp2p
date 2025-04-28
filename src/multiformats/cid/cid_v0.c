@@ -65,18 +65,22 @@ int cid_v0_to_bytes(const cid_v0_t *cid, uint8_t *out, size_t out_len)
  * @param bytes_len Length of the byte representation.
  * @return int Error code indicating success or type of failure.
  */
-int cid_v0_from_bytes(cid_v0_t *cid, const uint8_t *bytes, size_t bytes_len)
+int cid_v0_from_bytes(cid_v0_t *cid,
+                      const uint8_t *bytes,
+                      size_t bytes_len)
 {
     if (cid == NULL || bytes == NULL)
     {
         return CIDV0_ERROR_NULL_POINTER;
     }
-    if (bytes_len < CIDV0_BINARY_SIZE)
+
+    if (bytes_len != CIDV0_BINARY_SIZE)
     {
         return CIDV0_ERROR_INVALID_DIGEST_LENGTH;
     }
 
-    if (bytes[0] != MULTICODEC_SHA2_256 || bytes[1] != SHA2_256_LENGTH_BYTE)
+    if (bytes[0] != MULTICODEC_SHA2_256 ||
+        bytes[1] != SHA2_256_LENGTH_BYTE)   
     {
         return CIDV0_ERROR_INVALID_DIGEST_LENGTH;
     }
@@ -101,6 +105,11 @@ int cid_v0_to_string(const cid_v0_t *cid, char *out, size_t out_len)
         return CIDV0_ERROR_NULL_POINTER;
     }
 
+    if (out_len < CIDV0_STRING_LEN + 1)
+    {
+        return CIDV0_ERROR_BUFFER_TOO_SMALL;
+    }
+
     uint8_t bin[CIDV0_BINARY_SIZE];
     int bin_written = cid_v0_to_bytes(cid, bin, sizeof(bin));
     if (bin_written < 0)
@@ -108,13 +117,13 @@ int cid_v0_to_string(const cid_v0_t *cid, char *out, size_t out_len)
         return bin_written;
     }
 
-    /* Encode using the multibase API with base58btc. */
     int str_written = multibase_base58_btc_encode(bin, CIDV0_BINARY_SIZE, out, out_len);
-    if (str_written < 0)
+    if (str_written != CIDV0_STRING_LEN)
     {
         return CIDV0_ERROR_ENCODE_FAILURE;
     }
 
+    out[CIDV0_STRING_LEN] = '\0';
     return str_written;
 }
 

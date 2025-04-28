@@ -1,4 +1,5 @@
 #include <inttypes.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,34 +16,64 @@
 #include "multiformats/multicodec/multicodec_table.h"
 #include "multiformats/unsigned_varint/unsigned_varint.h"
 
+/* Maximum size of a multihash in bytes. */
+#define CIDV1_MAX_DIGEST (4U * 1024U * 1024U)
+
+static inline int add_overflow_size(size_t a, size_t b, size_t *out)
+{
+    if (a > SIZE_MAX - b)
+    {
+        return 1;
+    }
+    *out = a + b;
+    return 0;
+}
+
+static inline int mul_overflow_size(size_t a, size_t b, size_t *out)
+{
+    if (a != 0 && b > SIZE_MAX / a)
+    {
+        return 1;
+    }
+    *out = a * b;
+    return 0;
+}
+
 /**
  * @brief Detect the multibase encoding from the given string.
  *
  * @param str The input string to detect the multibase encoding from.
  * @return The detected multibase encoding.
  */
-static multibase_t detect_multibase(const char *str)
+static int detect_multibase(const char *str, multibase_t *base_out)
 {
-    if (str == NULL || *str == '\0')
+    if (str == NULL || base_out == NULL || *str == '\0')
     {
-        return MULTIBASE_BASE58_BTC;
+        return CIDV1_ERROR_INVALID_ARG;
     }
+
     switch (str[0])
     {
         case BASE58_BTC_CHARACTER:
-            return MULTIBASE_BASE58_BTC;
+            *base_out = MULTIBASE_BASE58_BTC;
+            return CIDV1_SUCCESS;
         case BASE16_CHARACTER:
-            return MULTIBASE_BASE16;
+            *base_out = MULTIBASE_BASE16;
+            return CIDV1_SUCCESS;
         case BASE32_CHARACTER:
-            return MULTIBASE_BASE32;
+            *base_out = MULTIBASE_BASE32;
+            return CIDV1_SUCCESS;
         case BASE64_CHARACTER:
-            return MULTIBASE_BASE64;
+            *base_out = MULTIBASE_BASE64;
+            return CIDV1_SUCCESS;
         case BASE64_URL_CHARACTER:
-            return MULTIBASE_BASE64_URL;
+            *base_out = MULTIBASE_BASE64_URL;
+            return CIDV1_SUCCESS;
         case BASE64_URL_PAD_CHARACTER:
-            return MULTIBASE_BASE64_URL_PAD;
+            *base_out = MULTIBASE_BASE64_URL_PAD;
+            return CIDV1_SUCCESS;
         default:
-            return MULTIBASE_BASE58_BTC;
+            return CIDV1_ERROR_DECODE_FAILURE;
     }
 }
 
@@ -102,9 +133,9 @@ static const char *get_multicodec_name(uint64_t code)
  * @param mh_size The size of the input multihash.
  * @param out The output buffer to store the human-readable string.
  * @param out_len The size of the output buffer.
- * @return int Error code indicating success or type of failure.
+ * @return ssize_t Number of bytes written (>=0) or negative error code.
  */
-static int multihash_to_human(const uint8_t *mh, size_t mh_size, char *out, size_t out_len)
+static ssize_t multihash_to_human(const uint8_t *mh, size_t mh_size, char *out, size_t out_len)
 {
     if (mh == NULL || out == NULL)
     {
@@ -117,7 +148,6 @@ static int multihash_to_human(const uint8_t *mh, size_t mh_size, char *out, size
     {
         return CIDV1_ERROR_DECODE_FAILURE;
     }
-
     if (read >= mh_size)
     {
         return CIDV1_ERROR_DECODE_FAILURE;
@@ -130,24 +160,38 @@ static int multihash_to_human(const uint8_t *mh, size_t mh_size, char *out, size
         return CIDV1_ERROR_DECODE_FAILURE;
     }
 
+    if (digest_len > CIDV1_MAX_DIGEST)
+    {
+        return CIDV1_ERROR_DECODE_FAILURE;
+    }
+
     size_t header_size = read + read2;
     if (header_size + digest_len != mh_size)
     {
         return CIDV1_ERROR_DECODE_FAILURE;
     }
 
-    const char *hash_name = get_multicodec_name(hash_code);
-    size_t hex_len = digest_len * 2;
+    size_t hex_len = 0;
+    if (mul_overflow_size((size_t)digest_len, 2, &hex_len))
+    {
+        return CIDV1_ERROR_BUFFER_TOO_SMALL;
+    }
+
     char *hex_str = (char *)malloc(hex_len + 1);
     if (!hex_str)
     {
         return CIDV1_ERROR_ALLOCATION_FAILED;
     }
+
     for (size_t i = 0; i < digest_len; i++)
     {
-        sprintf(hex_str + i * 2, "%02x", mh[header_size + i]);
+        static const char lut[] = "0123456789abcdef";
+        uint8_t b = mh[header_size + i];
+        hex_str[i * 2] = lut[b >> 4];
+        hex_str[i * 2 + 1] = lut[b & 0x0F];
     }
     hex_str[hex_len] = '\0';
+    const char *hash_name = get_multicodec_name(hash_code);
     int written = snprintf(out, out_len, "%s-%s", hash_name, hex_str);
     free(hex_str);
 
@@ -155,7 +199,7 @@ static int multihash_to_human(const uint8_t *mh, size_t mh_size, char *out, size
     {
         return CIDV1_ERROR_BUFFER_TOO_SMALL;
     }
-    return written;
+    return (ssize_t)written;
 }
 
 /**
@@ -175,11 +219,7 @@ static int compute_mh_human_size(const uint8_t *mh, size_t mh_size, size_t *out_
 
     uint64_t hash_code = 0;
     size_t read = 0;
-    if (unsigned_varint_decode(mh, mh_size, &hash_code, &read) != UNSIGNED_VARINT_OK)
-    {
-        return CIDV1_ERROR_DECODE_FAILURE;
-    }
-    if (read >= mh_size)
+    if (unsigned_varint_decode(mh, mh_size, &hash_code, &read) != UNSIGNED_VARINT_OK || read >= mh_size)
     {
         return CIDV1_ERROR_DECODE_FAILURE;
     }
@@ -191,14 +231,25 @@ static int compute_mh_human_size(const uint8_t *mh, size_t mh_size, size_t *out_
         return CIDV1_ERROR_DECODE_FAILURE;
     }
 
+    if (digest_len > CIDV1_MAX_DIGEST)
+    {
+        return CIDV1_ERROR_DECODE_FAILURE;
+    }
+
     size_t header_size = read + read2;
     if (header_size + digest_len != mh_size)
     {
         return CIDV1_ERROR_DECODE_FAILURE;
     }
 
-    const char *hash_name = get_multicodec_name(hash_code);
-    *out_size = strlen(hash_name) + 1 + (digest_len * 2) + 1;
+    size_t name_len = strlen(get_multicodec_name(hash_code));
+    size_t hex_len = 0;
+    if (mul_overflow_size((size_t)digest_len, 2, &hex_len) || add_overflow_size(name_len + 1, hex_len, out_size) ||
+        add_overflow_size(*out_size, 1, out_size))
+    {
+        return CIDV1_ERROR_BUFFER_TOO_SMALL;
+    }
+
     return CIDV1_SUCCESS;
 }
 
@@ -261,9 +312,9 @@ void cid_v1_free(cid_v1_t *cid)
  * @param cid Pointer to the CIDv1 structure to decode into.
  * @param data The input byte array.
  * @param data_len The length of the input byte array.
- * @return int Error code indicating success or type of failure.
+ * @return ssize_t Number of bytes consumed (>=0) or negative error code.
  */
-int cid_v1_from_bytes(cid_v1_t *cid, const uint8_t *data, size_t data_len)
+ssize_t cid_v1_from_bytes(cid_v1_t *cid, const uint8_t *data, size_t data_len)
 {
     if (cid == NULL || data == NULL)
     {
@@ -308,7 +359,7 @@ int cid_v1_from_bytes(cid_v1_t *cid, const uint8_t *data, size_t data_len)
     cid->multihash = mh;
     cid->multihash_size = mh_size;
 
-    return offset + mh_size;
+    return (ssize_t)(offset + mh_size);
 }
 
 /**
@@ -317,47 +368,50 @@ int cid_v1_from_bytes(cid_v1_t *cid, const uint8_t *data, size_t data_len)
  * @param cid Pointer to the CIDv1 structure to encode.
  * @param out The output byte array.
  * @param out_len The length of the output byte array.
- * @return int Error code indicating success or type of failure.
+ * @return ssize_t Number of bytes written (>=0) or negative error code.
  */
-int cid_v1_to_bytes(const cid_v1_t *cid, uint8_t *out, size_t out_len)
+ssize_t cid_v1_to_bytes(const cid_v1_t *cid, uint8_t *out, size_t out_len)
 {
     if (cid == NULL || out == NULL)
     {
         return CIDV1_ERROR_NULL_POINTER;
     }
 
-    size_t pos = 0;
+    size_t idx = 0;
     size_t written = 0;
-    size_t version_size = unsigned_varint_size(cid->version);
-    if (pos + version_size > out_len)
+    size_t ver_size = unsigned_varint_size(cid->version);
+
+    if (idx + ver_size > out_len)
     {
         return CIDV1_ERROR_BUFFER_TOO_SMALL;
     }
-    if (unsigned_varint_encode(cid->version, out + pos, out_len - pos, &written) != UNSIGNED_VARINT_OK)
+    if (unsigned_varint_encode(cid->version, out + idx, out_len - idx, &written) != UNSIGNED_VARINT_OK)
     {
         return CIDV1_ERROR_ENCODE_FAILURE;
     }
-    pos += written;
-
+    idx += written;
     size_t codec_size = unsigned_varint_size(cid->codec);
-    if (pos + codec_size > out_len)
+    if (idx + codec_size > out_len)
     {
         return CIDV1_ERROR_BUFFER_TOO_SMALL;
     }
-    if (unsigned_varint_encode(cid->codec, out + pos, out_len - pos, &written) != UNSIGNED_VARINT_OK)
+    if (unsigned_varint_encode(cid->codec, out + idx, out_len - idx, &written) != UNSIGNED_VARINT_OK)
     {
         return CIDV1_ERROR_ENCODE_FAILURE;
     }
-    pos += written;
-
-    if (pos + cid->multihash_size > out_len)
+    idx += written;
+    if (idx + cid->multihash_size > out_len)
     {
         return CIDV1_ERROR_BUFFER_TOO_SMALL;
     }
-    memcpy(out + pos, cid->multihash, cid->multihash_size);
-    pos += cid->multihash_size;
+    memcpy(out + idx, cid->multihash, cid->multihash_size);
+    idx += cid->multihash_size;
 
-    return pos;
+    if (idx > INT_MAX)
+    {
+        return CIDV1_ERROR_BUFFER_TOO_SMALL;
+    }
+    return (ssize_t)idx;
 }
 
 /**
@@ -367,9 +421,9 @@ int cid_v1_to_bytes(const cid_v1_t *cid, uint8_t *out, size_t out_len)
  * @param base The multibase encoding to use.
  * @param out The output string buffer.
  * @param out_len The length of the output string buffer.
- * @return int Error code indicating success or type of failure.
+ * @return ssize_t Number of characters written (>=0) or negative error code.
  */
-int cid_v1_to_string(const cid_v1_t *cid, multibase_t base, char *out, size_t out_len)
+ssize_t cid_v1_to_string(const cid_v1_t *cid, multibase_t base, char *out, size_t out_len)
 {
     if (cid == NULL || out == NULL)
     {
@@ -378,7 +432,12 @@ int cid_v1_to_string(const cid_v1_t *cid, multibase_t base, char *out, size_t ou
 
     size_t version_size = unsigned_varint_size(cid->version);
     size_t codec_size = unsigned_varint_size(cid->codec);
-    size_t total_bin_size = version_size + codec_size + cid->multihash_size;
+    size_t total_bin_size = 0;
+
+    if (add_overflow_size(version_size, codec_size, &total_bin_size) || add_overflow_size(total_bin_size, cid->multihash_size, &total_bin_size))
+    {
+        return CIDV1_ERROR_BUFFER_TOO_SMALL;
+    }
 
     uint8_t *tmp = (uint8_t *)malloc(total_bin_size);
     if (!tmp)
@@ -386,20 +445,20 @@ int cid_v1_to_string(const cid_v1_t *cid, multibase_t base, char *out, size_t ou
         return CIDV1_ERROR_ALLOCATION_FAILED;
     }
 
-    int bin_len = cid_v1_to_bytes(cid, tmp, total_bin_size);
+    ssize_t bin_len = cid_v1_to_bytes(cid, tmp, total_bin_size);
     if (bin_len < 0)
     {
         free(tmp);
         return bin_len;
     }
 
-    int str_len = multibase_encode(base, tmp, bin_len, out, out_len);
+    ssize_t str_len = multibase_encode(base, tmp, (size_t)bin_len, out, out_len);
     free(tmp);
+
     if (str_len < 0)
     {
         return CIDV1_ERROR_ENCODE_FAILURE;
     }
-
     return str_len;
 }
 
@@ -408,39 +467,39 @@ int cid_v1_to_string(const cid_v1_t *cid, multibase_t base, char *out, size_t ou
  *
  * @param cid Pointer to the CIDv1 structure to decode into.
  * @param str The input multibase-encoded string.
- * @return int Error code indicating success or type of failure.
+ * @return ssize_t Number of bytes consumed (>=0) or negative error code.
  */
-int cid_v1_from_string(cid_v1_t *cid, const char *str)
+ssize_t cid_v1_from_string(cid_v1_t *cid, const char *str)
 {
     if (cid == NULL || str == NULL)
     {
         return CIDV1_ERROR_NULL_POINTER;
     }
 
-    size_t str_len = strlen(str);
-    multibase_t base = detect_multibase(str);
-    uint8_t *bin = (uint8_t *)malloc(str_len);
+    multibase_t base = 0;
+    int err = detect_multibase(str, &base);
+    if (err != CIDV1_SUCCESS)
+    {
+        return err;
+    }
 
+    size_t str_len = strlen(str);
+    uint8_t *bin = (uint8_t *)malloc(str_len);
     if (!bin)
     {
         return CIDV1_ERROR_ALLOCATION_FAILED;
     }
 
-    int decoded_len = multibase_decode(base, str, bin, str_len);
+    ssize_t decoded_len = multibase_decode(base, str, bin, str_len);
     if (decoded_len < 0)
     {
         free(bin);
         return CIDV1_ERROR_DECODE_FAILURE;
     }
 
-    int ret = cid_v1_from_bytes(cid, bin, decoded_len);
+    ssize_t ret = cid_v1_from_bytes(cid, bin, (size_t)decoded_len);
     free(bin);
-    if (ret < 0)
-    {
-        return ret;
-    }
-
-    return (int)str_len;
+    return ret;
 }
 
 /**
@@ -450,9 +509,9 @@ int cid_v1_from_string(cid_v1_t *cid, const char *str)
  * @param base The multibase encoding to use.
  * @param out The output string buffer.
  * @param out_len The length of the output string buffer.
- * @return int Error code indicating success or type of failure.
+ * @return ssize_t Number of characters written (>=0) or negative error code.
  */
-int cid_v1_to_human(const cid_v1_t *cid, multibase_t base, char *out, size_t out_len)
+ssize_t cid_v1_to_human(const cid_v1_t *cid, multibase_t base, char *out, size_t out_len)
 {
     if (cid == NULL || out == NULL)
     {
@@ -475,11 +534,11 @@ int cid_v1_to_human(const cid_v1_t *cid, multibase_t base, char *out, size_t out
         return CIDV1_ERROR_ALLOCATION_FAILED;
     }
 
-    err = multihash_to_human(cid->multihash, cid->multihash_size, mh_human, mh_human_size);
-    if (err < 0)
+    ssize_t hlen = multihash_to_human(cid->multihash, cid->multihash_size, mh_human, mh_human_size);
+    if (hlen < 0)
     {
         free(mh_human);
-        return err;
+        return hlen;
     }
 
     int written = snprintf(out, out_len, "%s - cidv1 - %s - %s", mb_name, codec_name, mh_human);
@@ -490,5 +549,5 @@ int cid_v1_to_human(const cid_v1_t *cid, multibase_t base, char *out, size_t out
         return CIDV1_ERROR_BUFFER_TOO_SMALL;
     }
 
-    return written;
+    return (ssize_t)written;
 }

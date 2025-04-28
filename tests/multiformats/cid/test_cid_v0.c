@@ -1,10 +1,11 @@
-#include "multiformats/cid/cid_v0.h"
-#include "multiformats/multibase/multibase.h"
-#include "multiformats/multicodec/multicodec_codes.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "multiformats/cid/cid_v0.h"
+#include "multiformats/multibase/multibase.h"
+#include "multiformats/multicodec/multicodec_codes.h"
 
 static void print_standard(const char *test_name, const char *details, int passed)
 {
@@ -35,15 +36,10 @@ int main(void)
     char str[64];
     uint8_t bin[CIDV0_BINARY_SIZE];
     cid_v0_test_vector tests[] = {
-        {"Incremental bytes", {0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,
-                                16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31}},
-        {"All zeros",       {0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-                                0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}},
-        {"All 0xFF",        {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                              0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                              0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                              0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}}
-    };
+        {"Incremental bytes", {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31}},
+        {"All zeros", {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+        {"All 0xFF", {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+                      0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}}};
     size_t num_tests = sizeof(tests) / sizeof(tests[0]);
 
     for (size_t i = 0; i < num_tests; i++)
@@ -73,8 +69,7 @@ int main(void)
             print_standard(test_name, details, 0);
             failures++;
         }
-        else if (bin[0] != MULTICODEC_SHA2_256 || bin[1] != 0x20 ||
-                 memcmp(bin + 2, tests[i].digest, CIDV0_HASH_SIZE) != 0)
+        else if (bin[0] != MULTICODEC_SHA2_256 || bin[1] != 0x20 || memcmp(bin + 2, tests[i].digest, CIDV0_HASH_SIZE) != 0)
         {
             char details[256];
             sprintf(details, "Binary format mismatch for %s", tests[i].description);
@@ -331,10 +326,10 @@ int main(void)
         cid_v0_init(&dummy, dummy_digest, CIDV0_HASH_SIZE);
         char buf[CIDV0_STRING_LEN - 1];
         ret = cid_v0_to_string(&dummy, buf, sizeof(buf));
-        if (ret != CIDV0_ERROR_ENCODE_FAILURE)
+        if (ret != CIDV0_ERROR_BUFFER_TOO_SMALL)
         {
             char details[256];
-            sprintf(details, "Expected CIDV0_ERROR_ENCODE_FAILURE, got %d", ret);
+            sprintf(details, "Expected CIDV0_ERROR_BUFFER_TOO_SMALL, got %d", ret);
             print_standard(test_name, details, 0);
             failures++;
         }
@@ -413,12 +408,9 @@ int main(void)
     }
     {
         const char *known_cid_str = "QmbWqxBEKC3P8tqsKc98xmWNzrzDtRLMiMPL8wBuTGsMnR";
-        const uint8_t expected_digest[CIDV0_HASH_SIZE] = {
-            0xc3, 0xc4, 0x73, 0x3e, 0xc8, 0xaf, 0xfd, 0x06,
-            0xcf, 0x9e, 0x9f, 0xf5, 0x0f, 0xfc, 0x6b, 0xcd,
-            0x2e, 0xc8, 0x5a, 0x61, 0x70, 0x00, 0x4b, 0xb7,
-            0x09, 0x66, 0x9c, 0x31, 0xde, 0x94, 0x39, 0x1a
-        };
+        const uint8_t expected_digest[CIDV0_HASH_SIZE] = {0xc3, 0xc4, 0x73, 0x3e, 0xc8, 0xaf, 0xfd, 0x06, 0xcf, 0x9e, 0x9f,
+                                                          0xf5, 0x0f, 0xfc, 0x6b, 0xcd, 0x2e, 0xc8, 0x5a, 0x61, 0x70, 0x00,
+                                                          0x4b, 0xb7, 0x09, 0x66, 0x9c, 0x31, 0xde, 0x94, 0x39, 0x1a};
         cid_v0_t cid_from_known;
         int ret_local;
 

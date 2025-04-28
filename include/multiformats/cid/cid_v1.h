@@ -6,8 +6,11 @@ extern "C"
 {
 #endif
 
-#include <stddef.h>
-#include <stdint.h>
+#include <inttypes.h>
+#include <limits.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "multiformats/multibase/multibase.h" /* for multibase_t */
 #include "multiformats/multicodec/multicodec_codes.h"
@@ -100,7 +103,7 @@ void cid_v1_free(cid_v1_t *cid);
  *
  * @return Number of bytes consumed on success, or a negative error code on failure.
  */
-int cid_v1_from_bytes(cid_v1_t *cid, const uint8_t *data, size_t data_len);
+ssize_t cid_v1_from_bytes(cid_v1_t *cid, const uint8_t *data, size_t data_len);
 
 /**
  * @brief Encode a CIDv1 structure into its binary form:
@@ -112,7 +115,7 @@ int cid_v1_from_bytes(cid_v1_t *cid, const uint8_t *data, size_t data_len);
  *
  * @return Number of bytes written on success, or a negative error code.
  */
-int cid_v1_to_bytes(const cid_v1_t *cid, uint8_t *out, size_t out_len);
+ssize_t cid_v1_to_bytes(const cid_v1_t *cid, uint8_t *out, size_t out_len);
 
 /**
  * @brief Encode a CIDv1 into a multibase string. The result is:
@@ -125,7 +128,7 @@ int cid_v1_to_bytes(const cid_v1_t *cid, uint8_t *out, size_t out_len);
  *
  * @return Number of characters (excluding null terminator) on success, or a negative error code.
  */
-int cid_v1_to_string(const cid_v1_t *cid, multibase_t base, char *out, size_t out_len);
+ssize_t cid_v1_to_string(const cid_v1_t *cid, multibase_t base, char *out, size_t out_len);
 
 /**
  * @brief Decode a CIDv1 from a multibase string. Detects the multibase prefix,
@@ -138,7 +141,7 @@ int cid_v1_to_string(const cid_v1_t *cid, multibase_t base, char *out, size_t ou
  *
  * @return Number of characters consumed from `str` on success, or a negative error code.
  */
-int cid_v1_from_string(cid_v1_t *cid, const char *str);
+ssize_t cid_v1_from_string(cid_v1_t *cid, const char *str);
 
 /**
  * @brief Convert a CIDv1 to a human-readable string of the form:
@@ -157,7 +160,7 @@ int cid_v1_from_string(cid_v1_t *cid, const char *str);
  *
  * @return Number of characters (excluding null terminator) on success, or negative error code.
  */
-int cid_v1_to_human(const cid_v1_t *cid, multibase_t base, char *out, size_t out_len);
+ssize_t cid_v1_to_human(const cid_v1_t *cid, multibase_t base, char *out, size_t out_len);
 
 #ifdef __cplusplus
 }
