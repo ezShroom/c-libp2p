@@ -1,13 +1,25 @@
-#include <fcntl.h>
+#ifdef _WIN32
+  // avoid pulling in the world
+  #ifndef WIN32_LEAN_AND_MEAN
+  #  define WIN32_LEAN_AND_MEAN
+  #endif
+  // core Windows types, plus LONG, DWORD, etc.
+  #include <windows.h>
+  // Win32 CryptoAPI (CryptGenRandom, CryptAcquireContext, …)
+  #include <wincrypt.h>
+#else
+  // POSIX / BSD side
+  #include <fcntl.h>
+  #include <sys/types.h>
+  #include <unistd.h>
+  #ifdef __linux__
+  #  include <sys/random.h>
+  #endif
+#endif
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
-#include <unistd.h>
-#ifdef __linux__
-#include <sys/random.h>
-#endif
-
 #include "../../lib/secp256k1/include/secp256k1.h"
 #include "peer_id/peer_id.h"
 #include "peer_id/peer_id_proto.h"
@@ -24,7 +36,7 @@ static void explicit_bzero(void *s, size_t n)
 
 static int get_random_bytes(void *buf, size_t len)
 {
-#ifdef __linux__
+#if defined(__linux__)
     ssize_t r = getrandom(buf, len, 0);
     if (r == (ssize_t)len)
     {
@@ -48,6 +60,21 @@ static int get_random_bytes(void *buf, size_t len)
     }
     close(fd);
     return 0;
+
+#elif defined(_WIN32)
+    HCRYPTPROV hProv = 0;
+    if (!CryptAcquireContextA(&hProv, NULL, NULL, PROV_RSA_AES, CRYPT_VERIFYCONTEXT))
+    {
+        return -1;
+    }
+    if (!CryptGenRandom(hProv, (DWORD)len, (BYTE *)buf))
+    {
+        CryptReleaseContext(hProv, 0);
+        return -1;
+    }
+    CryptReleaseContext(hProv, 0);
+    return 0;
+
 #else
     arc4random_buf(buf, len);
     return 0;

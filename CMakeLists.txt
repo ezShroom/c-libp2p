@@ -1,6 +1,9 @@
 # CMake minimum required version.
 cmake_minimum_required(VERSION 3.10)
 
+# Build using shared libraries by default
+option(BUILD_SHARED_LIBS "Build using shared libraries" ON)
+
 # Project metadata.
 project(libp2p
     VERSION 0.1
@@ -28,13 +31,10 @@ add_subdirectory(lib/secp256k1)
 
 # Add libtommath submodule.
 add_subdirectory(lib/libtommath)
-
-# Point to the build directory where libtommath exports its config file.
 set(libtommath_DIR "${CMAKE_BINARY_DIR}/lib/libtommath")
 
 # Add libtomcrypt submodule.
 add_subdirectory(lib/libtomcrypt)
-
 target_compile_definitions(libtomcrypt PRIVATE USE_LTM LTM_DESC)
 
 # ---------------------------------------------
@@ -49,7 +49,7 @@ target_compile_definitions(libtomcrypt PRIVATE USE_LTM LTM_DESC)
 #   PRIVATE_DIR   - (Optional) Relative path for additional private include directories.
 #
 function(add_module MODULE_NAME MODULE_SOURCE TEST_SOURCE BENCH_SOURCE PRIVATE_DIR)
-    # Create the library.
+    # Create the library (shared if BUILD_SHARED_LIBS=ON).
     add_library(${MODULE_NAME} ${MODULE_SOURCE})
     target_include_directories(${MODULE_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/include)
     if(NOT "${PRIVATE_DIR}" STREQUAL "")
@@ -64,6 +64,16 @@ function(add_module MODULE_NAME MODULE_SOURCE TEST_SOURCE BENCH_SOURCE PRIVATE_D
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/tests
         )
         add_test(NAME Test${MODULE_NAME} COMMAND test_${MODULE_NAME})
+
+        # On Windows, copy all produced DLLs from bin/ into the test folder
+        if (WIN32 AND BUILD_SHARED_LIBS)
+          add_custom_command(TARGET test_${MODULE_NAME}
+            POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+              ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+              $<TARGET_FILE_DIR:test_${MODULE_NAME}>
+          )
+        endif()
         set_tests_properties(Test${MODULE_NAME} PROPERTIES TIMEOUT 10)
     endif()
 
@@ -90,7 +100,6 @@ add_module(
     benchmarks/multiformats/unsigned_varint/bench_unsigned_varint.c
     src/multiformats/unsigned_varint
 )
-
 
 # ---------------------------------------------
 # multiformats/multicodec/multicodec_table
@@ -213,7 +222,10 @@ add_module(
     ""
     ""
 )
-target_link_libraries(multibase PRIVATE base16 base16_upper base32 base32_upper base58_btc base64 base64_url base64_url_pad)
+target_link_libraries(multibase PRIVATE
+    base16 base16_upper base32 base32_upper
+    base58_btc base64 base64_url base64_url_pad
+)
 
 # ---------------------------------------------
 # wjcryptlib
@@ -279,6 +291,9 @@ add_module(
     ""
 )
 target_link_libraries(multiaddr PRIVATE multibase multicodec unsigned_varint base58_btc)
+if (WIN32)
+  target_link_libraries(multiaddr PRIVATE ws2_32)
+endif()
 
 # ---------------------------------------------
 # peer_id/peer_id_proto
@@ -302,7 +317,12 @@ add_module(
     ""
     src/peer_id
 )
-target_link_libraries(peer_id_secp256k1 PRIVATE secp256k1 peer_id_proto)
+target_link_libraries(peer_id_secp256k1 PRIVATE
+    secp256k1 peer_id_proto
+)
+if (WIN32)
+  target_link_libraries(peer_id_secp256k1 PRIVATE advapi32)
+endif()
 
 # ---------------------------------------------
 # peer_id/peer_id_ed25519
@@ -314,7 +334,9 @@ add_module(
     ""
     src/peer_id
 )
-target_link_libraries(peer_id_ed25519 PRIVATE libtomcrypt peer_id_proto)
+target_link_libraries(peer_id_ed25519 PRIVATE
+    libtomcrypt peer_id_proto
+)
 
 # ---------------------------------------------
 # peer_id/peer_id_ecdsa
@@ -326,7 +348,9 @@ add_module(
     ""
     src/peer_id
 )
-target_link_libraries(peer_id_ecdsa PRIVATE libtomcrypt peer_id_proto)
+target_link_libraries(peer_id_ecdsa PRIVATE
+    libtomcrypt peer_id_proto
+)
 
 # ---------------------------------------------
 # peer_id/peer_id_rsa
@@ -338,7 +362,9 @@ add_module(
     ""
     src/peer_id
 )
-target_link_libraries(peer_id_rsa PRIVATE libtomcrypt peer_id_proto)
+target_link_libraries(peer_id_rsa PRIVATE
+    libtomcrypt peer_id_proto
+)
 
 # ---------------------------------------------
 # peer_id
@@ -350,4 +376,7 @@ add_module(
     ""
     ""
 )
-target_link_libraries(peer_id PRIVATE peer_id_secp256k1 peer_id_ed25519 peer_id_ecdsa peer_id_rsa peer_id_proto unsigned_varint multibase multicodec multihash)
+target_link_libraries(peer_id PRIVATE
+    peer_id_secp256k1 peer_id_ed25519 peer_id_ecdsa peer_id_rsa
+    peer_id_proto unsigned_varint multibase multicodec multihash
+)

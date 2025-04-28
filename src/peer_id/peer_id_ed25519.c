@@ -10,6 +10,7 @@
 #include <windows.h>
 #define secure_zero(ptr, len) SecureZeroMemory((PVOID)(ptr), (SIZE_T)(len))
 #else
+
 /**
  * @brief Securely zero out a memory region.
  *
