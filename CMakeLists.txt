@@ -11,6 +11,20 @@ project(libp2p
     LANGUAGES C
 )
 
+# Pull in pthread/C11‐threads
+find_package(Threads REQUIRED)
+
+# ------------------------------------------------
+# detect explicit_bzero() in <string.h>
+# ------------------------------------------------
+include(CheckFunctionExists)
+check_function_exists(explicit_bzero HAVE_EXPLICIT_BZERO)
+
+if(HAVE_EXPLICIT_BZERO)
+  # system has it—tell the compiler to skip our fallback
+  add_compile_definitions(HAVE_EXPLICIT_BZERO=1)
+endif()
+
 # Add the cmake directory to the module path
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
@@ -25,6 +39,12 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 # Include public headers.
 include_directories(${PROJECT_SOURCE_DIR}/include)
+
+# (force the cache so that the secp256k1 CMakeLists picks them up as OFF)
+set(SECP256K1_BUILD_TESTS            OFF CACHE BOOL "" FORCE)
+set(SECP256K1_BUILD_EXHAUSTIVE_TESTS OFF CACHE BOOL "" FORCE)
+set(SECP256K1_BUILD_BENCHMARK        OFF CACHE BOOL "" FORCE)
+set(SECP256K1_BUILD_CTIME_TESTS      OFF CACHE BOOL "" FORCE)
 
 # Add secp256k1 submodule.
 add_subdirectory(lib/secp256k1)
@@ -376,7 +396,19 @@ add_module(
     ""
     ""
 )
-target_link_libraries(peer_id PRIVATE
-    peer_id_secp256k1 peer_id_ed25519 peer_id_ecdsa peer_id_rsa
-    peer_id_proto unsigned_varint multibase multicodec multihash
+
+target_link_libraries(peer_id
+    PRIVATE
+      peer_id_secp256k1
+      peer_id_ed25519
+      peer_id_ecdsa
+      peer_id_rsa
+      peer_id_proto
+      unsigned_varint
+      multibase
+      multicodec
+      multihash
+
+    PUBLIC
+      Threads::Threads
 )
