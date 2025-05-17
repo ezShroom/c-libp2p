@@ -94,7 +94,9 @@ struct libp2p_listener
 static inline void libp2p_listener_ref(libp2p_listener_t *l)
 {
     if (!l)
+    {
         return;
+    }
     atomic_fetch_add(&l->refcount, 1);
 }
 
@@ -104,7 +106,9 @@ static inline void libp2p_listener_ref(libp2p_listener_t *l)
 static inline void libp2p_listener_unref(libp2p_listener_t *l)
 {
     if (!l)
+    {
         return;
+    }
     if (atomic_fetch_sub(&l->refcount, 1) == 1)
     {
         if (l->vt && l->vt->free)
@@ -117,13 +121,14 @@ static inline void libp2p_listener_unref(libp2p_listener_t *l)
 /* ------------------------------------------------------------------------- */
 /* Convenience inline wrappers                                               */
 /* ------------------------------------------------------------------------- */
-
 static inline libp2p_listener_err_t libp2p_listener_accept(libp2p_listener_t *l, libp2p_conn_t **out)
 {
     if (!l || !out)
+    {
         return LIBP2P_LISTENER_ERR_NULL_PTR;
+    }
 
-    libp2p_listener_ref(l); // <--- ADD THIS: Increment refcount
+    libp2p_listener_ref(l); 
 
     pthread_mutex_lock(&l->mutex);
     // Ensure vt is valid after potentially waiting for the lock
@@ -135,18 +140,18 @@ static inline libp2p_listener_err_t libp2p_listener_accept(libp2p_listener_t *l,
     }
     pthread_mutex_unlock(&l->mutex);
 
-    libp2p_listener_unref(l); // <--- ADD THIS: Decrement refcount
+    libp2p_listener_unref(l); 
     return ret;
 }
 
 static inline libp2p_listener_err_t libp2p_listener_local_addr(libp2p_listener_t *l, multiaddr_t **out)
 {
     if (!l || !out)
-    { // Check !out here, l->vt check is done after ref
+    { 
         return LIBP2P_LISTENER_ERR_NULL_PTR;
     }
 
-    libp2p_listener_ref(l); // <--- ADD THIS: Increment refcount
+    libp2p_listener_ref(l); 
 
     pthread_mutex_lock(&l->mutex);
     libp2p_listener_err_t ret = LIBP2P_LISTENER_ERR_NULL_PTR; // Default error if vt or func is null
@@ -156,16 +161,18 @@ static inline libp2p_listener_err_t libp2p_listener_local_addr(libp2p_listener_t
     }
     pthread_mutex_unlock(&l->mutex);
 
-    libp2p_listener_unref(l); // <--- ADD THIS: Decrement refcount
+    libp2p_listener_unref(l); 
     return ret;
 }
 
 static inline libp2p_listener_err_t libp2p_listener_close(libp2p_listener_t *l)
 {
     if (!l)
+    {
         return LIBP2P_LISTENER_ERR_NULL_PTR; // l->vt check after ref
+    }
 
-    libp2p_listener_ref(l); // <--- ADD THIS: Increment refcount
+    libp2p_listener_ref(l); 
 
     pthread_mutex_lock(&l->mutex);
     libp2p_listener_err_t ret = LIBP2P_LISTENER_ERR_NULL_PTR; // Default error
@@ -175,11 +182,19 @@ static inline libp2p_listener_err_t libp2p_listener_close(libp2p_listener_t *l)
     }
     pthread_mutex_unlock(&l->mutex);
 
-    libp2p_listener_unref(l); // <--- ADD THIS: Decrement refcount
+    libp2p_listener_unref(l); 
     return ret;
 }
 
-static inline void libp2p_listener_free(libp2p_listener_t *l) { libp2p_listener_unref(l); }
+static inline void libp2p_listener_free(libp2p_listener_t *l) 
+{ 
+    if (!l)
+    {
+        return;
+    }
+    
+    libp2p_listener_unref(l); 
+}
 
 #ifdef __cplusplus
 } /* extern "C" */
