@@ -66,11 +66,9 @@ typedef struct
      * there is nothing to accept right now.
      */
     libp2p_listener_err_t (*accept)(libp2p_listener_t *self, libp2p_conn_t **out_conn);
-
     libp2p_listener_err_t (*local_addr)(libp2p_listener_t *self, multiaddr_t **out);
 
     /* Lifecycle ----------------------------------------------------------- */
-
     libp2p_listener_err_t (*close)(libp2p_listener_t *self);
     void (*free)(libp2p_listener_t *self);
 
@@ -79,7 +77,6 @@ typedef struct
 /* ------------------------------------------------------------------------- */
 /* Public struct                                                             */
 /* ------------------------------------------------------------------------- */
-
 struct libp2p_listener
 {
     const libp2p_listener_vtbl_t *vt;

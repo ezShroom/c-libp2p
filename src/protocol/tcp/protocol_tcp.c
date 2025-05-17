@@ -20,14 +20,9 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
-
 #include <signal.h>
 #include <time.h>
-
 #include <unistd.h>
-#ifdef USE_EPOLL
-#include <sys/epoll.h>
-#endif
 
 #include "multiformats/multiaddr/multiaddr.h"
 #include "multiformats/multicodec/multicodec_codes.h"
@@ -39,6 +34,10 @@
 #include "transport/connection.h"
 #include "transport/listener.h"
 #include "transport/transport.h"
+
+#ifdef USE_EPOLL
+#include <sys/epoll.h>
+#endif
 
 #ifdef USE_KQUEUE
 #include <sys/event.h>
@@ -93,7 +92,6 @@ static void tcp_listener_destroy_actual(libp2p_listener_t *l)
 
     /* extract contexts */
     tcp_listener_ctx_t *ctx = l->ctx;
-    /* tctx is already set above */
 
     /* mark listener closed and remove from poller */
     if (ctx)
