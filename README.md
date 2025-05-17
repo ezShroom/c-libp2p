@@ -12,19 +12,23 @@ To build the project, you will need to have CMake installed. Follow these steps:
     cd libp2p-c
     ```
 
-2. Create a build directory and navigate into it:
+2. Create the build directory:
     ```sh
-    mkdir build && cd build
+    mkdir build 
     ```
 
 3. Run CMake to configure the project:
     ```sh
-    cmake ..
+    # For a normal build:
+    cmake -S .. -B build
+
+    # To enable Address, UndefinedBehavior, Thread Sanitizers, and Stress Test:
+    cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_SANITIZERS=OFF -DENABLE_STRESS_TESTS=ON
     ```
 
 4. Build the project:
     ```sh
-    cmake --build .       
+    cmake --build build      
     ```
 
 5. Run the tests:

@@ -59,6 +59,7 @@ dkms.conf
 # Ignore all files in the bin folder without extensions 
 bin/*
 !bin/.emptydir
+debug.plist
 
 # IDE Settings
 .vscode/*

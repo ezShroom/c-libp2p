@@ -11,6 +11,85 @@ project(libp2p
     LANGUAGES C
 )
 
+option(ENABLE_SANITIZERS "Enable Address, UndefinedBehavior and Thread Sanitizers" OFF)
+# ---------------------------------------------------------------------
+# Static‑analysis / coverage options
+# ---------------------------------------------------------------------
+option(ENABLE_CLANG_TIDY "Run clang‑tidy static analysis" OFF)
+option(ENABLE_CPPCHECK   "Run cppcheck static analysis"  OFF)
+option(ENABLE_IWYU       "Run include‑what‑you‑use"      OFF)
+option(ENABLE_COVERAGE   "Enable code‑coverage flags"    OFF)
+option(ENABLE_STRESS_TESTS "Build and run high‑load stress tests" OFF)
+
+if(ENABLE_SANITIZERS)
+    # Collect supported sanitizers
+    set(_sanitizers address undefined)
+
+    # ThreadSanitizer is available everywhere except AppleClang on macOS
+    if(NOT (CMAKE_C_COMPILER_ID STREQUAL "AppleClang" AND CMAKE_SYSTEM_NAME STREQUAL "Darwin"))
+        list(APPEND _sanitizers thread)
+    endif()
+
+    # MemorySanitizer is only supported on 64‑bit Linux with upstream Clang
+    if(CMAKE_C_COMPILER_ID MATCHES "Clang" AND
+       CMAKE_SIZEOF_VOID_P EQUAL 8 AND
+       CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        list(APPEND _sanitizers memory)
+    endif()
+
+    list(JOIN _sanitizers "," _san_opt)
+    message(STATUS "Building with sanitizers: ${_san_opt}")
+
+    add_compile_options(-fsanitize=${_san_opt} -fno-omit-frame-pointer)
+    add_link_options(-fsanitize=${_san_opt})
+endif()
+
+# ---------------------------------------------------------------------
+# Static analysis integrations
+# ---------------------------------------------------------------------
+if(ENABLE_CLANG_TIDY)
+    find_program(CLANG_TIDY_EXE NAMES clang-tidy)
+    if(CLANG_TIDY_EXE)
+        set(CMAKE_C_CLANG_TIDY "${CLANG_TIDY_EXE};--quiet")
+        message(STATUS "clang-tidy enabled: ${CLANG_TIDY_EXE}")
+    else()
+        message(WARNING "clang-tidy requested but not found – disabling")
+    endif()
+endif()
+
+if(ENABLE_CPPCHECK)
+    find_program(CPPCHECK_EXE NAMES cppcheck)
+    if(CPPCHECK_EXE)
+        set(CMAKE_C_CPPCHECK "${CPPCHECK_EXE};--enable=all;--inconclusive;--std=c99;--quiet;--error-exitcode=1")
+        message(STATUS "cppcheck enabled: ${CPPCHECK_EXE}")
+    else()
+        message(WARNING "cppcheck requested but not found – disabling")
+    endif()
+endif()
+
+if(ENABLE_IWYU)
+    find_program(IWYU_EXE NAMES include-what-you-use iwyu)
+    if(IWYU_EXE)
+        set(CMAKE_C_INCLUDE_WHAT_YOU_USE "${IWYU_EXE}")
+        message(STATUS "include-what-you-use enabled: ${IWYU_EXE}")
+    else()
+        message(WARNING "include-what-you-use requested but not found – disabling")
+    endif()
+endif()
+
+# ---------------------------------------------------------------------
+# Code coverage
+# ---------------------------------------------------------------------
+if(ENABLE_COVERAGE)
+    if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+        add_compile_options(-O0 --coverage)
+        add_link_options(--coverage)
+        message(STATUS "Code coverage instrumentation enabled")
+    else()
+        message(WARNING "Code coverage currently supported only with GCC or Clang")
+    endif()
+endif()
+
 # Pull in pthread/C11‐threads
 find_package(Threads REQUIRED)
 
@@ -412,3 +491,86 @@ target_link_libraries(peer_id
     PUBLIC
       Threads::Threads
 )
+
+# ---------------------------------------------
+# protocol/protocol_tcp
+# ---------------------------------------------
+
+add_module(
+    protocol_tcp                              # MODULE_NAME  (library target)
+    src/protocol/tcp/protocol_tcp.c            # MODULE_SOURCE
+    tests/protocol/tcp/test_protocol_tcp.c     # TEST_SOURCE
+    ""                                         # BENCH_SOURCE (none yet)
+    src/protocol/tcp                           # PRIVATE_DIR  (extra includes)
+)
+
+# Link against multiaddr (which already carries all its deps) and Threads.
+target_link_libraries(protocol_tcp
+    PUBLIC multiaddr Threads::Threads
+)
+
+target_sources(protocol_tcp PRIVATE
+    src/protocol/tcp/protocol_tcp_util.c
+    src/protocol/tcp/protocol_tcp_conn.c
+    src/protocol/tcp/protocol_tcp_queue.c
+    src/protocol/tcp/protocol_tcp_poller.c
+)
+
+
+# Windows needs Winsock; *nix already linked via libc.
+if (WIN32)
+    target_link_libraries(protocol_tcp PRIVATE ws2_32)
+endif()
+
+# -----------------------------------------------------------------
+# protocol/tcp high‑load stress test (optional)
+# -----------------------------------------------------------------
+if(ENABLE_STRESS_TESTS)
+    add_executable(test_protocol_tcp_stress
+        tests/protocol/tcp/test_protocol_tcp_stress.c
+    )
+    target_link_libraries(test_protocol_tcp_stress
+        PRIVATE
+            protocol_tcp
+            Threads::Threads
+    )
+    set_target_properties(test_protocol_tcp_stress PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/tests
+    )
+
+    add_test(NAME StressProtocolTCP COMMAND test_protocol_tcp_stress)
+    # Stress jobs can run for a while – no timeout (0 = infinite)
+    set_tests_properties(StressProtocolTCP PROPERTIES TIMEOUT 0)
+
+    # On Windows, copy produced DLLs next to the test binary
+    if (WIN32 AND BUILD_SHARED_LIBS)
+        add_custom_command(TARGET test_protocol_tcp_stress
+            POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+                ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+                $<TARGET_FILE_DIR:test_protocol_tcp_stress>
+        )
+    endif()
+endif()
+
+
+# ---------------------------------------------
+# protocol/protocol_multiselect
+# ---------------------------------------------
+add_module(
+    protocol_multiselect                                   # MODULE_NAME  (library)
+    src/protocol/multiselect/protocol_multiselect.c        # MODULE_SOURCE
+    tests/protocol/multiselect/test_protocol_multiselect.c  # TEST_SOURCE
+    ""                                            # BENCH_SOURCE (none)
+    src/protocol/multiselect                      # PRIVATE_DIR
+)
+
+target_link_libraries(protocol_multiselect PUBLIC unsigned_varint)
+
+if (TARGET test_protocol_multiselect)
+    target_link_libraries(test_protocol_multiselect
+        PRIVATE
+            protocol_tcp
+            Threads::Threads
+    )
+endif()

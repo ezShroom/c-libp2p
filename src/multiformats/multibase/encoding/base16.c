@@ -97,27 +97,18 @@ int multibase_base16_encode(const uint8_t *restrict data, size_t data_len, char 
 
     if ((((uintptr_t)out) & (HEX_ALIGNMENT - 1)) == 0)
     {
-#ifdef REQUIRE_STRICT_ALIGNMENT
-        if (out_len < data_len * 2 + 2)
-        {
-            return MULTIBASE_ERR_BUFFER_TOO_SMALL;
-        }
-#else
+        // require space for all hex digits plus one null terminator
         if (out_len < data_len * 2 + 1)
         {
             return MULTIBASE_ERR_BUFFER_TOO_SMALL;
         }
-#endif
         uint16_t *restrict out16 = (uint16_t *)out;
         for (size_t i = 0; i < data_len; i++)
         {
             out16[i] = HEX_LOOKUP[data[i]];
         }
-#ifdef REQUIRE_STRICT_ALIGNMENT
-        out16[data_len] = 0;
-#else
-        out16[data_len] = 0;
-#endif
+        // write a single-byte null terminator
+        out[data_len * 2] = '\0';
     }
     else
     {
