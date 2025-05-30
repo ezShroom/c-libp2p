@@ -186,6 +186,7 @@ int main(int argc, char **argv)
     libp2p_protocol_handler_ctx_t *handler_ctx = NULL;
     libp2p_conn_t *raw_conn = NULL;
     libp2p_uconn_t *uconn = NULL;
+    libp2p_transport_t *tcp = NULL;
 
     logmsg("=== Enhanced Identify Protocol Test (High-Level API) ===\n");
     logmsg("connecting to: %s\n", argv[1]);
@@ -273,7 +274,7 @@ int main(int argc, char **argv)
 
     // Create TCP transport and dial
     libp2p_tcp_config_t tcfg = libp2p_tcp_config_default();
-    libp2p_transport_t *tcp = libp2p_tcp_transport_new(&tcfg);
+    tcp = libp2p_tcp_transport_new(&tcfg);
     if (!tcp)
     {
         fprintf(stderr, "failed to create TCP transport\n");
@@ -287,7 +288,6 @@ int main(int argc, char **argv)
         goto cleanup;
     }
 
-    libp2p_transport_free(tcp); // We can free the transport after dialing
     logmsg("raw TCP connection established\n");
 
     // Generate identity keys (like in ping test)
@@ -420,6 +420,10 @@ cleanup:
     if (mplex)
     {
         libp2p_muxer_free(mplex);
+    }
+    if (tcp)
+    {
+        libp2p_transport_free(tcp);
     }
     free(host);
     multiaddr_free(maddr);
