@@ -46,12 +46,8 @@
 #include "transport/transport.h"
 
 /* Forward declarations for helpers implemented in separate modules */
-libp2p_transport_err_t tcp_dial(libp2p_transport_t *self,
-                                const multiaddr_t *addr,
-                                libp2p_conn_t **out);
-libp2p_transport_err_t tcp_listen(libp2p_transport_t *self,
-                                  const multiaddr_t *addr,
-                                  libp2p_listener_t **out);
+libp2p_transport_err_t tcp_dial(libp2p_transport_t *self, const multiaddr_t *addr, libp2p_conn_t **out);
+libp2p_transport_err_t tcp_listen(libp2p_transport_t *self, const multiaddr_t *addr, libp2p_listener_t **out);
 
 #ifdef USE_KQUEUE
 #include <sys/event.h>
@@ -508,7 +504,8 @@ libp2p_listener_err_t tcp_listener_accept(libp2p_listener_t *l, libp2p_conn_t **
     const time_t WAIT_SEC = (time_t)(wait_ms / 1000);             /* ≤ 86 400        */
     const long WAIT_NSEC = (long)((wait_ms % 1000) * 1000000ULL); /* < 1 000 000 000 */
 
-    while (!ctx->q.head && !atomic_load_explicit(&ctx->closed, memory_order_acquire) && !atomic_load_explicit(&ctx->state.disabled, memory_order_acquire))
+    while (!ctx->q.head && !atomic_load_explicit(&ctx->closed, memory_order_acquire) &&
+           !atomic_load_explicit(&ctx->state.disabled, memory_order_acquire))
     {
         struct timespec ts;
         const clockid_t WAIT_CLOCK = ctx->state.cond_clock;
@@ -935,7 +932,6 @@ void tcp_listener_free(libp2p_listener_t *l)
      */
     tcp_listener_destroy_actual(l);
 }
-
 
 /**
  * @brief Create and register a new TCP listener for the given multiaddress.
@@ -1401,7 +1397,7 @@ static void tcp_free(libp2p_transport_t *t)
 
                 if (pthread_timedjoin_np(ctx->thr, NULL, &ts_extra) == 0)
                 {
-                    fprintf(stderr, "libp2p-c: poll thread joined after %d second%s of extra wait\n", waited + interval,
+                    fprintf(stderr, "c-libp2p: poll thread joined after %d second%s of extra wait\n", waited + interval,
                             ((waited + interval) == 1) ? "" : "s");
                     joined = true;
                     break;
@@ -1420,13 +1416,13 @@ static void tcp_free(libp2p_transport_t *t)
 
             if (!joined)
             {
-                fprintf(stderr, "libp2p-c: poll thread still alive; attempting cancellation (%s)\n", strerror(rc));
+                fprintf(stderr, "c-libp2p: poll thread still alive; attempting cancellation (%s)\n", strerror(rc));
 
                 /* Best-effort cancellation of the poll thread */
                 pthread_cancel(ctx->thr);
                 if (pthread_join(ctx->thr, NULL) != 0)
                 {
-                    fprintf(stderr, "libp2p-c: poll thread did not respond to cancel; leaking context\n");
+                    fprintf(stderr, "c-libp2p: poll thread did not respond to cancel; leaking context\n");
 
                     (void)pthread_detach(ctx->thr);
                     free(t);
@@ -1441,7 +1437,7 @@ static void tcp_free(libp2p_transport_t *t)
         if (rc != 0)
         {
             fprintf(stderr,
-                    "libp2p-c: initial pthread_join failed (%s); "
+                    "c-libp2p: initial pthread_join failed (%s); "
                     "waiting up to 30 s for poll thread to exit\n",
                     strerror(rc));
 
@@ -1456,7 +1452,7 @@ static void tcp_free(libp2p_transport_t *t)
                 {
                     if (pthread_join(ctx->thr, NULL) == 0)
                     {
-                        fprintf(stderr, "libp2p-c: poll thread joined after %d second%s of extra wait\n", waited, (waited == 1) ? "" : "s");
+                        fprintf(stderr, "c-libp2p: poll thread joined after %d second%s of extra wait\n", waited, (waited == 1) ? "" : "s");
                     }
                     joined = true;
                     break;
@@ -1478,7 +1474,7 @@ static void tcp_free(libp2p_transport_t *t)
 
             if (!joined)
             {
-                fprintf(stderr, "libp2p-c: poll thread still alive after extended wait; "
+                fprintf(stderr, "c-libp2p: poll thread still alive after extended wait; "
                                 "detaching and leaking transport context to avoid use-after-free\n");
 
                 /* detach so the OS reclaims thread resources once it exits */
@@ -1588,7 +1584,7 @@ static void tcp_free(libp2p_transport_t *t)
     if (leaked_list_snapshot && atomic_load_explicit(&ctx->gc.active_destroyers, memory_order_acquire) != 0)
     {
         fprintf(stderr,
-                "libp2p-c: tcp_free waited %d ms but %zu listener destroyer(s) are still active; "
+                "c-libp2p: tcp_free waited %d ms but %zu listener destroyer(s) are still active; "
                 "leaking detached listener snapshot to avoid use‑after‑free\n",
                 MAX_TOTAL_WAIT_MS, (size_t)atomic_load_explicit(&ctx->gc.active_destroyers, memory_order_relaxed));
         /* intentional leak: do not free(listeners) */
@@ -1769,7 +1765,7 @@ libp2p_transport_t *libp2p_tcp_transport_new(const libp2p_tcp_config_t *cfg)
             int rc2 = pthread_mutex_destroy(&ctx->listeners.lock);
             if (rc2 != 0)
             {
-                fprintf(stderr, "libp2p-c: warning: failed to destroy transport mutex: %s\n", strerror(rc2));
+                fprintf(stderr, "c-libp2p: warning: failed to destroy transport mutex: %s\n", strerror(rc2));
             }
         }
         free(ctx);
@@ -1790,14 +1786,14 @@ libp2p_transport_t *libp2p_tcp_transport_new(const libp2p_tcp_config_t *cfg)
             int rc = pthread_mutex_destroy(&ctx->gc.lock);
             if (rc != 0)
             {
-                fprintf(stderr, "libp2p-c: warning: failed to destroy graveyard mutex: %s\n", strerror(rc));
+                fprintf(stderr, "c-libp2p: warning: failed to destroy graveyard mutex: %s\n", strerror(rc));
             }
         }
         {
             int rc2 = pthread_mutex_destroy(&ctx->listeners.lock);
             if (rc2 != 0)
             {
-                fprintf(stderr, "libp2p-c: warning: failed to destroy transport mutex: %s\n", strerror(rc2));
+                fprintf(stderr, "c-libp2p: warning: failed to destroy transport mutex: %s\n", strerror(rc2));
             }
         }
         free(ctx);
@@ -1812,14 +1808,14 @@ libp2p_transport_t *libp2p_tcp_transport_new(const libp2p_tcp_config_t *cfg)
             int rc = pthread_mutex_destroy(&ctx->gc.lock);
             if (rc != 0)
             {
-                fprintf(stderr, "libp2p-c: warning: failed to destroy graveyard mutex: %s\n", strerror(rc));
+                fprintf(stderr, "c-libp2p: warning: failed to destroy graveyard mutex: %s\n", strerror(rc));
             }
         }
         {
             int rc2 = pthread_mutex_destroy(&ctx->listeners.lock);
             if (rc2 != 0)
             {
-                fprintf(stderr, "libp2p-c: warning: failed to destroy transport mutex: %s\n", strerror(rc2));
+                fprintf(stderr, "c-libp2p: warning: failed to destroy transport mutex: %s\n", strerror(rc2));
             }
         }
         free(ctx);
@@ -1841,14 +1837,14 @@ libp2p_transport_t *libp2p_tcp_transport_new(const libp2p_tcp_config_t *cfg)
             int rc = pthread_mutex_destroy(&ctx->gc.lock);
             if (rc != 0)
             {
-                fprintf(stderr, "libp2p-c: warning: failed to destroy graveyard mutex: %s\n", strerror(rc));
+                fprintf(stderr, "c-libp2p: warning: failed to destroy graveyard mutex: %s\n", strerror(rc));
             }
         }
         {
             int rc2 = pthread_mutex_destroy(&ctx->listeners.lock);
             if (rc2 != 0)
             {
-                fprintf(stderr, "libp2p-c: warning: failed to destroy transport mutex: %s\n", strerror(rc2));
+                fprintf(stderr, "c-libp2p: warning: failed to destroy transport mutex: %s\n", strerror(rc2));
             }
         }
         free(ctx);
@@ -1875,14 +1871,14 @@ libp2p_transport_t *libp2p_tcp_transport_new(const libp2p_tcp_config_t *cfg)
                 int rc = pthread_mutex_destroy(&ctx->gc.lock);
                 if (rc != 0)
                 {
-                    fprintf(stderr, "libp2p-c: warning: failed to destroy graveyard mutex: %s\n", strerror(rc));
+                    fprintf(stderr, "c-libp2p: warning: failed to destroy graveyard mutex: %s\n", strerror(rc));
                 }
             }
             {
                 int rc2 = pthread_mutex_destroy(&ctx->listeners.lock);
                 if (rc2 != 0)
                 {
-                    fprintf(stderr, "libp2p-c: warning: failed to destroy transport mutex: %s\n", strerror(rc2));
+                    fprintf(stderr, "c-libp2p: warning: failed to destroy transport mutex: %s\n", strerror(rc2));
                 }
             }
             free(ctx);
@@ -1905,14 +1901,14 @@ libp2p_transport_t *libp2p_tcp_transport_new(const libp2p_tcp_config_t *cfg)
                 int rc = pthread_mutex_destroy(&ctx->gc.lock);
                 if (rc != 0)
                 {
-                    fprintf(stderr, "libp2p-c: warning: failed to destroy graveyard mutex: %s\n", strerror(rc));
+                    fprintf(stderr, "c-libp2p: warning: failed to destroy graveyard mutex: %s\n", strerror(rc));
                 }
             }
             {
                 int rc2 = pthread_mutex_destroy(&ctx->listeners.lock);
                 if (rc2 != 0)
                 {
-                    fprintf(stderr, "libp2p-c: warning: failed to destroy transport mutex: %s\n", strerror(rc2));
+                    fprintf(stderr, "c-libp2p: warning: failed to destroy transport mutex: %s\n", strerror(rc2));
                 }
             }
             free(ctx);
@@ -1934,14 +1930,14 @@ libp2p_transport_t *libp2p_tcp_transport_new(const libp2p_tcp_config_t *cfg)
             int rc = pthread_mutex_destroy(&ctx->gc.lock);
             if (rc != 0)
             {
-                fprintf(stderr, "libp2p-c: warning: failed to destroy graveyard mutex: %s\n", strerror(rc));
+                fprintf(stderr, "c-libp2p: warning: failed to destroy graveyard mutex: %s\n", strerror(rc));
             }
         }
         {
             int rc2 = pthread_mutex_destroy(&ctx->listeners.lock);
             if (rc2 != 0)
             {
-                fprintf(stderr, "libp2p-c: warning: failed to destroy transport mutex: %s\n", strerror(rc2));
+                fprintf(stderr, "c-libp2p: warning: failed to destroy transport mutex: %s\n", strerror(rc2));
             }
         }
         free(ctx);
@@ -1960,14 +1956,14 @@ libp2p_transport_t *libp2p_tcp_transport_new(const libp2p_tcp_config_t *cfg)
             int rc = pthread_mutex_destroy(&ctx->gc.lock);
             if (rc != 0)
             {
-                fprintf(stderr, "libp2p-c: warning: failed to destroy graveyard mutex: %s\n", strerror(rc));
+                fprintf(stderr, "c-libp2p: warning: failed to destroy graveyard mutex: %s\n", strerror(rc));
             }
         }
         {
             int rc2 = pthread_mutex_destroy(&ctx->listeners.lock);
             if (rc2 != 0)
             {
-                fprintf(stderr, "libp2p-c: warning: failed to destroy transport mutex: %s\n", strerror(rc2));
+                fprintf(stderr, "c-libp2p: warning: failed to destroy transport mutex: %s\n", strerror(rc2));
             }
         }
         free(ctx);
@@ -1989,14 +1985,14 @@ libp2p_transport_t *libp2p_tcp_transport_new(const libp2p_tcp_config_t *cfg)
             int rc = pthread_mutex_destroy(&ctx->gc.lock);
             if (rc != 0)
             {
-                fprintf(stderr, "libp2p-c: warning: failed to destroy graveyard mutex: %s\n", strerror(rc));
+                fprintf(stderr, "c-libp2p: warning: failed to destroy graveyard mutex: %s\n", strerror(rc));
             }
         }
         {
             int rc2 = pthread_mutex_destroy(&ctx->listeners.lock);
             if (rc2 != 0)
             {
-                fprintf(stderr, "libp2p-c: warning: failed to destroy transport mutex: %s\n", strerror(rc2));
+                fprintf(stderr, "c-libp2p: warning: failed to destroy transport mutex: %s\n", strerror(rc2));
             }
         }
         free(ctx);

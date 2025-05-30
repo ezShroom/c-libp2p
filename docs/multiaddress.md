@@ -1,6 +1,6 @@
 # Multiaddress Usage
 
-A **multiaddress** encodes network locations in a self-describing format. libp2p-c provides utilities under `multiformats/multiaddr/` for parsing, inspecting and composing these addresses.
+A **multiaddress** encodes network locations in a self-describing format. c-libp2p provides utilities under `multiformats/multiaddr/` for parsing, inspecting and composing these addresses.
 
 A multiaddress is an ordered list of protocol components. For example `/ip4/127.0.0.1/tcp/4001` contains two protocols: `ip4` with the address `127.0.0.1` and `tcp` with port `4001`.
 

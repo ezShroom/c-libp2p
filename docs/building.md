@@ -1,11 +1,11 @@
-# Building libp2p-c
+# Building c-libp2p
 
-libp2p-c uses CMake and requires a C compiler. The steps below summarize the process.
+c-libp2p uses CMake and requires a C compiler. The steps below summarize the process.
 
 1. Clone the repository and enter it:
    ```sh
-   git clone https://github.com/Pier-Two/libp2p-c.git
-   cd libp2p-c
+   git clone https://github.com/Pier-Two/c-libp2p.git
+   cd c-libp2p
    ```
 2. Create a build directory:
    ```sh

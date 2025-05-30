@@ -1,16 +1,16 @@
-# libp2p-c
+# c-libp2p
 
-**libp2p-c** is an implementation of the [libp2p specification](https://github.com/libp2p/specs) written in C.  The project is still in active development but already provides the building blocks needed for peer-to-peer networking applications.
+**c-libp2p** is an implementation of the [libp2p specification](https://github.com/libp2p/specs) written in C.  The project is still in active development but already provides the building blocks needed for peer-to-peer networking applications.
 
 ## Building
 
-libp2p-c uses CMake and should build on Linux, macOS and Windows.  A C compiler that supports the C11 standard is required.
+c-libp2p uses CMake and should build on Linux, macOS and Windows.  A C compiler that supports the C11 standard is required.
 
 ### Clone the repository
 
 ```sh
-git clone --recursive https://github.com/Pier-Two/libp2p-c.git
-cd libp2p-c
+git clone --recursive https://github.com/Pier-Two/c-libp2p.git
+cd c-libp2p
 ```
 
 The `--recursive` flag ensures that all third-party submodules are fetched.
@@ -51,7 +51,7 @@ Detailed documentation is available under [docs/](docs/README.md).
 
 ## Third-party libraries
 
-libp2p-c bundles several third-party projects under `lib/`:
+c-libp2p bundles several third-party projects under `lib/`:
 
 - [libtomcrypt](https://github.com/libtom/libtomcrypt) and [libtommath](https://github.com/libtom/libtommath) – [LibTom License](http://unlicense.org/)
 - [secp256k1](https://github.com/bitcoin-core/secp256k1) – [MIT License](https://opensource.org/licenses/MIT)

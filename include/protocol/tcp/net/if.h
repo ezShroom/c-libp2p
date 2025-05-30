@@ -5,7 +5,7 @@
  * @file net/if.h
  * @brief Minimal stub of <net/if.h> for Windows builds.
  *
- * The current libp2p-c codebase only includes the header but does not
+ * The current c-libp2p codebase only includes the header but does not
  * actually use any of its definitions when compiled for Windows,
  * therefore we provide just enough to satisfy the compiler.
  */

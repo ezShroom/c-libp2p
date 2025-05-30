@@ -38,7 +38,7 @@ over an existing transport connection.
 
 ## Choosing a Stream Multiplexer
 
-libp2p-c offers the mplex and yamux multiplexers. They wrap the secure channel to
+c-libp2p offers the mplex and yamux multiplexers. They wrap the secure channel to
 allow many independent streams.
 
 ```c

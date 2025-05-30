@@ -1,5 +1,5 @@
 /*  ──────────────────────────────────────────────────────────────── *\
-    libp2p-c TCP transport – high-load stress / race harness
+    c-libp2p TCP transport – high-load stress / race harness
 \*  ──────────────────────────────────────────────────────────────── */
 
 #include <limits.h>
@@ -154,7 +154,7 @@ int main(void)
 
     /* -------- create transport -------- */
     libp2p_tcp_config_t cfg = libp2p_tcp_config_default();
-    cfg.accept_poll_ms = 10;    /* wake listener every 10 ms        */
+    cfg.accept_poll_ms = 10;       /* wake listener every 10 ms        */
     cfg.connect_timeout_ms = 5000; /* 5 s dial timeout                 */
     /* Use default close_timeout_ms to avoid premature forced close */
     libp2p_transport_t *tcp = libp2p_tcp_transport_new(&cfg);

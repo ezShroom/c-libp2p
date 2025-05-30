@@ -67,7 +67,7 @@ static int handle_identify_request(const peer_id_t *local_peer_id,
     
     // Fill in response
     response->protocol_version = strdup("libp2p/1.0.0");
-    response->agent_version = strdup("libp2p-c/0.1.0");
+    response->agent_version = strdup("c-libp2p/0.1.0");
     response->public_key = pubkey_buf;
     response->public_key_len = pubkey_len;
     
@@ -288,7 +288,7 @@ static int listener_handle_identify_request(const peer_id_t *local_peer_id,
     
     // Fill in response
     response->protocol_version = strdup("libp2p/1.0.0");
-    response->agent_version = strdup("libp2p-c/0.1.0");
+    response->agent_version = strdup("c-libp2p/0.1.0");
     response->public_key = pubkey_buf;
     response->public_key_len = pubkey_len;
     

@@ -5,7 +5,7 @@
  * @file netdb.h
  * @brief Minimal <netdb.h> replacement for Windows builds.
  *
- * The libp2p-c codebase only uses getaddrinfo()/freeaddrinfo() and the
+ * The c-libp2p codebase only uses getaddrinfo()/freeaddrinfo() and the
  * addrinfo structure, all of which are already provided by <ws2tcpip.h>
  * on modern Windows systems.
  */

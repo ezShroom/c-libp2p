@@ -1,6 +1,6 @@
 # Peer Identities
 
-Each libp2p node is identified by a **Peer ID**. In libp2p-c, a peer ID is the multihash of a deterministically encoded public key. The `peer_id/` helpers make it straightforward to create peer IDs from raw key material, convert them to and from human readable strings, and compare or destroy them when finished.
+Each libp2p node is identified by a **Peer ID**. In c-libp2p, a peer ID is the multihash of a deterministically encoded public key. The `peer_id/` helpers make it straightforward to create peer IDs from raw key material, convert them to and from human readable strings, and compare or destroy them when finished.
 
 The API supports RSA, Ed25519, secp256k1 and ECDSA keys. The resulting peer IDs can be represented either in the legacy base58btc multihash form (`Qm...`) or in CIDv1 format using a multibase prefix (`bafz...`).
 

@@ -7,7 +7,7 @@
  *
  * This compatibility layer maps POSIX poll() calls to the Windows WSAPoll()
  * API so the existing code can compile unmodified. It only implements the
- * subset of functionality required by libp2p-c.
+ * subset of functionality required by c-libp2p.
  */
 
 #ifdef _WIN32
@@ -53,10 +53,7 @@ typedef unsigned long nfds_t; /* WSAPoll uses ULONG – this matches */
 /** Function wrapper */
 
 /** Wrap WSAPoll with a POSIX-like poll() API. */
-static inline int poll(struct pollfd *fds, nfds_t nfds, int timeout)
-{
-    return WSAPoll((WSAPOLLFD *)fds, (ULONG)nfds, timeout);
-}
+static inline int poll(struct pollfd *fds, nfds_t nfds, int timeout) { return WSAPoll((WSAPOLLFD *)fds, (ULONG)nfds, timeout); }
 
 #else /* non-Windows */
 
