@@ -814,3 +814,13 @@ target_link_libraries(example_identify_dial
 set_target_properties(example_identify_dial PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/examples
 )
+
+# On Windows, copy all produced DLLs from bin/ into the examples folder
+if (WIN32 AND BUILD_SHARED_LIBS)
+  add_custom_command(TARGET example_identify_dial
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+      ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+      $<TARGET_FILE_DIR:example_identify_dial>
+  )
+endif()

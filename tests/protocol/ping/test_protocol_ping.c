@@ -1,11 +1,25 @@
 #include "protocol/ping/protocol_ping.h"
 #include <assert.h>
 #include <errno.h>
-#include <fcntl.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#ifdef _WIN32
+#include <io.h>
+#include <fcntl.h>
+#include <windows.h>
+#define pipe(fds) _pipe(fds, 4096, _O_BINARY)
+#define read_func _read
+#define write_func _write
+#define close_func _close
+#else
+#include <fcntl.h>
 #include <unistd.h>
+#define read_func read
+#define write_func write
+#define close_func close
+#endif
 
 typedef struct
 {
@@ -16,7 +30,7 @@ typedef struct
 static ssize_t pipe_read(libp2p_conn_t *c, void *buf, size_t len)
 {
     pipe_ctx_t *p = c->ctx;
-    ssize_t n = read(p->rfd, buf, len);
+    ssize_t n = read_func(p->rfd, buf, len);
     if (n > 0)
         return n;
     if (n == 0)
@@ -29,7 +43,7 @@ static ssize_t pipe_read(libp2p_conn_t *c, void *buf, size_t len)
 static ssize_t pipe_write(libp2p_conn_t *c, const void *buf, size_t len)
 {
     pipe_ctx_t *p = c->ctx;
-    ssize_t n = write(p->wfd, buf, len);
+    ssize_t n = write_func(p->wfd, buf, len);
     if (n >= 0)
         return n;
     if (errno == EAGAIN || errno == EWOULDBLOCK)
@@ -55,8 +69,8 @@ static libp2p_conn_err_t pipe_close(libp2p_conn_t *c)
     pipe_ctx_t *p = c->ctx;
     if (p)
     {
-        close(p->rfd);
-        close(p->wfd);
+        close_func(p->rfd);
+        close_func(p->wfd);
     }
     return LIBP2P_CONN_OK;
 }
@@ -78,10 +92,12 @@ static void make_pipe_pair(libp2p_conn_t *a, libp2p_conn_t *b)
     int ab[2];
     int ba[2];
     assert(pipe(ab) == 0 && pipe(ba) == 0);
+#ifndef _WIN32
     fcntl(ab[0], F_SETFL, O_NONBLOCK);
     fcntl(ab[1], F_SETFL, O_NONBLOCK);
     fcntl(ba[0], F_SETFL, O_NONBLOCK);
     fcntl(ba[1], F_SETFL, O_NONBLOCK);
+#endif
     pipe_ctx_t *actx = malloc(sizeof(*actx));
     pipe_ctx_t *bctx = malloc(sizeof(*bctx));
     assert(actx && bctx);

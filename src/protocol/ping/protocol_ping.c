@@ -8,8 +8,8 @@
 #include <sys/random.h>
 #endif
 #ifdef _WIN32
-#include <wincrypt.h>
 #include <windows.h>
+#include <wincrypt.h>
 #else
 #include <stdlib.h>
 #endif
