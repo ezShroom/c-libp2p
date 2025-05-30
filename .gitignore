@@ -58,6 +58,7 @@ dkms.conf
 
 # Ignore all files in the bin folder without extensions 
 bin/*
+build/*
 !bin/.emptydir
 debug.plist
 

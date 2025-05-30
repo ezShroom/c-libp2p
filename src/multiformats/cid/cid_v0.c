@@ -65,9 +65,7 @@ int cid_v0_to_bytes(const cid_v0_t *cid, uint8_t *out, size_t out_len)
  * @param bytes_len Length of the byte representation.
  * @return int Error code indicating success or type of failure.
  */
-int cid_v0_from_bytes(cid_v0_t *cid,
-                      const uint8_t *bytes,
-                      size_t bytes_len)
+int cid_v0_from_bytes(cid_v0_t *cid, const uint8_t *bytes, size_t bytes_len)
 {
     if (cid == NULL || bytes == NULL)
     {
@@ -79,8 +77,7 @@ int cid_v0_from_bytes(cid_v0_t *cid,
         return CIDV0_ERROR_INVALID_DIGEST_LENGTH;
     }
 
-    if (bytes[0] != MULTICODEC_SHA2_256 ||
-        bytes[1] != SHA2_256_LENGTH_BYTE)   
+    if (bytes[0] != MULTICODEC_SHA2_256 || bytes[1] != SHA2_256_LENGTH_BYTE)
     {
         return CIDV0_ERROR_INVALID_DIGEST_LENGTH;
     }

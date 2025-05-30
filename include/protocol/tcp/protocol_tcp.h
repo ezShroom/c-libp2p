@@ -14,13 +14,10 @@
 #include <stdint.h>
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
-/* ------------------------------------------------------------------------- */
-/* Configuration                                                             */
-/* ------------------------------------------------------------------------- */
+
 
 /**
  * @struct libp2p_tcp_config_t
@@ -35,9 +32,9 @@ typedef struct
     bool keepalive;       /**< Enable TCP keep-alives.                      */
     uint32_t recv_buffer; /**< SO_RCVBUF (0 → kernel default).              */
     uint32_t send_buffer; /**< SO_SNDBUF (0 → kernel default).              */
-    int backlog;          /**< Listen backlog (≤0 → OS default).            */
-    uint32_t ttl;         /**< Initial IP TTL / hop-limit (0 → OS default). */
-    uint32_t connect_timeout;   /**< Dial timeout in milliseconds.           */
+    int listen_backlog;   /**< Listen backlog (≤0 → OS default).            */
+    uint32_t ttl_ms;      /**< Initial IP TTL / hop-limit in ms (0 → OS default). */
+    uint32_t connect_timeout_ms;   /**< Dial timeout in milliseconds.           */
     uint32_t accept_poll_ms; /**< accept() poll period in milliseconds (0 → library default 1000). */
     uint32_t close_timeout_ms; /**< Listener close timeout in milliseconds (0 → immediate, UINT32_MAX → wait forever, library default 5000). */
 } libp2p_tcp_config_t;
@@ -50,8 +47,8 @@ typedef struct
  *  * `keepalive    = true`
  *  * `recv_buffer  = 0`
  *  * `send_buffer  = 0`
- *  * `backlog      = 128`
- *  * `ttl          = 0`
+ *  * `listen_backlog = 128`
+ *  * `ttl_ms       = 0`
  *  * `close_timeout_ms = 5000`
  */
 static inline libp2p_tcp_config_t libp2p_tcp_config_default(void)
@@ -60,18 +57,15 @@ static inline libp2p_tcp_config_t libp2p_tcp_config_default(void)
         .nodelay = true, 
         .reuse_port = true, 
         .keepalive = true, 
-        .recv_buffer = 0, 
-        .send_buffer = 0, 
-        .backlog = 128, .ttl = 0, 
-        .connect_timeout = 30000,
+        .recv_buffer = 0,
+        .send_buffer = 0,
+        .listen_backlog = 128,
+        .ttl_ms = 0,
+        .connect_timeout_ms = 30000,
         .accept_poll_ms  = 1000,   /* 1 s default */
         .close_timeout_ms = 5000 /* 5 s default */
     };
 }
-
-/* ------------------------------------------------------------------------- */
-/* Constructor                                                               */
-/* ------------------------------------------------------------------------- */
 
 /**
  * @brief Create a new TCP transport.

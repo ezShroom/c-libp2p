@@ -25,11 +25,18 @@ void cq_init(conn_queue_t *q)
         abort();
     }
 #if defined(_POSIX_MONOTONIC_CLOCK) && !defined(__APPLE__)
-    if (pthread_condattr_setclock(&attr, CLOCK_MONOTONIC) != 0)
     {
-        pthread_condattr_destroy(&attr);
-        pthread_mutex_destroy(&q->mtx);
-        abort();
+        int rc_clock = pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
+        /* On some platforms (e.g. Windows pthreads-w32) this call returns
+           EINVAL / ENOTSUP because CLOCK_MONOTONIC is not supported.  That
+           is perfectly fine – fall back to the default CLOCK_REALTIME */
+        if (rc_clock != 0 && rc_clock != EINVAL && rc_clock != ENOTSUP)
+        {
+            /* Any other error (e.g. EPERM) really is unexpected. */
+            pthread_condattr_destroy(&attr);
+            pthread_mutex_destroy(&q->mtx);
+            abort();
+        }
     }
 #endif
     if (pthread_cond_init(&q->cond, &attr) != 0)
@@ -117,7 +124,4 @@ libp2p_conn_t *cq_pop(conn_queue_t *q)
  * Lock‑free, relaxed‑ordering accessor suitable for statistics
  * and back‑pressure checks.
  */
-size_t cq_length(conn_queue_t *q) 
-{ 
-    return atomic_load_explicit(&q->len, memory_order_relaxed); 
-}
+size_t cq_length(conn_queue_t *q) { return atomic_load_explicit(&q->len, memory_order_relaxed); }

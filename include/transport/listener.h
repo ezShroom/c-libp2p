@@ -25,16 +25,9 @@ extern "C"
 {
 #endif
 
-/* ------------------------------------------------------------------------- */
-/* Forward declarations                                                      */
-/* ------------------------------------------------------------------------- */
-
 struct libp2p_listener;
 typedef struct libp2p_listener libp2p_listener_t;
 
-/* ------------------------------------------------------------------------- */
-/* Error codes                                                               */
-/* ------------------------------------------------------------------------- */
 
 /**
  * @enum libp2p_listener_err_t
@@ -53,9 +46,9 @@ typedef enum
     LIBP2P_LISTENER_ERR_OVERFLOW = -8 /**< Refcount overflow: close this listener and create a new one; retrying will always fail. */
 } libp2p_listener_err_t;
 
-/* ------------------------------------------------------------------------- */
-/* Virtual table                                                             */
-/* ------------------------------------------------------------------------- */
+/**
+ * @brief Virtual table for listener operations.
+ */
 
 typedef struct
 {
@@ -66,17 +59,20 @@ typedef struct
      * there is nothing to accept right now.
      */
     libp2p_listener_err_t (*accept)(libp2p_listener_t *self, libp2p_conn_t **out_conn);
+
     libp2p_listener_err_t (*local_addr)(libp2p_listener_t *self, multiaddr_t **out);
 
-    /* Lifecycle ----------------------------------------------------------- */
+    /* Lifecycle management */
+
     libp2p_listener_err_t (*close)(libp2p_listener_t *self);
     void (*free)(libp2p_listener_t *self);
 
 } libp2p_listener_vtbl_t;
 
-/* ------------------------------------------------------------------------- */
-/* Public struct                                                             */
-/* ------------------------------------------------------------------------- */
+/**
+ * @brief Listener structure holding state for inbound connections.
+ */
+
 struct libp2p_listener
 {
     const libp2p_listener_vtbl_t *vt;
@@ -91,9 +87,7 @@ struct libp2p_listener
 static inline void libp2p_listener_ref(libp2p_listener_t *l)
 {
     if (!l)
-    {
         return;
-    }
     atomic_fetch_add(&l->refcount, 1);
 }
 
@@ -103,9 +97,7 @@ static inline void libp2p_listener_ref(libp2p_listener_t *l)
 static inline void libp2p_listener_unref(libp2p_listener_t *l)
 {
     if (!l)
-    {
         return;
-    }
     if (atomic_fetch_sub(&l->refcount, 1) == 1)
     {
         if (l->vt && l->vt->free)
@@ -115,17 +107,21 @@ static inline void libp2p_listener_unref(libp2p_listener_t *l)
     }
 }
 
-/* ------------------------------------------------------------------------- */
-/* Convenience inline wrappers                                               */
-/* ------------------------------------------------------------------------- */
+/* Convenience inline wrappers */
+
+/**
+ * @brief Accept the next inbound connection.
+ *
+ * @param l   Listener instance.
+ * @param out On success, receives a new connection.
+ * @return LIBP2P_LISTENER_OK or an error code.
+ */
 static inline libp2p_listener_err_t libp2p_listener_accept(libp2p_listener_t *l, libp2p_conn_t **out)
 {
     if (!l || !out)
-    {
         return LIBP2P_LISTENER_ERR_NULL_PTR;
-    }
 
-    libp2p_listener_ref(l); 
+    libp2p_listener_ref(l);
 
     pthread_mutex_lock(&l->mutex);
     // Ensure vt is valid after potentially waiting for the lock
@@ -137,18 +133,25 @@ static inline libp2p_listener_err_t libp2p_listener_accept(libp2p_listener_t *l,
     }
     pthread_mutex_unlock(&l->mutex);
 
-    libp2p_listener_unref(l); 
+    libp2p_listener_unref(l);
     return ret;
 }
 
+/**
+ * @brief Retrieve the listener's local address.
+ *
+ * @param l   Listener instance.
+ * @param out Receives the address on success.
+ * @return LIBP2P_LISTENER_OK or an error code.
+ */
 static inline libp2p_listener_err_t libp2p_listener_local_addr(libp2p_listener_t *l, multiaddr_t **out)
 {
     if (!l || !out)
-    { 
+    { // Check !out here, l->vt check is done after ref
         return LIBP2P_LISTENER_ERR_NULL_PTR;
     }
 
-    libp2p_listener_ref(l); 
+    libp2p_listener_ref(l);
 
     pthread_mutex_lock(&l->mutex);
     libp2p_listener_err_t ret = LIBP2P_LISTENER_ERR_NULL_PTR; // Default error if vt or func is null
@@ -158,18 +161,24 @@ static inline libp2p_listener_err_t libp2p_listener_local_addr(libp2p_listener_t
     }
     pthread_mutex_unlock(&l->mutex);
 
-    libp2p_listener_unref(l); 
+    libp2p_listener_unref(l);
     return ret;
 }
 
+/**
+ * @brief Close the listener.
+ *
+ * Safe to call multiple times; subsequent calls return an error.
+ *
+ * @param l Listener instance.
+ * @return LIBP2P_LISTENER_OK or an error code.
+ */
 static inline libp2p_listener_err_t libp2p_listener_close(libp2p_listener_t *l)
 {
     if (!l)
-    {
         return LIBP2P_LISTENER_ERR_NULL_PTR; // l->vt check after ref
-    }
 
-    libp2p_listener_ref(l); 
+    libp2p_listener_ref(l);
 
     pthread_mutex_lock(&l->mutex);
     libp2p_listener_err_t ret = LIBP2P_LISTENER_ERR_NULL_PTR; // Default error
@@ -179,18 +188,18 @@ static inline libp2p_listener_err_t libp2p_listener_close(libp2p_listener_t *l)
     }
     pthread_mutex_unlock(&l->mutex);
 
-    libp2p_listener_unref(l); 
+    libp2p_listener_unref(l);
     return ret;
 }
 
-static inline void libp2p_listener_free(libp2p_listener_t *l) 
-{ 
-    if (!l)
-    {
-        return;
-    }
-    
-    libp2p_listener_unref(l); 
+/**
+ * @brief Drop a reference and free if this was the last one.
+ *
+ * @param l Listener instance (may be NULL).
+ */
+static inline void libp2p_listener_free(libp2p_listener_t *l)
+{
+    libp2p_listener_unref(l);
 }
 
 #ifdef __cplusplus

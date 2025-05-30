@@ -22,16 +22,9 @@
 extern "C" {
 #endif
 
-/* ------------------------------------------------------------------------- */
-/* Forward declarations                                                      */
-/* ------------------------------------------------------------------------- */
-
-struct libp2p_connection;  
+struct libp2p_connection;
 typedef struct libp2p_connection libp2p_conn_t;
 
-/* ------------------------------------------------------------------------- */
-/* Error codes                                                               */
-/* ------------------------------------------------------------------------- */
 
 /**
  * @enum libp2p_conn_err_t
@@ -50,14 +43,13 @@ typedef enum
     LIBP2P_CONN_ERR_INTERNAL = -6     /**< Unspecified internal failure.            */
 } libp2p_conn_err_t;
 
-/* ------------------------------------------------------------------------- */
-/* Virtual table                                                             */
-/* ------------------------------------------------------------------------- */
+/**
+ * @brief Virtual table for connection operations.
+ */
 
 typedef struct
 {
-    /* I/O ----------------------------------------------------------------- */
-
+    /* I/O operations */
     /**
      * @brief Read up to @p len bytes into @p buf.
      *
@@ -78,21 +70,21 @@ typedef struct
      */
     libp2p_conn_err_t (*set_deadline)(libp2p_conn_t *self, uint64_t ms);
 
-    /* Metadata ------------------------------------------------------------ */
+    /* Metadata accessors */
 
     const multiaddr_t *(*local_addr)(libp2p_conn_t *self);
     const multiaddr_t *(*remote_addr)(libp2p_conn_t *self);
 
-    /* Lifecycle ----------------------------------------------------------- */
+    /* Lifecycle management */
 
     libp2p_conn_err_t (*close)(libp2p_conn_t *self);
     void (*free)(libp2p_conn_t *self);
 
 } libp2p_conn_vtbl_t;
 
-/* ------------------------------------------------------------------------- */
-/* Public struct                                                             */
-/* ------------------------------------------------------------------------- */
+/**
+ * @brief Opaque connection structure.
+ */
 
 struct libp2p_connection
 {
@@ -100,50 +92,92 @@ struct libp2p_connection
     void                     *ctx;  /**< Transport-specific state. */
 };
 
-/* ------------------------------------------------------------------------- */
-/* Convenience inline wrappers                                               */
-/* ------------------------------------------------------------------------- */
+/* Convenience inline wrappers */
 
-static inline ssize_t
-libp2p_conn_read(libp2p_conn_t *c, void *buf, size_t len)
+/**
+ * @brief Read from a connection.
+ *
+ * @param c   Connection handle.
+ * @param buf Buffer to fill with received bytes.
+ * @param len Maximum number of bytes to read.
+ * @return Positive byte count, or a negative @ref libp2p_conn_err_t.
+ */
+static inline ssize_t libp2p_conn_read(libp2p_conn_t *c, void *buf, size_t len)
 {
     return c && c->vt ? c->vt->read(c, buf, len) : LIBP2P_CONN_ERR_NULL_PTR;
 }
 
-static inline ssize_t
-libp2p_conn_write(libp2p_conn_t *c, const void *buf, size_t len)
+/**
+ * @brief Write to a connection.
+ *
+ * @param c   Connection handle.
+ * @param buf Bytes to send.
+ * @param len Number of bytes available in @p buf.
+ * @return Positive byte count, or a negative @ref libp2p_conn_err_t.
+ */
+static inline ssize_t libp2p_conn_write(libp2p_conn_t *c, const void *buf, size_t len)
 {
     return c && c->vt ? c->vt->write(c, buf, len) : LIBP2P_CONN_ERR_NULL_PTR;
 }
 
-static inline libp2p_conn_err_t
-libp2p_conn_set_deadline(libp2p_conn_t *c, uint64_t ms)
+/**
+ * @brief Set a combined read/write deadline.
+ *
+ * Passing @p ms == 0 clears any existing deadline.
+ *
+ * @param c  Connection handle.
+ * @param ms Deadline in milliseconds from now.
+ * @return LIBP2P_CONN_OK on success or a negative error code.
+ */
+static inline libp2p_conn_err_t libp2p_conn_set_deadline(libp2p_conn_t *c, uint64_t ms)
 {
     return c && c->vt ? c->vt->set_deadline(c, ms) : LIBP2P_CONN_ERR_NULL_PTR;
 }
 
-static inline const multiaddr_t *
-libp2p_conn_local_addr(libp2p_conn_t *c)
+/**
+ * @brief Get the local endpoint address.
+ *
+ * @param c Connection handle.
+ * @return Pointer to the local multiaddress or NULL on error.
+ */
+static inline const multiaddr_t *libp2p_conn_local_addr(libp2p_conn_t *c)
 {
     return c && c->vt ? c->vt->local_addr(c) : NULL;
 }
 
-static inline const multiaddr_t *
-libp2p_conn_remote_addr(libp2p_conn_t *c)
+/**
+ * @brief Get the remote endpoint address.
+ *
+ * @param c Connection handle.
+ * @return Pointer to the remote multiaddress or NULL on error.
+ */
+static inline const multiaddr_t *libp2p_conn_remote_addr(libp2p_conn_t *c)
 {
     return c && c->vt ? c->vt->remote_addr(c) : NULL;
 }
 
-static inline libp2p_conn_err_t
-libp2p_conn_close(libp2p_conn_t *c)
+/**
+ * @brief Close the connection.
+ *
+ * @param c Connection handle.
+ * @return LIBP2P_CONN_OK on success or a negative error code.
+ */
+static inline libp2p_conn_err_t libp2p_conn_close(libp2p_conn_t *c)
 {
     return c && c->vt ? c->vt->close(c) : LIBP2P_CONN_ERR_NULL_PTR;
 }
 
-static inline void
-libp2p_conn_free(libp2p_conn_t *c)
+/**
+ * @brief Free a connection and its resources.
+ *
+ * Safe to call with NULL or on a half-initialized object.
+ *
+ * @param c Connection handle.
+ */
+static inline void libp2p_conn_free(libp2p_conn_t *c)
 {
-    if (c && c->vt && c->vt->free) c->vt->free(c);
+    if (c && c->vt && c->vt->free)
+        c->vt->free(c);
 }
 
 #ifdef __cplusplus

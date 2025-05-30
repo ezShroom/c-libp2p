@@ -52,7 +52,7 @@ static int accept_with_timeout(libp2p_listener_t *lst, libp2p_conn_t **out, int 
 static void test_default_config_values(void)
 {
     libp2p_tcp_config_t d = libp2p_tcp_config_default();
-    const int ok = d.nodelay && d.reuse_port && d.keepalive && d.recv_buffer == 0 && d.send_buffer == 0 && d.backlog == 128 && d.ttl == 0;
+    const int ok = d.nodelay && d.reuse_port && d.keepalive && d.recv_buffer == 0 && d.send_buffer == 0 && d.listen_backlog == 128 && d.ttl_ms == 0;
     TEST_OK("Default config values", ok, "Unexpected field(s) in libp2p_tcp_config_default()");
 }
 
@@ -62,7 +62,7 @@ static void test_transport_allocation(void)
     TEST_OK("Transport allocation (default cfg)", t1 != NULL, "returned NULL");
 
     libp2p_tcp_config_t c = {
-        .nodelay = false, .reuse_port = false, .keepalive = false, .recv_buffer = 128 * 1024, .send_buffer = 256 * 1024, .backlog = 8, .ttl = 64};
+        .nodelay = false, .reuse_port = false, .keepalive = false, .recv_buffer = 128 * 1024, .send_buffer = 256 * 1024, .listen_backlog = 8, .ttl_ms = 64};
     libp2p_transport_t *t2 = libp2p_tcp_transport_new(&c);
     TEST_OK("Transport allocation (custom cfg)", t2 != NULL, "returned NULL");
 
@@ -147,8 +147,9 @@ static void test_end_to_end(void)
     libp2p_conn_free(cli2);
     libp2p_conn_free(srv2);
 
+    /* Close the listener before destroying the transport */
     libp2p_listener_close(lst);
-    libp2p_listener_free(lst);
+    libp2p_transport_close(tcp);
     libp2p_transport_free(tcp);
 
     multiaddr_free(addr);
@@ -194,8 +195,9 @@ static void test_dns4_dial(void)
     libp2p_conn_free(cli);
     libp2p_conn_close(srv);
     libp2p_conn_free(srv);
+    /* Close the listener before freeing the transport */
     libp2p_listener_close(lst);
-    libp2p_listener_free(lst);
+    libp2p_transport_close(tcp);
     libp2p_transport_free(tcp);
 }
 
@@ -218,8 +220,9 @@ static void test_listen_wrong_protocol(void)
 
     TEST_OK("Listen on /udp/ address should fail", rc != 0, "unexpected success (rc=%d, lst=%p)", rc, (void *)lst);
 
+    /* Close listener before freeing transport */
     libp2p_listener_close(lst);
-    libp2p_listener_free(lst);
+    libp2p_transport_close(tcp);
     libp2p_transport_free(tcp);
     multiaddr_free(udp_addr);
 }
@@ -271,6 +274,7 @@ static void test_dial_unreachable(void)
     libp2p_conn_close(c);
     libp2p_conn_free(c);
     multiaddr_free(addr);
+    libp2p_transport_close(tcp);
     libp2p_transport_free(tcp);
 }
 
@@ -299,11 +303,11 @@ static void test_listener_close_and_free(void)
     rc = libp2p_listener_accept(lst, &dummy);
     TEST_OK("Accept after close", rc == LIBP2P_LISTENER_ERR_CLOSED, "rc=%d", rc);
 
-    libp2p_listener_free(lst);
     libp2p_listener_free(NULL);
     TEST_OK("Listener free handles NULL", 1, "");
 
     multiaddr_free(addr);
+    libp2p_transport_close(tcp);
     libp2p_transport_free(tcp);
 }
 

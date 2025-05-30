@@ -28,29 +28,29 @@
 
 #include "transport/connection.h"  /* raw conn            */
 #include "peer_id/peer_id.h"       /* peer identity       */
+#include "transport/muxer.h"       /* muxer definitions    */
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* ------------------------------------------------------------------------- */
-/* Forward declarations                                                      */
-/* ------------------------------------------------------------------------- */
+struct libp2p_security; /* Noise, TLS, etc. (defined elsewhere) */
+struct libp2p_muxer;    /* Yamux, MPLEX, … (defined elsewhere)  */
 
-struct libp2p_security;      /* Noise, TLS, etc.  (to be defined elsewhere) */
-struct libp2p_muxer;         /* Yamux, MPLEX, …  (to be defined elsewhere)  */
-
-/* A secured + multiplexed connection produced by the upgrader */
-struct libp2p_upgraded_conn;
+/**
+ * @brief Secured + multiplexed connection produced by the upgrader.
+ */
+struct libp2p_upgraded_conn {
+    libp2p_conn_t           *conn;
+    peer_id_t               *remote_peer;
+    const libp2p_muxer_t    *muxer;
+};
 typedef struct libp2p_upgraded_conn libp2p_uconn_t;
 
 /* The upgrader itself */
 struct libp2p_upgrader;
 typedef struct libp2p_upgrader libp2p_upgrader_t;
 
-/* ------------------------------------------------------------------------- */
-/* Error codes                                                               */
-/* ------------------------------------------------------------------------- */
 
 typedef enum
 {
@@ -63,9 +63,9 @@ typedef enum
     LIBP2P_UPGRADER_ERR_INTERNAL   = -6   /**< Unexpected internal failure.            */
 } libp2p_upgrader_err_t;
 
-/* ------------------------------------------------------------------------- */
-/* Configuration                                                             */
-/* ------------------------------------------------------------------------- */
+/**
+ * @brief Upgrader configuration options.
+ */
 
 /**
  * @struct libp2p_upgrader_config_t
@@ -79,15 +79,15 @@ typedef struct
     /* Local identity (used by security transports that need a key). */
     const peer_id_t *local_peer;
 
-    /* Security transports ------------------------------------------------ */
+    /* Security transports */
     const struct libp2p_security *const *security; /**< NULL-terminated array. */
     size_t                        n_security;      /**< Number of entries.     */
 
-    /* Stream multiplexers ------------------------------------------------ */
+    /* Stream multiplexers */
     const struct libp2p_muxer *const *muxers;      /**< NULL-terminated array. */
     size_t                     n_muxers;           /**< Number of entries.     */
 
-    /* Handshake deadline (0 → no timeout) -------------------------------- */
+    /* Handshake deadline (0 → no timeout) */
     uint64_t handshake_timeout_ms;
 
 } libp2p_upgrader_config_t;
@@ -109,9 +109,9 @@ static inline libp2p_upgrader_config_t libp2p_upgrader_config_default(void)
         .handshake_timeout_ms = 0};
 }
 
-/* ------------------------------------------------------------------------- */
-/* Virtual table                                                             */
-/* ------------------------------------------------------------------------- */
+/**
+ * @brief Virtual table for upgrader operations.
+ */
 
 typedef struct
 {
@@ -139,16 +139,16 @@ typedef struct
                                              libp2p_conn_t     *raw,
                                              libp2p_uconn_t   **out);
 
-    /* Lifecycle ----------------------------------------------------------- */
+    /* Lifecycle management */
 
     libp2p_upgrader_err_t (*close)(libp2p_upgrader_t *self);
     void (*free)(libp2p_upgrader_t *self);
 
 } libp2p_upgrader_vtbl_t;
 
-/* ------------------------------------------------------------------------- */
-/* Public struct                                                             */
-/* ------------------------------------------------------------------------- */
+/**
+ * @brief Upgrader instance with implementation context.
+ */
 
 struct libp2p_upgrader
 {
@@ -156,9 +156,7 @@ struct libp2p_upgrader
     void                         *ctx;   /**< Implementation private data. */
 };
 
-/* ------------------------------------------------------------------------- */
-/* Constructor / destructor                                                  */
-/* ------------------------------------------------------------------------- */
+/* Constructor / destructor */
 
 /**
  * @brief Create a new upgrader.
@@ -170,10 +168,17 @@ struct libp2p_upgrader
  */
 libp2p_upgrader_t *libp2p_upgrader_new(const libp2p_upgrader_config_t *cfg);
 
-/* ------------------------------------------------------------------------- */
-/* Convenience inline wrappers                                               */
-/* ------------------------------------------------------------------------- */
+/* Convenience inline wrappers */
 
+/**
+ * @brief Upgrade an outbound connection using the configured security and muxer.
+ *
+ * @param u      Upgrader instance.
+ * @param raw    Raw connection to upgrade.
+ * @param remote Expected remote peer ID (may be NULL).
+ * @param out    Receives the upgraded connection.
+ * @return LIBP2P_UPGRADER_OK or an error code.
+ */
 static inline libp2p_upgrader_err_t
 libp2p_upgrader_upgrade_outbound(libp2p_upgrader_t *u,
                                  libp2p_conn_t     *raw,
@@ -184,6 +189,14 @@ libp2p_upgrader_upgrade_outbound(libp2p_upgrader_t *u,
     return u->vt->upgrade_outbound(u, raw, remote, out);
 }
 
+/**
+ * @brief Upgrade an inbound connection using the configured security and muxer.
+ *
+ * @param u   Upgrader instance.
+ * @param raw Raw connection to upgrade.
+ * @param out Receives the upgraded connection.
+ * @return LIBP2P_UPGRADER_OK or an error code.
+ */
 static inline libp2p_upgrader_err_t
 libp2p_upgrader_upgrade_inbound(libp2p_upgrader_t *u,
                                 libp2p_conn_t     *raw,
@@ -193,16 +206,28 @@ libp2p_upgrader_upgrade_inbound(libp2p_upgrader_t *u,
     return u->vt->upgrade_inbound(u, raw, out);
 }
 
+/**
+ * @brief Close the upgrader instance.
+ *
+ * @param u Upgrader instance.
+ * @return LIBP2P_UPGRADER_OK or an error code.
+ */
 static inline libp2p_upgrader_err_t
 libp2p_upgrader_close(libp2p_upgrader_t *u)
 {
     return u && u->vt ? u->vt->close(u) : LIBP2P_UPGRADER_ERR_NULL_PTR;
 }
 
+/**
+ * @brief Free the upgrader instance.
+ *
+ * @param u Upgrader instance (may be NULL).
+ */
 static inline void
 libp2p_upgrader_free(libp2p_upgrader_t *u)
 {
-    if (u && u->vt && u->vt->free) u->vt->free(u);
+    if (u && u->vt && u->vt->free)
+        u->vt->free(u);
 }
 
 #ifdef __cplusplus

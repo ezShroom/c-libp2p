@@ -1,66 +1,68 @@
-# libp2p-c (WIP)
+# libp2p-c
 
-Implementation of [Libp2p](https://libp2p.io/) specification in C.
+**libp2p-c** is an implementation of the [libp2p specification](https://github.com/libp2p/specs) written in C.  The project is still in active development but already provides the building blocks needed for peer-to-peer networking applications.
 
-## Building the Project
+## Building
 
-To build the project, you will need to have CMake installed. Follow these steps:
+libp2p-c uses CMake and should build on Linux, macOS and Windows.  A C compiler that supports the C11 standard is required.
 
-1. Clone the repository:
-    ```sh
-    git clone https://github.com/Pier-Two/libp2p-c.git
-    cd libp2p-c
-    ```
+### Clone the repository
 
-2. Create the build directory:
-    ```sh
-    mkdir build 
-    ```
+```sh
+git clone --recursive https://github.com/Pier-Two/libp2p-c.git
+cd libp2p-c
+```
 
-3. Run CMake to configure the project:
-    ```sh
-    # For a normal build:
-    cmake -S .. -B build
+The `--recursive` flag ensures that all third-party submodules are fetched.
 
-    # To enable Address, UndefinedBehavior, Thread Sanitizers, and Stress Test:
-    cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_SANITIZERS=OFF -DENABLE_STRESS_TESTS=ON
-    ```
+### Linux / macOS
 
-4. Build the project:
-    ```sh
-    cmake --build build      
-    ```
+```sh
+mkdir build
+cmake -S . -B build
+cmake --build build
+ctest --test-dir build
+```
 
-5. Run the tests:
-    ```sh
-    ctest
-    ```
+Sanitizers can be enabled with `-DENABLE_SANITIZERS=ON` and additional flags in `SANITIZERS`.  Stress tests for the TCP module are built when `-DENABLE_STRESS_TESTS=ON` is passed.
+
+### Windows
+
+A recent Visual Studio with CMake support is recommended.  From the *x64 Native Tools* command prompt run:
+
+```bat
+mkdir build
+cmake -S . -B build -G "Visual Studio 16 2019" -A x64
+cmake --build build --config Release
+ctest --test-dir build -C Release
+```
+
+When building shared libraries on Windows the produced DLLs are copied next to the test executables automatically.
 
 ## Project Structure
 
-- `src/`: Contains the source code for the library.
-- `include/`: Contains the public headers for the library.
-- `tests/`: Contains the test code for the library.
-- `benchmarks/`: Contains the benchmark code for the library.
-- `CMakeLists.txt`: The CMake build script for the project.
+- `src/` – library source code
+- `include/` – public headers
+- `tests/` – unit tests
+- `benchmarks/` – optional benchmarks
+- `docs/` – user guides and examples
+
+Detailed documentation is available under [docs/](docs/README.md).
+
+## Third-party libraries
+
+libp2p-c bundles several third-party projects under `lib/`:
+
+- [libtomcrypt](https://github.com/libtom/libtomcrypt) and [libtommath](https://github.com/libtom/libtommath) – [LibTom License](http://unlicense.org/)
+- [secp256k1](https://github.com/bitcoin-core/secp256k1) – [MIT License](https://opensource.org/licenses/MIT)
+- [sha3](https://github.com/pablotron/sha3) – [MIT-0 License](https://opensource.org/license/mit-0/)
+- [WjCryptLib](https://github.com/WaterJuice/WjCryptLib) – [Unlicense](http://unlicense.org/)
+- [c20p1305](https://github.com/wg/c20p1305) – [MIT License](https://opensource.org/licenses/MIT)
+- [libeddsa](https://github.com/phlay/libeddsa) – [Unlicense](http://unlicense.org/)
+- [noise-c](https://github.com/uink45/noise-c) – [MIT License](https://opensource.org/licenses/MIT)
+
+Please refer to each submodule for license details.
 
 ## License
 
-MIT License - see [LICENSE-MIT.md](LICENSE-MIT.md).
-
-## Third-party Libraries
-
-This project includes or makes use of the following third-party libraries:
-
-- [libtomcrypt](https://github.com/libtom/libtomcrypt) (included as a git submodule):
-  - Licensed under the [LibTom License (Public Domain/Unlicense)](http://unlicense.org/).
-
-- [secp256k1](https://github.com/bitcoin-core/secp256k1):
-  - Licensed under the [MIT License](https://opensource.org/licenses/MIT).
-
-- [sha3](https://github.com/pablotron/sha3):
-  - Licensed under the [MIT-0 License](https://opensource.org/license/mit-0/).
-
-- [WjCryptLib](https://github.com/WaterJuice/WjCryptLib):
-  - Licensed under the [Unlicense (Public Domain)](http://unlicense.org/).
-
+The code in this repository is licensed under the [MIT License](LICENSE-MIT.md).

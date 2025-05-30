@@ -1,11 +1,10 @@
 #include <arpa/inet.h>
+#include <assert.h>
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <assert.h>
 #include <inttypes.h>
 #include <net/if.h>
-#include <errno.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <stdbool.h>
@@ -22,13 +21,12 @@
 #include "multiformats/multicodec/multicodec_codes.h"
 #include "protocol/tcp/protocol_tcp_util.h"
 
-/**
- * @brief Installs a signal handler to ignore SIGPIPE.
- *
- * This function sets the process-wide signal handler for SIGPIPE to SIG_IGN,
- * preventing the process from being terminated when writing to a closed socket.
- * It is intended to be called once at initialization.
- */
+/* ------------------------------------------------------------------------- */
+/*  SIGPIPE-related helpers – skipped on Windows                             */
+/* ------------------------------------------------------------------------- */
+
+#ifndef _WIN32
+
 static void ignore_sigpipe_init(void)
 {
     struct sigaction sa;
@@ -39,26 +37,12 @@ static void ignore_sigpipe_init(void)
     sigaction(SIGPIPE, &sa, NULL);
 }
 
-/**
- * @brief Ensures SIGPIPE is ignored exactly once for the process.
- *
- * This function uses pthread_once to install a signal handler that ignores
- * SIGPIPE, preventing the process from being terminated when writing to a
- * closed socket. It is safe to call from multiple threads; the handler will
- * only be installed once.
- */
 void ignore_sigpipe_once(void)
 {
     static pthread_once_t once = PTHREAD_ONCE_INIT;
     pthread_once(&once, ignore_sigpipe_init);
 }
 
-/**
- * @brief Temporarily block SIGPIPE in the calling thread.
- *
- * Stores the previous signal mask in @p oldset so it can be restored later.
- * Returns the pthread_sigmask() error code (0 on success).
- */
 inline int sigpipe_block(sigset_t *oldset)
 {
     sigset_t set;
@@ -67,9 +51,6 @@ inline int sigpipe_block(sigset_t *oldset)
     return pthread_sigmask(SIG_BLOCK, &set, oldset);
 }
 
-/**
- * @brief Restore the thread's signal mask after sigpipe_block().
- */
 inline void sigpipe_restore(const sigset_t *oldset)
 {
     if (oldset != NULL)
@@ -77,6 +58,8 @@ inline void sigpipe_restore(const sigset_t *oldset)
         (void)pthread_sigmask(SIG_SETMASK, oldset, NULL);
     }
 }
+
+#endif /* !_WIN32 */
 
 /**
  * @brief Set a file descriptor to non-blocking mode.
@@ -86,12 +69,21 @@ inline void sigpipe_restore(const sigset_t *oldset)
  */
 int set_nonblocking(int fd)
 {
+#ifdef _WIN32
+    u_long mode = 1;
+    /* On Windows the socket descriptor is a SOCKET (uintptr_t).  The MinGW
+       runtime lets us treat it as an int for POSIX compatibility, but
+       ioctlsocket expects the native SOCKET type – cast accordingly. */
+    SOCKET s = (SOCKET)fd;
+    return ioctlsocket(s, FIONBIO, &mode) == 0 ? 0 : -1;
+#else
     int flags = fcntl(fd, F_GETFL, 0);
     if (flags < 0)
     {
         return -1;
     }
     return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+#endif
 }
 
 /**

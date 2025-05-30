@@ -1,10 +1,10 @@
 #ifndef PROTOCOL_TCP_POLLER_H
 #define PROTOCOL_TCP_POLLER_H
-
-/*
- *  protocol_tcp_poller.h ― epoll / kqueue accept-loop helpers
- *                          + central TCP transport structs
+/**
+ * @file protocol_tcp_poller.h
+ * @brief epoll/kqueue accept-loop helpers and transport context types.
  */
+
 
 #include <pthread.h>   /* pthread_t / mutex           */
 #include <stdatomic.h> /* atomic_*                    */
@@ -25,15 +25,17 @@ extern "C"
 {
 #endif
 
+#if defined(_WIN32)
+/* Windows: neither kqueue nor epoll is available – rely on WSAPoll() instead */
+#else
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
 #define USE_KQUEUE 1
 #else
 #define USE_EPOLL 1
 #endif
+#endif
 
-/* ------------------------------------------------------------------------- */
-/*  Transport-wide context                                                   */
-/* ------------------------------------------------------------------------- */
+/** @brief Transport-wide context. */
 struct tcp_transport_ctx
 {
     libp2p_tcp_config_t cfg;
@@ -46,60 +48,84 @@ struct tcp_transport_ctx
 #endif
 
     pthread_t thr;
-    pthread_mutex_t lck;
 
-    libp2p_listener_t **listeners;
-    size_t n_listeners;
+    struct
+    {
+        pthread_mutex_t lock;
+        libp2p_listener_t **list;
+        size_t count;
+    } listeners;
 
-    /* ─── deferred-free bookkeeping ─────────────────────────────────── */
-    pthread_mutex_t graveyard_lck;
-    tcp_listener_ctx_t *graveyard_head;
-    _Atomic uint64_t poll_epoch;
-    _Atomic bool     compact_pending; /* pending listener‑array compaction */
-    _Atomic size_t active_listener_destroyers; /* per-transport destroyer counter */
-    // Self-wakeup mechanism
-    void *wakeup_marker; // unique marker for wakeup events
-    _Atomic int wakeup_pipe[2];  // [0]: read end, [1]: write end (atomic ⇒ race‑free)
+    struct
+    {
+        pthread_mutex_t lock;
+        tcp_listener_ctx_t *head;
+        _Atomic uint64_t poll_epoch;
+        _Atomic bool compact_pending;              /* pending listener‑array compaction */
+        _Atomic size_t active_destroyers;          /* per-transport destroyer counter */
+    } gc;
+
+    struct
+    {
+        void *marker;            /* unique marker for wakeup events */
+        _Atomic int pipe[2];     /* [0]: read end, [1]: write end */
+    } wakeup;
 };
 
 typedef struct tcp_transport_ctx tcp_transport_ctx_t;
 
-/* ------------------------------------------------------------------------- */
-/*  Per-listener context                                                     */
-/* ------------------------------------------------------------------------- */
+/** @brief Per-listener context. */
 struct tcp_listener
 {
-    _Atomic int fd;   /* atomic ⇒ close/read race‑free */
+    _Atomic int fd; /* atomic ⇒ close/read race‑free */
     multiaddr_t *local;
     atomic_bool closed;
     _Atomic size_t refcount;
     conn_queue_t q;
-    struct tcp_transport_ctx *tctx;
+    struct tcp_transport_ctx *transport_ctx;
 
-    /* ─── deferred-free bookkeeping ─────────────────────────────────── */
-    _Atomic bool pending_free;
-    struct tcp_listener *next_free;
-    _Atomic size_t free_epoch;
+    struct
+    {
+        _Atomic bool pending_free;
+        struct tcp_listener *next_free;
+        _Atomic size_t free_epoch;
+    } gc;
 
-    _Atomic bool disabled; /* true  ⇒ not in poll-set   */
-    uint64_t enable_at_ms; /* wall-clock when to re-add */
-    uint32_t backoff_ms;   /* next delay (100 → 200 …)  */
-    uint32_t poll_ms;      /* accept() poll period in ms */
-    uint32_t close_timeout_ms; /* listener close timeout in ms */
-    /* Clock used with pthread_cond_timedwait in accept() */
-    clockid_t cond_clock;
-
-    /* number of threads currently blocked in pthread_cond_(timed)wait() */
-    _Atomic size_t waiters;
+    struct
+    {
+        _Atomic bool disabled;     /* true  ⇒ not in poll-set   */
+        uint64_t enable_at_ms;     /* wall-clock when to re-add */
+        uint32_t backoff_ms;       /* next delay (100 → 200 …)  */
+        uint32_t poll_ms;          /* accept() poll period in ms */
+        uint32_t close_timeout_ms; /* listener close timeout in ms */
+        clockid_t cond_clock;      /* Clock used with pthread_cond_timedwait in accept() */
+        _Atomic size_t waiters;    /* number of threads currently blocked */
+    } state;
 };
 
-/* ------------------------------------------------------------------------- */
-/*  Poller API                                                               */
-/* ------------------------------------------------------------------------- */
-int poller_add(tcp_transport_ctx_t *tctx, tcp_listener_ctx_t *lctx);
-void poller_del(tcp_transport_ctx_t *tctx, tcp_listener_ctx_t *lctx);
+/**
+ * @brief Register a listener with the poller.
+ *
+ * @param transport_ctx Transport context to use.
+ * @param listener_ctx  Listener to add to the poll set.
+ * @return 0 on success, -1 on error.
+ */
+int poller_add(tcp_transport_ctx_t *transport_ctx, tcp_listener_ctx_t *listener_ctx);
 
-/* Thread entry point (used by pthread_create in tcp_transport_new) */
+/**
+ * @brief Remove a listener from the poller.
+ *
+ * @param transport_ctx Transport context used to manage the listener.
+ * @param listener_ctx  Listener to remove.
+ */
+void poller_del(tcp_transport_ctx_t *transport_ctx, tcp_listener_ctx_t *listener_ctx);
+
+/**
+ * @brief Thread entry point for the poll loop.
+ *
+ * @param arg Pointer to the transport context.
+ * @return NULL on exit.
+ */
 void *poll_loop(void *arg);
 
 #ifdef __cplusplus

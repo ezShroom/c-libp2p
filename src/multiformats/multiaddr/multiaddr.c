@@ -224,8 +224,7 @@ static int validate_multiaddr_bytes(const uint8_t *bytes, size_t len)
     {
         uint64_t code = 0;
         size_t csize = 0;
-        if (unsigned_varint_decode(bytes + offset, len - offset, &code, &csize) !=
-            UNSIGNED_VARINT_OK)
+        if (unsigned_varint_decode(bytes + offset, len - offset, &code, &csize) != UNSIGNED_VARINT_OK)
         {
             return MULTIADDR_ERR_INVALID_DATA;
         }
@@ -254,8 +253,7 @@ static int validate_multiaddr_bytes(const uint8_t *bytes, size_t len)
         {
             uint64_t addr_size = 0;
             size_t csize2 = 0;
-            if (unsigned_varint_decode(bytes + offset, len - offset, &addr_size, &csize2) !=
-                UNSIGNED_VARINT_OK)
+            if (unsigned_varint_decode(bytes + offset, len - offset, &addr_size, &csize2) != UNSIGNED_VARINT_OK)
             {
                 return MULTIADDR_ERR_INVALID_DATA;
             }
@@ -452,8 +450,7 @@ static int parse_and_append_protocol(const char *proto_str, const char *addr_str
                     return MULTIADDR_ERR_INVALID_STRING;
                 }
             }
-            else if (code == MULTICODEC_DNS || code == MULTICODEC_DNS4 || code == MULTICODEC_DNS6 ||
-                     code == MULTICODEC_DNSADDR)
+            else if (code == MULTICODEC_DNS || code == MULTICODEC_DNS4 || code == MULTICODEC_DNS6 || code == MULTICODEC_DNSADDR)
             {
                 tmp_len = strlen(addr_str);
                 if (tmp_len > sizeof(tmp))
@@ -758,8 +755,7 @@ static int sprint_ip4(const uint8_t *addr_bytes, char *out, size_t out_size)
     {
         return -1;
     }
-    snprintf(out, out_size, "%u.%u.%u.%u", addr_bytes[0], addr_bytes[1], addr_bytes[2],
-             addr_bytes[3]);
+    snprintf(out, out_size, "%u.%u.%u.%u", addr_bytes[0], addr_bytes[1], addr_bytes[2], addr_bytes[3]);
     return 0;
 }
 
@@ -864,8 +860,7 @@ char *multiaddr_to_str(const multiaddr_t *addr, int *err)
     {
         uint64_t code = 0;
         size_t csize = 0;
-        if (unsigned_varint_decode(addr->bytes + offset, addr->size - offset, &code, &csize) !=
-            UNSIGNED_VARINT_OK)
+        if (unsigned_varint_decode(addr->bytes + offset, addr->size - offset, &code, &csize) != UNSIGNED_VARINT_OK)
         {
             ma_buf_free(&sbuf);
             if (err)
@@ -949,8 +944,7 @@ char *multiaddr_to_str(const multiaddr_t *addr, int *err)
         {
             uint64_t vlen = 0;
             size_t csize2 = 0;
-            if (unsigned_varint_decode(addr->bytes + offset, addr->size - offset, &vlen, &csize2) !=
-                UNSIGNED_VARINT_OK)
+            if (unsigned_varint_decode(addr->bytes + offset, addr->size - offset, &vlen, &csize2) != UNSIGNED_VARINT_OK)
             {
                 goto invalid;
             }
@@ -975,8 +969,7 @@ char *multiaddr_to_str(const multiaddr_t *addr, int *err)
                     goto oom;
                 }
             }
-            else if (code == MULTICODEC_DNS || code == MULTICODEC_DNS4 || code == MULTICODEC_DNS6 ||
-                     code == MULTICODEC_DNSADDR)
+            else if (code == MULTICODEC_DNS || code == MULTICODEC_DNS4 || code == MULTICODEC_DNS6 || code == MULTICODEC_DNSADDR)
             {
                 if (ma_buf_append_byte(&sbuf, '/') < 0)
                 {
@@ -1034,8 +1027,7 @@ size_t multiaddr_nprotocols(const multiaddr_t *addr)
     {
         uint64_t code = 0;
         size_t csize = 0;
-        if (unsigned_varint_decode(addr->bytes + offset, addr->size - offset, &code, &csize) !=
-            UNSIGNED_VARINT_OK)
+        if (unsigned_varint_decode(addr->bytes + offset, addr->size - offset, &code, &csize) != UNSIGNED_VARINT_OK)
         {
             return 0;
         }
@@ -1057,8 +1049,7 @@ size_t multiaddr_nprotocols(const multiaddr_t *addr)
         {
             uint64_t vlen = 0;
             size_t csize2 = 0;
-            if (unsigned_varint_decode(addr->bytes + offset, addr->size - offset, &vlen, &csize2) !=
-                UNSIGNED_VARINT_OK)
+            if (unsigned_varint_decode(addr->bytes + offset, addr->size - offset, &vlen, &csize2) != UNSIGNED_VARINT_OK)
             {
                 return 0;
             }
@@ -1098,8 +1089,7 @@ int multiaddr_get_protocol_code(const multiaddr_t *addr, size_t index, uint64_t 
     {
         uint64_t code = 0;
         size_t csize = 0;
-        if (unsigned_varint_decode(addr->bytes + offset, addr->size - offset, &code, &csize) !=
-            UNSIGNED_VARINT_OK)
+        if (unsigned_varint_decode(addr->bytes + offset, addr->size - offset, &code, &csize) != UNSIGNED_VARINT_OK)
         {
             return MULTIADDR_ERR_INVALID_DATA;
         }
@@ -1126,8 +1116,7 @@ int multiaddr_get_protocol_code(const multiaddr_t *addr, size_t index, uint64_t 
         {
             uint64_t vlen = 0;
             size_t csize2 = 0;
-            if (unsigned_varint_decode(addr->bytes + offset, addr->size - offset, &vlen, &csize2) !=
-                UNSIGNED_VARINT_OK)
+            if (unsigned_varint_decode(addr->bytes + offset, addr->size - offset, &vlen, &csize2) != UNSIGNED_VARINT_OK)
             {
                 return MULTIADDR_ERR_INVALID_DATA;
             }
@@ -1154,8 +1143,7 @@ int multiaddr_get_protocol_code(const multiaddr_t *addr, size_t index, uint64_t 
  * @return 0 on success, or an error code if extraction fails or the buffer is
  * too small.
  */
-int multiaddr_get_address_bytes(const multiaddr_t *addr, size_t index, uint8_t *buf,
-                                size_t *buf_len)
+int multiaddr_get_address_bytes(const multiaddr_t *addr, size_t index, uint8_t *buf, size_t *buf_len)
 {
     if (!addr || !buf || !buf_len)
     {
@@ -1166,8 +1154,7 @@ int multiaddr_get_address_bytes(const multiaddr_t *addr, size_t index, uint8_t *
     {
         uint64_t code = 0;
         size_t csize = 0;
-        if (unsigned_varint_decode(addr->bytes + offset, addr->size - offset, &code, &csize) !=
-            UNSIGNED_VARINT_OK)
+        if (unsigned_varint_decode(addr->bytes + offset, addr->size - offset, &code, &csize) != UNSIGNED_VARINT_OK)
         {
             return MULTIADDR_ERR_INVALID_DATA;
         }
@@ -1198,8 +1185,7 @@ int multiaddr_get_address_bytes(const multiaddr_t *addr, size_t index, uint8_t *
             {
                 uint64_t vlen = 0;
                 size_t csize2 = 0;
-                if (unsigned_varint_decode(addr->bytes + offset, addr->size - offset, &vlen,
-                                           &csize2) != UNSIGNED_VARINT_OK)
+                if (unsigned_varint_decode(addr->bytes + offset, addr->size - offset, &vlen, &csize2) != UNSIGNED_VARINT_OK)
                 {
                     return MULTIADDR_ERR_INVALID_DATA;
                 }
@@ -1231,8 +1217,7 @@ int multiaddr_get_address_bytes(const multiaddr_t *addr, size_t index, uint8_t *
             {
                 uint64_t vlen = 0;
                 size_t csize2 = 0;
-                if (unsigned_varint_decode(addr->bytes + offset, addr->size - offset, &vlen,
-                                           &csize2) != UNSIGNED_VARINT_OK)
+                if (unsigned_varint_decode(addr->bytes + offset, addr->size - offset, &vlen, &csize2) != UNSIGNED_VARINT_OK)
                 {
                     return MULTIADDR_ERR_INVALID_DATA;
                 }
@@ -1271,8 +1256,7 @@ multiaddr_t *multiaddr_encapsulate(const multiaddr_t *addr, const multiaddr_t *s
         }
         return NULL;
     }
-    if (validate_multiaddr_bytes(addr->bytes, addr->size) < 0 ||
-        validate_multiaddr_bytes(sub->bytes, sub->size) < 0)
+    if (validate_multiaddr_bytes(addr->bytes, addr->size) < 0 || validate_multiaddr_bytes(sub->bytes, sub->size) < 0)
     {
         if (err)
         {
@@ -1324,8 +1308,7 @@ typedef struct
  * @param count Pointer to store the number of components parsed.
  * @return 0 on success, or -1 on failure.
  */
-static int parse_multiaddr_components(const multiaddr_t *m, ma_component_t **out_list,
-                                      size_t *count)
+static int parse_multiaddr_components(const multiaddr_t *m, ma_component_t **out_list, size_t *count)
 {
     *out_list = NULL;
     *count = 0;
@@ -1341,8 +1324,7 @@ static int parse_multiaddr_components(const multiaddr_t *m, ma_component_t **out
         if (i == capacity)
         {
             capacity *= 2;
-            ma_component_t *tmp =
-                (ma_component_t *)realloc(list, capacity * sizeof(ma_component_t));
+            ma_component_t *tmp = (ma_component_t *)realloc(list, capacity * sizeof(ma_component_t));
             if (!tmp)
             {
                 free(list);
@@ -1352,8 +1334,7 @@ static int parse_multiaddr_components(const multiaddr_t *m, ma_component_t **out
         }
         uint64_t code = 0;
         size_t csize = 0;
-        if (unsigned_varint_decode(m->bytes + offset, m->size - offset, &code, &csize) !=
-            UNSIGNED_VARINT_OK)
+        if (unsigned_varint_decode(m->bytes + offset, m->size - offset, &code, &csize) != UNSIGNED_VARINT_OK)
         {
             free(list);
             return -1;
@@ -1381,8 +1362,7 @@ static int parse_multiaddr_components(const multiaddr_t *m, ma_component_t **out
         {
             uint64_t vlen = 0;
             size_t csize2 = 0;
-            if (unsigned_varint_decode(m->bytes + offset, m->size - offset, &vlen, &csize2) !=
-                UNSIGNED_VARINT_OK)
+            if (unsigned_varint_decode(m->bytes + offset, m->size - offset, &vlen, &csize2) != UNSIGNED_VARINT_OK)
             {
                 free(list);
                 return -1;
@@ -1519,8 +1499,7 @@ multiaddr_t *multiaddr_decapsulate(const multiaddr_t *addr, const multiaddr_t *s
     }
     ma_component_t *alist = NULL, *slist = NULL;
     size_t acount = 0, scount = 0;
-    if ((parse_multiaddr_components(addr, &alist, &acount) < 0) ||
-        (parse_multiaddr_components(sub, &slist, &scount) < 0))
+    if ((parse_multiaddr_components(addr, &alist, &acount) < 0) || (parse_multiaddr_components(sub, &slist, &scount) < 0))
     {
         if (alist)
         {

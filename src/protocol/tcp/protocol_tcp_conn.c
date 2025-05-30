@@ -6,6 +6,11 @@
 #include <string.h>
 #include <unistd.h>
 
+#ifdef _WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#endif
+
 #include "protocol/tcp/protocol_tcp_conn.h"
 #include "protocol/tcp/protocol_tcp_util.h"
 
@@ -40,21 +45,30 @@ ssize_t tcp_conn_read(libp2p_conn_t *c, void *buf, size_t len)
     }
 
     /* actual read */
-    ssize_t n = read(ctx->fd, buf, len);
-
-    if (n > 0)
+#ifdef _WIN32
+    ssize_t n = recv((SOCKET)ctx->fd, (char *)buf, (int)len, 0);
+    if (n == SOCKET_ERROR)
     {
-        return n;
+        int werr = WSAGetLastError();
+        if (werr == WSAEWOULDBLOCK)
+            return LIBP2P_CONN_ERR_AGAIN;
+        return LIBP2P_CONN_ERR_INTERNAL;
     }
+#else
+    ssize_t n = read(ctx->fd, buf, len);
+    if (n < 0)
+    {
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
+            return LIBP2P_CONN_ERR_AGAIN;
+        return LIBP2P_CONN_ERR_INTERNAL;
+    }
+#endif
+
     if (n == 0)
     {
         return LIBP2P_CONN_ERR_EOF;
     }
-    if (errno == EAGAIN || errno == EWOULDBLOCK)
-    {
-        return LIBP2P_CONN_ERR_AGAIN;
-    }
-    return LIBP2P_CONN_ERR_INTERNAL;
+    return n;
 }
 
 ssize_t tcp_conn_write(libp2p_conn_t *c, const void *buf, size_t len)
@@ -88,16 +102,25 @@ ssize_t tcp_conn_write(libp2p_conn_t *c, const void *buf, size_t len)
     }
 
     /* actual write */
+#ifdef _WIN32
+    ssize_t n = send((SOCKET)ctx->fd, (const char *)buf, (int)len, 0);
+    if (n == SOCKET_ERROR)
+    {
+        int werr = WSAGetLastError();
+        if (werr == WSAEWOULDBLOCK)
+            return LIBP2P_CONN_ERR_AGAIN;
+        return LIBP2P_CONN_ERR_INTERNAL;
+    }
+#else
     ssize_t n = write(ctx->fd, buf, len);
-    if (n >= 0)
+    if (n < 0)
     {
-        return n;
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
+            return LIBP2P_CONN_ERR_AGAIN;
+        return LIBP2P_CONN_ERR_INTERNAL;
     }
-    if (errno == EAGAIN || errno == EWOULDBLOCK)
-    {
-        return LIBP2P_CONN_ERR_AGAIN;
-    }
-    return LIBP2P_CONN_ERR_INTERNAL;
+#endif
+    return n;
 }
 
 libp2p_conn_err_t tcp_conn_set_deadline(libp2p_conn_t *c, uint64_t ms)
@@ -117,7 +140,7 @@ const multiaddr_t *tcp_conn_local(libp2p_conn_t *c)
     {
         return NULL;
     }
-    
+
     return ((tcp_conn_ctx_t *)c->ctx)->local;
 }
 const multiaddr_t *tcp_conn_remote(libp2p_conn_t *c)

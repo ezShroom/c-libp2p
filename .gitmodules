@@ -13,3 +13,12 @@
 [submodule "lib/libtommath"]
 	path = lib/libtommath
 	url = https://github.com/libtom/libtommath.git
+[submodule "lib/c20p1305"]
+	path = lib/c20p1305
+	url = https://github.com/wg/c20p1305.git
+[submodule "lib/libeddsa"]
+	path = lib/libeddsa
+	url = https://github.com/phlay/libeddsa.git
+[submodule "lib/noise-c"]
+	path = lib/noise-c
+	url = https://github.com/uink45/noise-c.git

@@ -106,6 +106,62 @@ static libp2p_multiselect_err_t send_msg(libp2p_conn_t *c, const char *msg)
     return rc;
 }
 
+/* Send multiple messages in a single write. */
+static libp2p_multiselect_err_t send_msg_batch(libp2p_conn_t *c,
+                                               const char *const msgs[],
+                                               size_t count)
+{
+    if (!c || !msgs)
+    {
+        return LIBP2P_MULTISELECT_ERR_NULL_PTR;
+    }
+
+    size_t total = 0;
+    size_t lens[8];
+    size_t vlen[8];
+    uint8_t vars[8][10];
+    if (count > 8)
+    {
+        return LIBP2P_MULTISELECT_ERR_INTERNAL;
+    }
+    for (size_t i = 0; i < count; ++i)
+    {
+        size_t mlen = strlen(msgs[i]) + 1;
+        if (mlen > MS_MAX_MESSAGE_SIZE)
+        {
+            return LIBP2P_MULTISELECT_ERR_PROTO_MAL;
+        }
+        lens[i] = mlen;
+        if (unsigned_varint_encode((uint64_t)mlen, vars[i], sizeof(vars[i]),
+                                   &vlen[i]))
+        {
+            return LIBP2P_MULTISELECT_ERR_INTERNAL;
+        }
+        total += vlen[i] + mlen;
+    }
+
+    uint8_t *frame = (uint8_t *)malloc(total);
+    if (!frame)
+    {
+        return LIBP2P_MULTISELECT_ERR_INTERNAL;
+    }
+
+    size_t off = 0;
+    for (size_t i = 0; i < count; ++i)
+    {
+        memcpy(frame + off, vars[i], vlen[i]);
+        off += vlen[i];
+        memcpy(frame + off, msgs[i], lens[i] - 1);
+        off += lens[i] - 1;
+        frame[off++] = '\n';
+    }
+
+    libp2p_multiselect_err_t rc = conn_write_all(c, frame, total);
+    free(frame);
+    return rc;
+}
+
+
 /* reads a frame → returns heap string w/o “\n”; caller frees                */
 static libp2p_multiselect_err_t recv_msg(libp2p_conn_t *c, char **out)
 {
@@ -222,6 +278,7 @@ static libp2p_multiselect_err_t send_ls_response(libp2p_conn_t *c, const char *c
     return rc;
 }
 
+
 libp2p_multiselect_err_t libp2p_multiselect_dial(libp2p_conn_t *conn, const char *const proposals[], uint64_t timeout_ms, const char **accepted_out)
 {
     if (!conn || !proposals)
@@ -233,56 +290,110 @@ libp2p_multiselect_err_t libp2p_multiselect_dial(libp2p_conn_t *conn, const char
         libp2p_conn_set_deadline(conn, timeout_ms);
     }
 
-    libp2p_multiselect_err_t rc = send_msg(conn, LIBP2P_MULTISELECT_PROTO_ID);
+    const char *batch[2];
+    size_t bcnt = 0;
+    batch[bcnt++] = LIBP2P_MULTISELECT_PROTO_ID;
+    bool have_proto0 = proposals[0] != NULL;
+    if (have_proto0)
+        batch[bcnt++] = proposals[0];
+
+    libp2p_multiselect_err_t rc = send_msg_batch(conn, batch, bcnt);
     if (rc)
     {
         goto done;
     }
 
-    for (size_t i = 0; proposals[i]; ++i)
+    char *msg = NULL;
+    rc = recv_msg(conn, &msg);
+    if (rc)
     {
-        const char *proto = proposals[i];
-        rc = send_msg(conn, proto);
-        if (rc)
-        {
-            goto done;
-        }
-
-        while (true)
-        {
-            char *msg = NULL;
-            rc = recv_msg(conn, &msg);
-            if (rc)
-            {
-                goto done;
-            }
-
-            if (!strcmp(msg, LIBP2P_MULTISELECT_PROTO_ID))
-            {
-                free(msg);
-                continue;
-            }
-            if (!strcmp(msg, LIBP2P_MULTISELECT_NA))
-            {
-                free(msg);
-                break;
-            }
-
-            if (!strcmp(msg, proto))
-            {
-                if (accepted_out)
-                {
-                    *accepted_out = proto; /* from proposals[] */
-                }
-                free(msg);
-                rc = LIBP2P_MULTISELECT_OK;
-                goto done;
-            }
-            free(msg);
-            rc = LIBP2P_MULTISELECT_ERR_PROTO_MAL;
-            goto done;
-        }
+        goto done;
     }
+    if (strcmp(msg, LIBP2P_MULTISELECT_PROTO_ID) != 0)
+    {
+        free(msg);
+        rc = LIBP2P_MULTISELECT_ERR_PROTO_MAL;
+        goto done;
+    }
+    free(msg);
+
+    rc = recv_msg(conn, &msg);
+    if (rc)
+    {
+        goto done;
+    }
+
+    size_t idx = 0;
+
+    if (!strcmp(msg, LIBP2P_MULTISELECT_NA))
+    {
+        free(msg);
+        /* remote rejected proto0; try next */
+        ++idx;
+        if (!proposals[idx])
+        {
+            rc = LIBP2P_MULTISELECT_ERR_UNAVAIL;
+            goto done;
+        }
+        rc = send_msg(conn, proposals[idx]);
+        if (rc)
+            goto done;
+    }
+    else if (have_proto0 && !strcmp(msg, proposals[0]))
+    {
+        if (accepted_out)
+            *accepted_out = proposals[0];
+        free(msg);
+        rc = LIBP2P_MULTISELECT_OK;
+        goto done;
+    }
+    else
+    {
+        free(msg);
+        rc = LIBP2P_MULTISELECT_ERR_PROTO_MAL;
+        goto done;
+    }
+
+    while (proposals[idx])
+    {
+        rc = recv_msg(conn, &msg);
+        if (rc)
+            goto done;
+
+        if (!strcmp(msg, LIBP2P_MULTISELECT_PROTO_ID))
+        {
+            free(msg);
+            continue;
+        }
+        if (!strcmp(msg, LIBP2P_MULTISELECT_NA))
+        {
+            free(msg);
+            ++idx;
+            if (!proposals[idx])
+            {
+                rc = LIBP2P_MULTISELECT_ERR_UNAVAIL;
+                goto done;
+            }
+            rc = send_msg(conn, proposals[idx]);
+            if (rc)
+                goto done;
+            continue;
+        }
+
+        if (!strcmp(msg, proposals[idx]))
+        {
+            if (accepted_out)
+                *accepted_out = proposals[idx];
+            free(msg);
+            rc = LIBP2P_MULTISELECT_OK;
+            goto done;
+        }
+
+        free(msg);
+        rc = LIBP2P_MULTISELECT_ERR_PROTO_MAL;
+        goto done;
+    }
+
     rc = LIBP2P_MULTISELECT_ERR_UNAVAIL;
 
 done:
@@ -309,6 +420,7 @@ libp2p_multiselect_err_t libp2p_multiselect_listen(libp2p_conn_t *conn, const ch
     }
 
     bool header_sent = false;
+    bool header_received = false;
     libp2p_multiselect_err_t rc = LIBP2P_MULTISELECT_OK;
 
     for (;;)
@@ -318,6 +430,28 @@ libp2p_multiselect_err_t libp2p_multiselect_listen(libp2p_conn_t *conn, const ch
         if (rc)
         {
             goto fail;
+        }
+
+        if (!header_received)
+        {
+            if (strcmp(msg, LIBP2P_MULTISELECT_PROTO_ID) != 0)
+            {
+                free(msg);
+                rc = LIBP2P_MULTISELECT_ERR_PROTO_MAL;
+                goto fail;
+            }
+            header_received = true;
+            free(msg);
+            if (!header_sent)
+            {
+                rc = send_msg(conn, LIBP2P_MULTISELECT_PROTO_ID);
+                if (rc)
+                {
+                    goto fail;
+                }
+                header_sent = true;
+            }
+            continue;
         }
 
         /* multistream header */

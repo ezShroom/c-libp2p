@@ -4,7 +4,6 @@
 
 #include <limits.h>
 #include <pthread.h>
-#include <stdatomic.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,8 +11,21 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <stdatomic.h>
+
 #define DEFAULT_N_THREADS 1
 #define DEFAULT_ITER_PER_THREAD 1
+
+/* Poll/read retry parameters – Windows loopback can be noticeably
+   slower to deliver data after an accept() than Linux/macOS.
+   Allow more retries with a slightly longer back-off so the harness
+   remains reliable across platforms while still finishing quickly. */
+#ifndef READ_RETRIES
+#define READ_RETRIES 100 /* total wait ≈ READ_RETRIES * READ_SLEEP_US */
+#endif
+#ifndef READ_SLEEP_US
+#define READ_SLEEP_US 1000 /* 1 ms */
+#endif
 
 #include "multiformats/multiaddr/multiaddr.h"
 #include "protocol/tcp/protocol_tcp.h"
@@ -48,6 +60,18 @@ static inline int env_int_or(const char *name, int def)
 }
 
 /* --------------------------------------------------------------------- */
+/* Output helpers (uniform test harness style)                           */
+/* --------------------------------------------------------------------- */
+
+static void print_standard(const char *test_name, const char *details, int passed)
+{
+    if (passed)
+        printf("TEST: %-70s | PASS\n", test_name);
+    else
+        printf("TEST: %-70s | FAIL: %s\n", test_name, details);
+}
+
+/* --------------------------------------------------------------------- */
 /* dialer worker: repeatedly dial, send/recv, close                      */
 /* --------------------------------------------------------------------- */
 static void *dialer_worker(void *arg)
@@ -76,11 +100,11 @@ static void *dialer_worker(void *arg)
 
         uint8_t buf[PAYLOAD_SZ] = {0};
         ssize_t n = LIBP2P_CONN_ERR_AGAIN;
-        for (int j = 0; j < 10 && n == LIBP2P_CONN_ERR_AGAIN; ++j)
+        for (int j = 0; j < READ_RETRIES && n == LIBP2P_CONN_ERR_AGAIN; ++j)
         {
             n = libp2p_conn_read(c, buf, sizeof buf);
             if (n == LIBP2P_CONN_ERR_AGAIN)
-                usleep(100);
+                usleep(READ_SLEEP_US);
         }
         if (n != sizeof ping || memcmp(buf, ping, sizeof ping) != 0)
             atomic_fetch_add_explicit(&h->failures, 1, memory_order_relaxed);
@@ -108,11 +132,11 @@ static void *echo_server(void *arg)
 
         uint8_t buf[PAYLOAD_SZ] = {0};
         ssize_t n = LIBP2P_CONN_ERR_AGAIN;
-        for (int j = 0; j < 10 && n == LIBP2P_CONN_ERR_AGAIN; ++j)
+        for (int j = 0; j < READ_RETRIES && n == LIBP2P_CONN_ERR_AGAIN; ++j)
         {
             n = libp2p_conn_read(c, buf, sizeof buf);
             if (n == LIBP2P_CONN_ERR_AGAIN)
-                usleep(100);
+                usleep(READ_SLEEP_US);
         }
         if (n == (ssize_t)sizeof buf)
             (void)libp2p_conn_write(c, buf, sizeof buf);
@@ -131,8 +155,8 @@ int main(void)
     /* -------- create transport -------- */
     libp2p_tcp_config_t cfg = libp2p_tcp_config_default();
     cfg.accept_poll_ms = 10;    /* wake listener every 10 ms        */
-    cfg.connect_timeout = 5000; /* 5 s dial timeout                 */
-    cfg.close_timeout_ms = 100; /* shorten listener close timeout to 100 ms */
+    cfg.connect_timeout_ms = 5000; /* 5 s dial timeout                 */
+    /* Use default close_timeout_ms to avoid premature forced close */
     libp2p_transport_t *tcp = libp2p_tcp_transport_new(&cfg);
     if (!tcp)
     {
@@ -192,20 +216,32 @@ int main(void)
     free(dial_thr);
 
     /* -------- shut down listener & server -------- */
-    lst->vt->close(lst); /* ensures server thread wakes and exits */
+    libp2p_listener_close(lst); /* ensures server thread wakes and exits */
 
     /* always wait for the echo‑server thread to finish */
     pthread_join(srv_thr, NULL);
-    
+
+    /* Listener will be cleaned up when the transport is freed */
+
     /* -------- cleanup -------- */
     multiaddr_free(ma);
     /* Always shut the transport down cleanly so that no allocations remain
        outstanding when the process exits, even in quick smoke‑test runs. */
+    libp2p_transport_close(tcp);
     libp2p_transport_free(tcp); /* full, blocking shutdown */
 
     int fails = atomic_load_explicit(&ctx.failures, memory_order_relaxed);
-    if (fails)
-        fprintf(stderr, "stress: %d failures\n", fails);
+
+    if (fails == 0)
+    {
+        print_standard("TCP stress harness", "", 1);
+    }
+    else
+    {
+        char details[64];
+        snprintf(details, sizeof details, "%d failures", fails);
+        print_standard("TCP stress harness", details, 0);
+    }
 
     return (fails == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }

@@ -11,7 +11,15 @@ project(libp2p
     LANGUAGES C
 )
 
-option(ENABLE_SANITIZERS "Enable Address, UndefinedBehavior and Thread Sanitizers" OFF)
+if(APPLE)
+  if("${CMAKE_OSX_ARCHITECTURES}" STREQUAL "")
+    set(CMAKE_OSX_ARCHITECTURES "${CMAKE_SYSTEM_PROCESSOR}" CACHE STRING "Build architectures for macOS" FORCE)
+    message(STATUS "Building for macOS architecture: ${CMAKE_OSX_ARCHITECTURES}")
+  endif()
+endif()
+
+option(ENABLE_SANITIZERS "Enable Address, UndefinedBehavior, Thread, etc. Sanitizers" OFF)
+set(SANITIZERS "address;undefined" CACHE STRING "List of sanitizers to enable (semicolon-separated)")
 # ---------------------------------------------------------------------
 # Static‑analysis / coverage options
 # ---------------------------------------------------------------------
@@ -22,23 +30,7 @@ option(ENABLE_COVERAGE   "Enable code‑coverage flags"    OFF)
 option(ENABLE_STRESS_TESTS "Build and run high‑load stress tests" OFF)
 
 if(ENABLE_SANITIZERS)
-    # Allow overriding sanitizer list via SANITIZERS environment variable
-    if(DEFINED ENV{SANITIZERS})
-        set(_sanitizers $ENV{SANITIZERS})
-    else()
-        set(_sanitizers address undefined)
-    endif()
-
-    # ThreadSanitizer is available everywhere except AppleClang on macOS
-    if(NOT (CMAKE_C_COMPILER_ID STREQUAL "AppleClang" AND CMAKE_SYSTEM_NAME STREQUAL "Darwin"))
-    endif()
-
-    # MemorySanitizer is only supported on 64‑bit Linux with upstream Clang
-    if(CMAKE_C_COMPILER_ID MATCHES "Clang" AND
-       CMAKE_SIZEOF_VOID_P EQUAL 8 AND
-       CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    endif()
-
+    set(_sanitizers ${SANITIZERS})
     list(JOIN _sanitizers "," _san_opt)
     message(STATUS "Building with sanitizers: ${_san_opt}")
 
@@ -92,6 +84,7 @@ if(ENABLE_COVERAGE)
     endif()
 endif()
 
+# Pull in pthread/C11‐threads
 find_package(Threads REQUIRED)
 
 # ------------------------------------------------
@@ -103,7 +96,6 @@ check_function_exists(explicit_bzero HAVE_EXPLICIT_BZERO)
 if(HAVE_EXPLICIT_BZERO)
   # system has it—tell the compiler to skip our fallback
   add_compile_definitions(HAVE_EXPLICIT_BZERO=1)
-add_compile_definitions(_GNU_SOURCE=1)
 endif()
 
 # Add the cmake directory to the module path
@@ -112,6 +104,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 # Set the C standard.
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
+add_compile_definitions(_GNU_SOURCE)
 
 # Set output directories for executables, libraries, and archives.
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
@@ -119,6 +112,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 # Include public headers.
+include_directories(BEFORE ${PROJECT_SOURCE_DIR}/include/protocol/tcp)
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
 # (force the cache so that the secp256k1 CMakeLists picks them up as OFF)
@@ -137,6 +131,44 @@ set(libtommath_DIR "${CMAKE_BINARY_DIR}/lib/libtommath")
 # Add libtomcrypt submodule.
 add_subdirectory(lib/libtomcrypt)
 target_compile_definitions(libtomcrypt PRIVATE USE_LTM LTM_DESC)
+
+# Add noise-c submodule with crypto backends disabled.
+set(USE_LIBSODIUM OFF CACHE BOOL "" FORCE)
+set(USE_OPENSSL OFF CACHE BOOL "" FORCE)
+add_subdirectory(lib/noise-c)
+set_target_properties(noiseprotocol PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_sources(noiseprotocol PRIVATE ${CMAKE_SOURCE_DIR}/cmake/newhope_abs_shim.c)
+
+# ---------------------------------------------------------------------------
+# Workaround: MinGW/Windows build failure in Noise-C's NewHope implementation
+# ---------------------------------------------------------------------------
+# The file `error_correction.c` inside the Noise-C submodule defines a local
+#   static int32_t abs(int32_t v)
+# which collides with the standard C `abs()` declared in <math.h> on Windows
+# (and pulled in indirectly by system headers).  We cannot patch the submodule
+# in-place, so instead rename the local symbol *only for that translation
+# unit*.  Using a per-source compile definition avoids side-effects elsewhere.
+
+if (TARGET noiseprotocol)
+    # Inject helper header globally (provides macro + inline impl)
+    target_compile_options(noiseprotocol PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/cmake/noise_newhope_abs_fix.h")
+
+    # Rename curve25519-donna helper fmul() to avoid libc conflict
+    target_compile_options(noiseprotocol PRIVATE
+        "-include${CMAKE_SOURCE_DIR}/cmake/noise_fmul_fix.h")
+
+    # For the original NewHope source file, keep the macro but suppress the
+    # inline implementation to avoid duplicate definitions.
+    set_source_files_properties(
+        ${PROJECT_SOURCE_DIR}/lib/noise-c/src/crypto/newhope/error_correction.c
+        PROPERTIES
+            COMPILE_DEFINITIONS "NEWHOPE_ABS_NO_IMPL"
+    )
+endif()
+
+# Add libeddsa submodule.
+add_subdirectory(lib/libeddsa)
 
 # ---------------------------------------------
 # Helper function for adding a module.
@@ -345,6 +377,7 @@ add_library(sha3
 )
 target_include_directories(sha3 PUBLIC ${PROJECT_SOURCE_DIR}/lib/sha3/lib)
 
+
 # ---------------------------------------------
 # multiformats/multihash
 # ---------------------------------------------
@@ -516,6 +549,8 @@ target_sources(protocol_tcp PRIVATE
     src/protocol/tcp/protocol_tcp_conn.c
     src/protocol/tcp/protocol_tcp_queue.c
     src/protocol/tcp/protocol_tcp_poller.c
+    src/protocol/tcp/protocol_tcp_dial.c
+    src/protocol/tcp/protocol_tcp_listen.c
 )
 
 
@@ -540,9 +575,9 @@ if(ENABLE_STRESS_TESTS)
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/tests
     )
 
-    add_test(NAME StressProtocolTCP COMMAND test_protocol_tcp_stress)
+    add_test(NAME Teststress_protocol_tcp COMMAND test_protocol_tcp_stress)
     # Stress jobs can run for a while – no timeout (0 = infinite)
-    set_tests_properties(StressProtocolTCP PROPERTIES TIMEOUT 0)
+    set_tests_properties(Teststress_protocol_tcp PROPERTIES TIMEOUT 60)
 
     # On Windows, copy produced DLLs next to the test binary
     if (WIN32 AND BUILD_SHARED_LIBS)
@@ -575,4 +610,207 @@ if (TARGET test_protocol_multiselect)
             protocol_tcp
             Threads::Threads
     )
+    # handshake-based tests sometimes take longer than the default
+    # timeout, so extend it for reliability
+    set_tests_properties(Testprotocol_multiselect PROPERTIES TIMEOUT 20)
 endif()
+
+# ---------------------------------------------
+# protocol/noise
+# ---------------------------------------------
+add_module(
+    protocol_noise
+    "src/protocol/noise/protocol_noise.c;src/protocol/noise/protocol_noise_conn.c;src/protocol/noise/protocol_noise_extensions.c;src/protocol/noise/protocol_noise_multiselect.c"
+    tests/protocol/noise/test_protocol_noise.c
+    ""
+    src/protocol/noise
+)
+
+# protocol_noise depends on unsigned varint encoding/decoding helpers as part of
+# the handshake payload (see src/protocol/noise/protocol_noise.c).  Without this
+# link the final build fails with undefined symbol errors for
+# `unsigned_varint_encode`/`unsigned_varint_decode` when creating the shared
+# library.  Add the dependency explicitly so the correct archive/dylib is linked
+# in.
+
+target_link_libraries(protocol_noise PUBLIC
+    libtomcrypt
+    wjcryptlib
+    sha3
+    noiseprotocol
+    protocol_multiselect
+    eddsa
+    peer_id_proto
+    peer_id
+    peer_id_ecdsa
+    peer_id_rsa
+    secp256k1
+    unsigned_varint
+)
+
+# ---------------------------------------------
+# protocol/identify
+# ---------------------------------------------
+add_module(
+    protocol_identify
+    src/protocol/identify/protocol_identify.c
+    tests/protocol/identify/test_protocol_identify.c
+    ""
+    src/protocol/identify
+)
+target_link_libraries(protocol_identify PUBLIC unsigned_varint protocol_handler)
+
+# ---------------------------------------------
+# protocol/protocol_handler (high-level protocol handler system)
+# ---------------------------------------------
+add_module(
+    protocol_handler
+    src/protocol/protocol_handler.c
+    ""
+    ""
+    src/protocol
+)
+target_link_libraries(protocol_handler PUBLIC protocol_multiselect protocol_mplex Threads::Threads)
+
+# ---------------------------------------------
+# protocol/ping
+# ---------------------------------------------
+add_module(
+    protocol_ping
+    src/protocol/ping/protocol_ping.c
+    tests/protocol/ping/test_protocol_ping.c
+    ""
+    src/protocol/ping
+)
+
+# ---------------------------------------------
+# protocol/mplex
+# ---------------------------------------------
+add_module(
+    protocol_mplex
+    "src/protocol/mplex/protocol_mplex.c;src/protocol/mplex/protocol_mplex_queue.c;src/protocol/mplex/protocol_mplex_codec.c;src/protocol/mplex/protocol_mplex_handshake.c;src/protocol/mplex/protocol_mplex_stream_array.c"
+    tests/protocol/mplex/test_protocol_mplex.c
+    ""
+    src/protocol/mplex
+)
+target_link_libraries(protocol_mplex
+    PUBLIC
+        protocol_multiselect
+        protocol_tcp
+)
+target_sources(protocol_mplex PRIVATE src/transport/conn_util.c)
+
+if (TARGET test_protocol_mplex)
+    target_link_libraries(test_protocol_mplex
+        PRIVATE
+            protocol_tcp
+            Threads::Threads
+    )
+    # negotiation and frame roundtrip may take slightly longer on
+    # slower systems, so allow a bit more time
+    set_tests_properties(Testprotocol_mplex PROPERTIES TIMEOUT 20)
+endif()
+
+# ---------------------------------------------
+# protocol/yamux
+# ---------------------------------------------
+add_module(
+    protocol_yamux
+    "src/protocol/yamux/protocol_yamux.c;src/protocol/yamux/protocol_yamux_queue.c"
+    tests/protocol/yamux/test_protocol_yamux.c
+    ""
+    src/protocol/yamux
+)
+target_link_libraries(protocol_yamux
+    PUBLIC
+        protocol_multiselect
+        protocol_tcp
+)
+
+target_sources(protocol_yamux PRIVATE src/transport/conn_util.c)
+# Windows needs Winsock for network byte order functions
+if (WIN32)
+    target_link_libraries(protocol_yamux PRIVATE ws2_32)
+endif()
+
+if (TARGET test_protocol_yamux)
+    target_link_libraries(test_protocol_yamux
+        PRIVATE
+            protocol_tcp
+            Threads::Threads
+    )
+    set_tests_properties(Testprotocol_yamux PROPERTIES TIMEOUT 60)
+endif()
+
+if (TARGET test_protocol_noise)
+    target_link_libraries(test_protocol_noise
+        PRIVATE
+            protocol_tcp
+            protocol_mplex
+            multiaddr
+            secp256k1
+            unsigned_varint
+            eddsa
+            peer_id_ed25519
+            peer_id_ecdsa
+            peer_id_rsa
+            Threads::Threads
+    )
+    # Provide access to eddsa public headers for the test source
+    target_include_directories(test_protocol_noise PRIVATE ${PROJECT_SOURCE_DIR}/lib/libeddsa/lib)
+
+    # Noise handshake test suite can take a while on Windows CI – allow 60 s.
+    set_tests_properties(Testprotocol_noise PROPERTIES TIMEOUT 60)
+endif()
+
+# ---------------------------------------------
+# transport/upgrader
+# ---------------------------------------------
+add_module(
+    transport_upgrader
+    src/transport/upgrader.c
+    tests/transport/test_upgrader.c
+    ""
+    src/transport
+)
+
+target_link_libraries(transport_upgrader PUBLIC protocol_noise protocol_mplex)
+
+if (TARGET test_transport_upgrader)
+    target_link_libraries(test_transport_upgrader
+        PRIVATE
+            protocol_tcp
+            multiaddr
+            eddsa
+            peer_id
+            peer_id_ed25519
+            Threads::Threads
+    )
+    target_include_directories(test_transport_upgrader PRIVATE ${PROJECT_SOURCE_DIR}/lib/libeddsa/lib)
+endif()
+
+# -----------------------------------------------------------------
+# Example dial for identify protocol
+# -----------------------------------------------------------------
+
+add_executable(example_identify_dial
+    examples/example_identify_dial.c
+)
+target_link_libraries(example_identify_dial
+    PRIVATE
+        protocol_tcp
+        protocol_noise
+        protocol_mplex
+        protocol_yamux
+        protocol_identify
+        protocol_handler
+        transport_upgrader
+        multiaddr
+        unsigned_varint
+        peer_id
+        peer_id_secp256k1
+        Threads::Threads
+)
+set_target_properties(example_identify_dial PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/examples
+)

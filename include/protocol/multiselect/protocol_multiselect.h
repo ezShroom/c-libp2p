@@ -12,20 +12,20 @@ extern "C"
 {
 #endif
 
-/* ------------------------------------------------------------------------- */
-/*  Constants                                                                */
-/* ------------------------------------------------------------------------- */
-
-/** Canonical protocol id (without trailing newline). */
+/**
+ * @brief Canonical protocol id.
+ */
 #define LIBP2P_MULTISELECT_PROTO_ID "/multistream/1.0.0"
 
-/* Special message tokens (no newline). */
+/**
+ * @brief Special message token for "not available" (no newline).
+ */
 #define LIBP2P_MULTISELECT_NA "na"
-#define LIBP2P_MULTISELECT_LS "ls"
 
-/* ------------------------------------------------------------------------- */
-/*  Error codes                                                              */
-/* ------------------------------------------------------------------------- */
+/**
+ * @brief Special message token for listing supported protocols (no newline).
+ */
+#define LIBP2P_MULTISELECT_LS "ls"
 
 typedef enum
 {
@@ -38,25 +38,24 @@ typedef enum
     LIBP2P_MULTISELECT_ERR_INTERNAL = -6
 } libp2p_multiselect_err_t;
 
-/* ------------------------------------------------------------------------- */
-/*  Configuration                                                            */
-/* ------------------------------------------------------------------------- */
-
 typedef struct
 {
     uint64_t handshake_timeout_ms; /**< 0 → no timeout. */
     bool enable_ls;                /**< Listener answers `ls` requests. */
 } libp2p_multiselect_config_t;
 
-/** Canonical defaults: no timeout, `ls` disabled. */
+/**
+ * @brief Return the canonical multiselect configuration.
+ *
+ * The defaults configure no handshake timeout and disable answering `ls`
+ * requests.
+ *
+ * @return Default configuration instance.
+ */
 static inline libp2p_multiselect_config_t libp2p_multiselect_config_default(void)
 {
     return (libp2p_multiselect_config_t){.handshake_timeout_ms = 0, .enable_ls = false};
 }
-
-/* ------------------------------------------------------------------------- */
-/*  Public API (dial / listen helpers)                                       */
-/* ------------------------------------------------------------------------- */
 
 /**
  * @brief Dial-side protocol negotiation.
@@ -84,8 +83,6 @@ libp2p_multiselect_err_t libp2p_multiselect_dial(libp2p_conn_t *conn, const char
  */
 libp2p_multiselect_err_t libp2p_multiselect_listen(libp2p_conn_t *conn, const char *const supported[], const libp2p_multiselect_config_t *cfg,
                                                    const char **accepted_out);
-
-/* ------------------------------------------------------------------------- */
 
 #ifdef __cplusplus
 } /* extern "C" */
