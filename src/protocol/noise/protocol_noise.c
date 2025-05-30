@@ -179,12 +179,9 @@ static int build_handshake_payload(struct libp2p_noise_ctx *ctx, uint8_t **out, 
         Sha256Calculate(to_sign, sizeof(to_sign), &hash);
         rsa_key rsa;
         if (rsa_import(ctx->identity_key, (unsigned long)ctx->identity_key_len, &rsa) != CRYPT_OK)
-        {
-            free(pubkey_pb);
             return -1;
-        }
-        sig_len = rsa_get_size(&rsa);
-        signature = malloc(sig_len);
+        unsigned long temp_sig_len = rsa_get_size(&rsa);
+        signature = malloc(temp_sig_len);
         if (!signature)
         {
             rsa_free(&rsa);
@@ -192,13 +189,14 @@ static int build_handshake_payload(struct libp2p_noise_ctx *ctx, uint8_t **out, 
             return -1;
         }
         int sha_idx = find_hash("sha256");
-        if (rsa_sign_hash_ex(hash.bytes, sizeof(hash.bytes), signature, &sig_len, LTC_PKCS_1_V1_5, NULL, 0, sha_idx, 0, &rsa) != CRYPT_OK)
+        if (rsa_sign_hash_ex(hash.bytes, sizeof(hash.bytes), signature, &temp_sig_len, LTC_PKCS_1_V1_5, NULL, 0, sha_idx, 0, &rsa) != CRYPT_OK)
         {
             rsa_free(&rsa);
             free(signature);
             free(pubkey_pb);
             return -1;
         }
+        sig_len = temp_sig_len;
         rsa_free(&rsa);
     }
     else if (ctx->identity_type == PEER_ID_ECDSA_KEY_TYPE)
@@ -207,7 +205,12 @@ static int build_handshake_payload(struct libp2p_noise_ctx *ctx, uint8_t **out, 
         Sha256Calculate(to_sign, sizeof(to_sign), &hash);
         ecc_key ecdsa;
         if (ecc_import_openssl(ctx->identity_key, (unsigned long)ctx->identity_key_len, &ecdsa) != CRYPT_OK)
+            return -1;
+        unsigned long temp_sig_len = 2 * ecc_get_size(&ecdsa) + 16;
+        signature = malloc(temp_sig_len);
+        if (!signature)
         {
+            ecc_free(&ecdsa);
             free(pubkey_pb);
             return -1;
         }
@@ -219,21 +222,14 @@ static int build_handshake_payload(struct libp2p_noise_ctx *ctx, uint8_t **out, 
             free(pubkey_pb);
             return -1;
         }
-        sig_len = 2 * ecc_get_size(&ecdsa) + 16;
-        signature = malloc(sig_len);
-        if (!signature)
-        {
-            ecc_free(&ecdsa);
-            free(pubkey_pb);
-            return -1;
-        }
-        if (ecc_sign_hash(hash.bytes, sizeof(hash.bytes), signature, &sig_len, &prng, prng_idx, &ecdsa) != CRYPT_OK)
+        if (ecc_sign_hash(hash.bytes, sizeof(hash.bytes), signature, &temp_sig_len, &prng, prng_idx, &ecdsa) != CRYPT_OK)
         {
             ecc_free(&ecdsa);
             free(signature);
             free(pubkey_pb);
             return -1;
         }
+        sig_len = temp_sig_len;
         ecc_free(&ecdsa);
     }
     else
