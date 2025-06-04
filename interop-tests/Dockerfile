@@ -15,13 +15,15 @@ RUN apt-get update && \
 WORKDIR /src/c-libp2p
 COPY . .
 
-# Initialize Git repository and fetch submodules
-RUN git init && \
-    git config user.email "docker@example.com" && \
-    git config user.name "Docker Build" && \
-    git add . && \
-    git commit -m "Initial commit" && \
-    git submodule update --init --recursive
+# Clone submodules 
+RUN git clone https://github.com/bitcoin-core/secp256k1.git lib/secp256k1 && \
+    git clone https://github.com/libtom/libtommath.git lib/libtommath && \
+    git clone https://github.com/libtom/libtomcrypt.git lib/libtomcrypt && \
+    git clone https://github.com/uink45/noise-c.git lib/noise-c && \
+    git clone https://github.com/phlay/libeddsa.git lib/libeddsa && \
+    git clone https://github.com/wg/c20p1305.git lib/c20p1305 && \
+    git clone https://github.com/pablotron/sha3.git lib/sha3 && \
+    git clone https://github.com/WaterJuice/WjCryptLib.git lib/wjcryptlib
 
 # Build step (parallel & strip binary)
 RUN cmake . && make -j"$(nproc)" && strip interop-c
