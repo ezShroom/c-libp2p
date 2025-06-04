@@ -17,6 +17,8 @@ COPY . .
 
 # Initialize Git repository and fetch submodules
 RUN git init && \
+    git config user.email "docker@example.com" && \
+    git config user.name "Docker Build" && \
     git add . && \
     git commit -m "Initial commit" && \
     git submodule update --init --recursive
