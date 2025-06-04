@@ -15,6 +15,12 @@ RUN apt-get update && \
 WORKDIR /src/c-libp2p
 COPY . .
 
+# Initialize Git repository and fetch submodules
+RUN git init && \
+    git add . && \
+    git commit -m "Initial commit" && \
+    git submodule update --init --recursive
+
 # Build step (parallel & strip binary)
 RUN cmake . && make -j"$(nproc)" && strip interop-c
 
