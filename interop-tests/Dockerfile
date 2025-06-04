@@ -1,7 +1,3 @@
-# Dockerfile for C libp2p interop implementation (multi-stage)
-# to test C libp2p integration with transport-interop runner.
-# Best-practice: Pin base image for reproducibility
-
 ########## Builder Stage ##########
 FROM ubuntu:22.04 AS builder
 
@@ -23,7 +19,7 @@ COPY . .
 RUN cmake . && make -j"$(nproc)" && strip interop-c
 
 ########## Runtime Stage ##########
-FROM ubuntu:22.04-slim
+FROM ubuntu:22.04
 
 # Install minimal runtime dependencies
 RUN apt-get update && \
