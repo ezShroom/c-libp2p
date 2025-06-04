@@ -36,7 +36,6 @@ RUN apt-get update && \
 COPY --from=builder /src/c-libp2p/interop-c /usr/local/bin/interop-c
 
 # Entrypoint: run the interop binary
-en
 ENTRYPOINT ["/usr/local/bin/interop-c"]
 
 # Default command (fallback)
