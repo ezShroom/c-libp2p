@@ -26,7 +26,7 @@ RUN git clone https://github.com/bitcoin-core/secp256k1.git lib/secp256k1 && \
     git clone https://github.com/WaterJuice/WjCryptLib.git lib/wjcryptlib
 
 # Build step (parallel & strip binary)
-RUN cmake . && make -j"$(nproc)" && strip interop-c
+RUN mkdir build && cd build && cmake .. && make -j"$(nproc)" interop-c && strip interop-c
 
 ########## Runtime Stage ##########
 FROM ubuntu:22.04
@@ -39,7 +39,7 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy the interop binary from builder
-COPY --from=builder /src/c-libp2p/interop-c /usr/local/bin/interop-c
+COPY --from=builder /src/c-libp2p/build/interop-c /usr/local/bin/interop-c
 
 # Entrypoint: run the interop binary
 ENTRYPOINT ["/usr/local/bin/interop-c"]

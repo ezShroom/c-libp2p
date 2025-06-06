@@ -20,6 +20,7 @@ endif()
 
 option(ENABLE_SANITIZERS "Enable Address, UndefinedBehavior, Thread, etc. Sanitizers" OFF)
 set(SANITIZERS "address;undefined" CACHE STRING "List of sanitizers to enable (semicolon-separated)")
+
 # ---------------------------------------------------------------------
 # Static‑analysis / coverage options
 # ---------------------------------------------------------------------
@@ -824,3 +825,32 @@ if (WIN32 AND BUILD_SHARED_LIBS)
       $<TARGET_FILE_DIR:example_identify_dial>
   )
 endif()
+
+# -----------------------------------------------------------------
+# interop binary
+# -----------------------------------------------------------------
+add_executable(interop-c
+    src/interop/interop.c
+)
+target_link_libraries(interop-c
+    PRIVATE
+        protocol_tcp
+        protocol_noise
+        protocol_yamux
+        protocol_mplex
+        protocol_ping
+        transport_upgrader
+        multiaddr
+        peer_id
+        peer_id_ed25519
+        Threads::Threads
+)
+set_target_properties(interop-c PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+add_executable(test_interop tests/interop/test_interop.c)
+target_link_libraries(test_interop PRIVATE Threads::Threads)
+set_target_properties(test_interop PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/tests
+)
+add_test(NAME Testinterop COMMAND test_interop)
