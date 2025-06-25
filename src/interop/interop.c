@@ -372,7 +372,7 @@ int main(void)
         ip = "0.0.0.0";
     const char *redis_addr = getenv("redis_addr");
     if (!redis_addr)
-        redis_addr = "127.0.0.1:6379";
+        redis_addr = "redis:6379"; // Default to Docker service name
     int timeout = getenv("test_timeout_seconds") ? atoi(getenv("test_timeout_seconds")) : 180;
     char host[64] = "", port[16] = "";
     sscanf(redis_addr, "%63[^:]:%15s", host, port);

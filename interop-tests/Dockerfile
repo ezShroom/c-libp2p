@@ -15,18 +15,11 @@ RUN apt-get update && \
 WORKDIR /src/c-libp2p
 COPY . .
 
-# Clone submodules 
-RUN git clone https://github.com/bitcoin-core/secp256k1.git lib/secp256k1 && \
-    git clone https://github.com/libtom/libtommath.git lib/libtommath && \
-    git clone https://github.com/libtom/libtomcrypt.git lib/libtomcrypt && \
-    git clone https://github.com/uink45/noise-c.git lib/noise-c && \
-    git clone https://github.com/phlay/libeddsa.git lib/libeddsa && \
-    git clone https://github.com/wg/c20p1305.git lib/c20p1305 && \
-    git clone https://github.com/pablotron/sha3.git lib/sha3 && \
-    git clone https://github.com/WaterJuice/WjCryptLib.git lib/wjcryptlib
-
 # Build step (parallel & strip binary)
-RUN mkdir build && cd build && cmake .. && make -j"$(nproc)" interop-c && strip interop-c
+RUN rm -rf build && mkdir build && cd build && \
+    cmake .. && \
+    make -j"$(nproc)" interop-c && \
+    strip interop-c
 
 ########## Runtime Stage ##########
 FROM ubuntu:22.04
@@ -41,8 +34,18 @@ RUN apt-get update && \
 # Copy the interop binary from builder
 COPY --from=builder /src/c-libp2p/build/interop-c /usr/local/bin/interop-c
 
+# Copy all shared libraries from builder - both .so and versioned libraries
+COPY --from=builder /src/c-libp2p/build/lib/ /usr/local/lib/
+
+# Set library search path
+ENV LD_LIBRARY_PATH=/usr/local/lib
+
+# Update library cache
+RUN ldconfig
+
+# Debug: List libraries to verify they were copied
+RUN echo "Libraries in /usr/local/lib:" && ls -la /usr/local/lib/ && \
+    echo "Library dependencies of interop-c:" && ldd /usr/local/bin/interop-c || true
+
 # Entrypoint: run the interop binary
 ENTRYPOINT ["/usr/local/bin/interop-c"]
-
-# Default command (fallback)
-CMD ["echo", "interop-c binary not found"]
