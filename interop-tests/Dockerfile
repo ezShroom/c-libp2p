@@ -1,5 +1,7 @@
 ########## Builder Stage ##########
-FROM ubuntu:22.04 AS builder
+# Accept architecture from buildx and pick the matching base image
+ARG TARGETARCH
+FROM --platform=linux/${TARGETARCH} ubuntu:22.04 AS builder
 
 # Install system build dependencies
 RUN apt-get update && \
@@ -26,7 +28,9 @@ RUN cd c-libp2p && \
     strip interop-c
 
 ########## Runtime Stage ##########
-FROM ubuntu:22.04
+# Runtime image for the same architecture
+ARG TARGETARCH
+FROM --platform=linux/${TARGETARCH} ubuntu:22.04
 
 # Install minimal runtime dependencies
 RUN apt-get update && \
