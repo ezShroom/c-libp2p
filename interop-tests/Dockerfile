@@ -16,9 +16,7 @@ WORKDIR /src/c-libp2p
 COPY . .
 
 # Initialize git repository and submodules
-RUN git init && \
-    git remote add origin https://github.com/Pier-Two/c-libp2p.git && \
-    git submodule update --init --recursive
+RUN git submodule update --init --recursive || (git init && git remote add origin https://github.com/Pier-Two/c-libp2p.git && git submodule update --init --recursive)
 
 # Build step (parallel & strip binary)
 RUN rm -rf build && mkdir build && cd build && \
