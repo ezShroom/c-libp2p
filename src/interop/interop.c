@@ -13,6 +13,7 @@
 #include "protocol/mplex/protocol_mplex.h"
 #include "protocol/noise/protocol_noise.h"
 #include "protocol/ping/protocol_ping.h"
+#include "protocol/protocol_handler.h"
 #include "protocol/tcp/protocol_tcp.h"
 #include "protocol/yamux/protocol_yamux.h"
 #include "transport/transport.h"
@@ -145,6 +146,24 @@ static libp2p_muxer_t *create_muxer(const char *muxer_name)
         return NULL;
 }
 
+/* File-scope handler that echos 32-byte pings */
+static int ping_stream_handler(libp2p_stream_t *stream, void *user_data)
+{
+    (void)user_data;
+    uint8_t buf[32];
+    ssize_t n = libp2p_stream_read(stream, buf, sizeof(buf));
+    if (n != (ssize_t)sizeof(buf))
+    {
+        libp2p_stream_close(stream);
+        libp2p_stream_free(stream);
+        return -1;
+    }
+    libp2p_stream_write(stream, buf, sizeof(buf));
+    libp2p_stream_close(stream);
+    libp2p_stream_free(stream);
+    return 0;
+}
+
 static int run_listener(const char *ip, const char *redis_host, const char *redis_port, int timeout, const char *muxer_name)
 {
     multiaddr_t *addr = NULL;
@@ -234,7 +253,30 @@ static int run_listener(const char *ip, const char *redis_host, const char *redi
         libp2p_transport_free(tcp);
         return 1;
     }
-    libp2p_ping_serve(uconn->conn);
+    /* -----------------------------------------------------------
+     * Respond to ping requests over a negotiated stream.
+     * We spin up a protocol-handler registry that echoes back
+     * 32-byte payloads on "/ipfs/ping/1.0.0" streams.
+     * ---------------------------------------------------------*/
+
+    /* Create registry and register the ping handler */
+    libp2p_protocol_handler_registry_t *registry = libp2p_protocol_handler_registry_new();
+    libp2p_register_protocol_handler(registry, LIBP2P_PING_PROTO_ID, ping_stream_handler, NULL);
+
+    /* Start protocol handler context (runs in bg thread) */
+    libp2p_protocol_handler_ctx_t *phctx = libp2p_protocol_handler_ctx_new(registry, uconn);
+    libp2p_protocol_handler_start(phctx);
+
+    /* Wait for the remote side to close the connection or timeout */
+    libp2p_conn_set_deadline(uconn->conn, timeout * 1000);
+    uint8_t tmp;
+    while (libp2p_conn_read(uconn->conn, &tmp, 1) > 0)
+        ;
+
+    libp2p_protocol_handler_stop(phctx);
+    libp2p_protocol_handler_ctx_free(phctx);
+    libp2p_protocol_handler_registry_free(registry);
+
     libp2p_conn_close(uconn->conn);
     free(uconn);
     libp2p_upgrader_free(up);
@@ -315,12 +357,14 @@ static int run_dialer(const char *redis_host, const char *redis_port, int timeou
         libp2p_transport_free(tcp);
         return 1;
     }
-    // Record ping RTT
-    uint64_t ping_start = now_mono_ms();
-    uint64_t ping_ms = 0;
-    if (libp2p_ping_roundtrip(uconn->conn, timeout * 1000, &ping_ms) != LIBP2P_PING_OK)
+    /* ------------------------------------------------------------------
+     * Open a ping protocol stream and perform one ping round-trip
+     * ----------------------------------------------------------------*/
+
+    libp2p_stream_t *ping_stream = NULL;
+    if (libp2p_protocol_open_stream(uconn, LIBP2P_PING_PROTO_ID, &ping_stream) != LIBP2P_PROTOCOL_HANDLER_OK)
     {
-        fprintf(stderr, "ping failed\n");
+        fprintf(stderr, "failed to open ping stream\n");
         libp2p_conn_close(uconn->conn);
         free(uconn);
         libp2p_upgrader_free(up);
@@ -331,11 +375,53 @@ static int run_dialer(const char *redis_host, const char *redis_port, int timeou
         return 1;
     }
 
-    // Calculate handshake + one RTT duration
+    uint8_t payload[32];
+    noise_randstate_generate_simple(payload, sizeof(payload));
+
+    uint64_t ping_start = now_mono_ms();
+
+    if ((ssize_t)sizeof(payload) != libp2p_stream_write(ping_stream, payload, sizeof(payload)))
+    {
+        fprintf(stderr, "ping write failed\n");
+        libp2p_stream_close(ping_stream);
+        libp2p_stream_free(ping_stream);
+        libp2p_conn_close(uconn->conn);
+        free(uconn);
+        libp2p_upgrader_free(up);
+        libp2p_muxer_free(muxer);
+        libp2p_security_free(noise);
+        multiaddr_free(addr);
+        libp2p_transport_free(tcp);
+        return 1;
+    }
+
+    uint8_t echo[32];
+    ssize_t rcvd = libp2p_stream_read(ping_stream, echo, sizeof(echo));
+    if (rcvd != (ssize_t)sizeof(echo) || memcmp(payload, echo, sizeof(echo)) != 0)
+    {
+        fprintf(stderr, "ping failed\n");
+        libp2p_stream_close(ping_stream);
+        libp2p_stream_free(ping_stream);
+        libp2p_conn_close(uconn->conn);
+        free(uconn);
+        libp2p_upgrader_free(up);
+        libp2p_muxer_free(muxer);
+        libp2p_security_free(noise);
+        multiaddr_free(addr);
+        libp2p_transport_free(tcp);
+        return 1;
+    }
+
+    uint64_t ping_ms = now_mono_ms() - ping_start;
+
+    libp2p_stream_close(ping_stream);
+    libp2p_stream_free(ping_stream);
+
     uint64_t handshake_plus_rtt_ms = now_mono_ms() - start;
 
-    // Output JSON to stdout (as per spec)
+    /* Output JSON to stdout (as per spec) */
     printf("{\"handshakePlusOneRTTMillis\":%.3f,\"pingRTTMilllis\":%.3f}\n", (double)handshake_plus_rtt_ms, (double)ping_ms);
+
     libp2p_conn_close(uconn->conn);
     free(uconn);
     libp2p_upgrader_free(up);
