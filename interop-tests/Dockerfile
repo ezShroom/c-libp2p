@@ -15,7 +15,7 @@ RUN apt-get update && \
 WORKDIR /src
 RUN git clone --recursive https://github.com/Pier-Two/c-libp2p.git && \
     cd c-libp2p && \
-    git checkout a60ff942063eaf1b379b918396640672518af056 && \
+    git checkout f20d98be040c7600d8f559ab4d62559326a2439a && \
     git submodule update --init --recursive
 
 # Build step (parallel & strip binary)
