@@ -11,15 +11,16 @@ RUN apt-get update && \
         ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Set and copy source
-WORKDIR /src/c-libp2p
-COPY . .
-
-# Initialize git repository and submodules
-RUN git submodule update --init --recursive || (git init && git remote add origin https://github.com/Pier-Two/c-libp2p.git && git submodule update --init --recursive)
+# Set working directory and clone the repository with submodules
+WORKDIR /src
+RUN git clone --recursive https://github.com/Pier-Two/c-libp2p.git && \
+    cd c-libp2p && \
+    git checkout a60ff942063eaf1b379b918396640672518af056 && \
+    git submodule update --init --recursive
 
 # Build step (parallel & strip binary)
-RUN rm -rf build && mkdir build && cd build && \
+RUN cd c-libp2p && \
+    rm -rf build && mkdir build && cd build && \
     cmake .. && \
     make -j"$(nproc)" interop-c && \
     strip interop-c
