@@ -24,19 +24,18 @@ jobs:
           tar --warning=no-file-changed czf $ARCHIVE_NAME --exclude='.git' .
           echo "ARCHIVE_NAME=$ARCHIVE_NAME" >> $GITHUB_OUTPUT
 
-      - name: Create GitHub Release
-        id: create_release
-        uses: actions/create-release@v1
-        with:
-          tag_name: release-${{ github.run_number }}    # you can customize
-          release_name: Release ${{ github.run_number }}
-          draft: false
-          prerelease: false
-
-      - name: Upload tar.gz to Release
+      - name: create tar.gz archive
+        id: tar_step
+        run: |
+          REVISION=${GITHUB_SHA::7}
+          ARCHIVE_NAME=c-libp2p-${GITHUB_REF_NAME}-${REVISION}.tar.gz
+          tar -czf $ARCHIVE_NAME --exclude='.git' .
+          echo "ARCHIVE_NAME=$ARCHIVE_NAME" >> $GITHUB_OUTPUT
+      
+      - name: upload tar.gz to release
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ steps.build-and-release.outputs.ARCHIVE_NAME }}
-          asset_name: ${{ steps.build-and-release.outputs.ARCHIVE_NAME }}
+          asset_path: ${{ steps.tar_step.outputs.ARCHIVE_NAME }}
+          asset_name: ${{ steps.tar_step.outputs.ARCHIVE_NAME }}
           asset_content_type: application/gzip
