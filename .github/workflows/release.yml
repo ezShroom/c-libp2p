@@ -22,7 +22,10 @@ jobs:
         run: |
           REVISION=${GITHUB_SHA::7}
           ARCHIVE_NAME=c-libp2p-${GITHUB_REF_NAME}-${REVISION}.tar.gz
-          tar --warning=no-file-changed -czf $ARCHIVE_NAME --exclude='.git' .
+          mkdir -p /tmp/temp_archive
+          cp -r --no-preserve=mode,ownership . /tmp/temp_archive --exclude='.git' --exclude='*.log' --exclude='*tmp*' --exclude="$ARCHIVE_NAME"
+          tar -czf /tmp/$ARCHIVE_NAME -C /tmp/temp_archive .
+          mv /tmp/$ARCHIVE_NAME .
           echo "ARCHIVE_NAME=$ARCHIVE_NAME" >> $GITHUB_OUTPUT
       
       - name: upload tar.gz to release
