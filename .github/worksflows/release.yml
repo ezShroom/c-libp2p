@@ -1,0 +1,43 @@
+name: Auto Release
+
+on:
+  push:
+    branches:
+      - main          # or your default branch
+  workflow_dispatch:  # manual trigger
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository (w/ submodules)
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0           # fetch all history
+          submodules: recursive    # pull in all submodules
+
+      - name: Create tar.gz archive
+        # create a versioned tarball, including everything (except .git)
+        run: |
+          REVISION=${GITHUB_SHA::7}
+          ARCHIVE_NAME=c-libp2p-${{ github.ref_name }}-${REVISION}.tar.gz
+          tar czf $ARCHIVE_NAME --exclude='.git' .
+          echo "ARCHIVE_NAME=$ARCHIVE_NAME" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        with:
+          tag_name: release-${{ github.run_number }}    # you can customize
+          release_name: Release ${{ github.run_number }}
+          draft: false
+          prerelease: false
+
+      - name: Upload tar.gz to Release
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.build-and-release.outputs.ARCHIVE_NAME }}
+          asset_name: ${{ steps.build-and-release.outputs.ARCHIVE_NAME }}
+          asset_content_type: application/gzip
