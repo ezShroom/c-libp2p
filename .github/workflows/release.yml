@@ -16,13 +16,6 @@ jobs:
         with:
           fetch-depth: 0           # fetch all history
           submodules: recursive    # pull in all submodules
-      
-      - name: Create tar.gz archive
-        run: |
-          REVISION=${GITHUB_SHA::7}
-          ARCHIVE_NAME=c-libp2p-${GITHUB_REF_NAME}-${REVISION}.tar.gz
-          tar --warning=no-file-changed czf $ARCHIVE_NAME --exclude='.git' .
-          echo "ARCHIVE_NAME=$ARCHIVE_NAME" >> $GITHUB_OUTPUT
 
       - name: create tar.gz archive
         id: tar_step
