@@ -23,8 +23,12 @@ jobs:
         run: |
           project_name=$(basename "$GITHUB_REPOSITORY")
           tar_name="${project_name}-${{ steps.get_sha.outputs.sha }}.tar.gz"
-          tar --exclude="./.git" --exclude="./.github" --exclude="$tar_name" -czf "$tar_name" .
-          echo "tar_name=$tar_name" >> "$GITHUB_ENV" # this is kinda hacky lol
+          # move out of the directory to create the tarball
+          # then move the tarball back into the workspace to be picked up
+          mkdir -p ../release_build
+          tar --exclude="./.git" --exclude="./.github" -czf "../release_build/$tar_name" .
+          mv "../release_build/$tar_name" .
+          echo "tar_name=$tar_name" >> "$GITHUB_ENV"
 
       - name: create release
         uses: softprops/action-gh-release@v1
