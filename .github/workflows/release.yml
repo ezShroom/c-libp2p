@@ -1,37 +1,37 @@
-name: Auto Release
+name: create release tarball
 
 on:
   push:
     branches:
-      - main          # or your default branch
-  workflow_dispatch:  # manual trigger
+      - main
+  workflow_dispatch:
 
 jobs:
-  build-and-release:
+  build_and_release:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository (w/ submodules)
-        uses: actions/checkout@v3
+      - name: checkout repository with submodules
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0           # fetch all history
-          submodules: recursive    # pull in all submodules
+          submodules: recursive
+
+      - name: get short commit sha
+        id: get_sha
+        run: echo "sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: create tar.gz archive
-        id: tar_step
         run: |
-          REVISION=${GITHUB_SHA::7}
-          ARCHIVE_NAME=c-libp2p-${GITHUB_REF_NAME}-${REVISION}.tar.gz
-          mkdir -p /tmp/temp_archive
-          cp -r --no-preserve=mode,ownership . /tmp/temp_archive
-          tar -czf /tmp/$ARCHIVE_NAME -C /tmp/temp_archive .
-          mv /tmp/$ARCHIVE_NAME .
-          echo "ARCHIVE_NAME=$ARCHIVE_NAME" >> $GITHUB_OUTPUT
-      
-      - name: upload tar.gz to release
-        uses: actions/upload-release-asset@v1
+          project_name=$(basename "$GITHUB_REPOSITORY")
+          tar_name="${project_name}-${{ steps.get_sha.outputs.sha }}.tar.gz"
+          tar --exclude="./.git" --exclude="./.github" --exclude="$tar_name" -czf "$tar_name" .
+          echo "tar_name=$tar_name" >> "$GITHUB_ENV" # this is kinda hacky lol
+
+      - name: create release
+        uses: softprops/action-gh-release@v1
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ steps.tar_step.outputs.ARCHIVE_NAME }}
-          asset_name: ${{ steps.tar_step.outputs.ARCHIVE_NAME }}
-          asset_content_type: application/gzip
+          files: ${{ env.tar_name }}
+          tag_name: ${{ github.ref_name }}-${{ steps.get_sha.outputs.sha }}
+          name: release ${{ github.ref_name }} (${{ steps.get_sha.outputs.sha }})
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
