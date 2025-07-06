@@ -1,4 +1,6 @@
+#include <arpa/inet.h>
 #include <netdb.h>
+#include <netinet/in.h>
 #include <noise/protocol/randstate.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -10,6 +12,7 @@
 
 #include "multiformats/multiaddr/multiaddr.h"
 #include "peer_id/peer_id_ed25519.h"
+#include "protocol/identify/protocol_identify.h"
 #include "protocol/mplex/protocol_mplex.h"
 #include "protocol/noise/protocol_noise.h"
 #include "protocol/ping/protocol_ping.h"
@@ -157,25 +160,136 @@ static libp2p_muxer_t *create_muxer(const char *muxer_name)
         return NULL;
 }
 
+/* File-scope handler that responds to identify requests */
+static int identify_stream_handler(libp2p_stream_t *stream, void *user_data)
+{
+    fprintf(stderr, "identify_stream_handler: got new stream\n");
+    (void)user_data;
+
+    // For identify protocol, we just need to receive the identify request
+    // and send back our own identify information. For interop tests, we can
+    // send a minimal response or close the stream.
+
+    uint8_t buf[1024];
+    ssize_t n = libp2p_stream_read(stream, buf, sizeof(buf));
+
+    if (n > 0)
+    {
+        fprintf(stderr, "identify_stream_handler: received %zd bytes\n", n);
+        // Send minimal identify response (for interop we just close)
+    }
+    else if (n == -5)
+    {
+        // EAGAIN - no data yet, that's fine for identify
+        fprintf(stderr, "identify_stream_handler: no data available yet\n");
+    }
+    else
+    {
+        fprintf(stderr, "identify_stream_handler: read error %zd\n", n);
+    }
+
+    libp2p_stream_close(stream);
+    fprintf(stderr, "identify_stream_handler: done\n");
+    return 0;
+}
+
+/* Forward declaration for generic muxer types */
+typedef enum
+{
+    MUXER_TYPE_MPLEX,
+    MUXER_TYPE_YAMUX,
+    MUXER_TYPE_UNKNOWN
+} muxer_type_t;
+
+typedef struct
+{
+    muxer_type_t type;
+    union
+    {
+        libp2p_mplex_ctx_t *mplex;
+        libp2p_yamux_ctx_t *yamux;
+    } ctx;
+} generic_muxer_ctx_t;
+
 /* File-scope handler that echos 32-byte pings */
+// Helper function to read exactly n bytes, similar to read_exact in Rust
+static ssize_t stream_read_exact(libp2p_stream_t *stream, uint8_t *buf, size_t len)
+{
+    size_t total_read = 0;
+    while (total_read < len)
+    {
+        ssize_t n = libp2p_stream_read(stream, buf + total_read, len - total_read);
+        if (n > 0)
+        {
+            total_read += n;
+        }
+        else if (n == -5) // EAGAIN
+        {
+            // Data not available yet, wait a bit and try again
+            usleep(1000); // 1ms
+            continue;
+        }
+        else if (n == 0)
+        {
+            // EOF before reading all data
+            return total_read;
+        }
+        else
+        {
+            // Other error
+            return n;
+        }
+    }
+    return total_read;
+}
+
 static int ping_stream_handler(libp2p_stream_t *stream, void *user_data)
 {
     fprintf(stderr, "ping_stream_handler: got new stream\n");
     (void)user_data;
-    uint8_t buf[32];
-    ssize_t n = libp2p_stream_read(stream, buf, sizeof(buf));
-    if (n != (ssize_t)sizeof(buf))
+
+    // Simple ping echo server - wait for 32 bytes, then echo them back
+    uint8_t payload[32];
+    size_t total_read = 0;
+
+    // Read exactly 32 bytes, handling partial reads and waiting for data
+    while (total_read < 32)
     {
-        fprintf(stderr, "ping_stream_handler: read %zd bytes (expected 32)\n", n);
-        libp2p_stream_close(stream);
-        libp2p_stream_free(stream);
+        ssize_t bytes_read = libp2p_stream_read(stream, payload + total_read, 32 - total_read);
+
+        if (bytes_read > 0)
+        {
+            total_read += bytes_read;
+            fprintf(stderr, "ping_stream_handler: read %zd bytes (total: %zu/32)\n", bytes_read, total_read);
+        }
+        else if (bytes_read == 0)
+        {
+            // EOF - stream closed
+            fprintf(stderr, "ping_stream_handler: stream closed by peer\n");
+            return -1;
+        }
+        else
+        {
+            // Error or would block - wait a bit and try again
+            // This handles the case where yamux data frame hasn't arrived yet
+            struct timespec ts = {0, 10000000}; // 10ms
+            nanosleep(&ts, NULL);
+        }
+    }
+
+    fprintf(stderr, "ping_stream_handler: received complete 32-byte ping payload\n");
+
+    // Echo the payload back
+    ssize_t bytes_written = libp2p_stream_write(stream, payload, 32);
+    if (bytes_written != 32)
+    {
+        fprintf(stderr, "ping_stream_handler: failed to write ping response\n");
         return -1;
     }
-    fprintf(stderr, "ping_stream_handler: echoing payload\n");
-    libp2p_stream_write(stream, buf, sizeof(buf));
-    libp2p_stream_close(stream);
-    libp2p_stream_free(stream);
-    fprintf(stderr, "ping_stream_handler: done\n");
+
+    fprintf(stderr, "ping_stream_handler: successfully echoed ping payload\n");
+
+    // Keep the stream open for potential additional pings
     return 0;
 }
 
@@ -359,6 +473,7 @@ static int run_listener(const char *ip, const char *redis_host, const char *redi
         /* Create registry and register the ping handler */
         libp2p_protocol_handler_registry_t *registry = libp2p_protocol_handler_registry_new();
         libp2p_register_protocol_handler(registry, LIBP2P_PING_PROTO_ID, ping_stream_handler, NULL);
+        libp2p_register_protocol_handler(registry, LIBP2P_IDENTIFY_PROTO_ID, identify_stream_handler, NULL);
 
         /* Start protocol handler in a background thread */
         libp2p_protocol_handler_ctx_t *phctx = libp2p_protocol_handler_ctx_new(registry, uconn);
@@ -377,6 +492,7 @@ static int run_listener(const char *ip, const char *redis_host, const char *redi
         /* Create registry and register the ping handler */
         libp2p_protocol_handler_registry_t *registry = libp2p_protocol_handler_registry_new();
         libp2p_register_protocol_handler(registry, LIBP2P_PING_PROTO_ID, ping_stream_handler, NULL);
+        libp2p_register_protocol_handler(registry, LIBP2P_IDENTIFY_PROTO_ID, identify_stream_handler, NULL);
 
         /* Start protocol handler in a background thread */
         libp2p_protocol_handler_ctx_t *phctx = libp2p_protocol_handler_ctx_new(registry, uconn);

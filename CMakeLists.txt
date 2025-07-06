@@ -671,7 +671,7 @@ add_module(
     ""
     src/protocol
 )
-target_link_libraries(protocol_handler PUBLIC protocol_multiselect protocol_mplex Threads::Threads)
+target_link_libraries(protocol_handler PUBLIC protocol_multiselect protocol_mplex protocol_yamux Threads::Threads)
 
 # ---------------------------------------------
 # protocol/ping
