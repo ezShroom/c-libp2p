@@ -88,12 +88,23 @@ static int redis_rpush(int fd, const char *key, const char *val)
 {
     char cmd[512];
     snprintf(cmd, sizeof(cmd), "*3\r\n$5\r\nRPUSH\r\n$%zu\r\n%s\r\n$%zu\r\n%s\r\n", strlen(key), key, strlen(val), val);
+    fprintf(stderr, "DEBUG: Redis RPUSH command: %s", cmd);
     if (redis_send(fd, cmd) != 0)
+    {
+        fprintf(stderr, "DEBUG: redis_send failed\n");
         return -1;
+    }
     char line[128];
-    if (redis_read_line(fd, line, sizeof(line)) <= 0)
+    int bytes_read = redis_read_line(fd, line, sizeof(line));
+    fprintf(stderr, "DEBUG: Redis response: bytes_read=%d, line=%s\n", bytes_read, bytes_read > 0 ? line : "NULL");
+    if (bytes_read <= 0)
+    {
+        fprintf(stderr, "DEBUG: redis_read_line failed\n");
         return -1;
-    return line[0] == ':' ? 0 : -1;
+    }
+    int result = line[0] == ':' ? 0 : -1;
+    fprintf(stderr, "DEBUG: Redis RPUSH result: %d (line[0]='%c')\n", result, line[0]);
+    return result;
 }
 
 static char *redis_blpop(int fd, const char *key, int timeout_sec)
@@ -170,33 +181,92 @@ static int ping_stream_handler(libp2p_stream_t *stream, void *user_data)
 
 static int run_listener(const char *ip, const char *redis_host, const char *redis_port, int timeout, const char *muxer_name)
 {
+    fprintf(stderr, "DEBUG: run_listener started with ip=%s, redis_host=%s, redis_port=%s, timeout=%d, muxer=%s\n", ip, redis_host, redis_port,
+            timeout, muxer_name);
+
     multiaddr_t *addr = NULL;
     char ma_str[64];
     snprintf(ma_str, sizeof(ma_str), "/ip4/%s/tcp/0", ip);
+    fprintf(stderr, "DEBUG: Creating multiaddr: %s\n", ma_str);
     addr = multiaddr_new_from_str(ma_str, NULL);
     if (!addr)
+    {
+        fprintf(stderr, "DEBUG: Failed to create multiaddr\n");
         return 1;
+    }
+    fprintf(stderr, "DEBUG: Created multiaddr successfully\n");
+
     libp2p_tcp_config_t tcfg = libp2p_tcp_config_default();
     libp2p_transport_t *tcp = libp2p_tcp_transport_new(&tcfg);
+    fprintf(stderr, "DEBUG: Created TCP transport\n");
+
     libp2p_listener_t *lst = NULL;
+    fprintf(stderr, "DEBUG: Starting to listen...\n");
     if (libp2p_transport_listen(tcp, addr, &lst) != 0)
     {
+        fprintf(stderr, "DEBUG: Failed to listen\n");
         multiaddr_free(addr);
         return 1;
     }
+    fprintf(stderr, "DEBUG: Listen successful\n");
     multiaddr_free(addr);
+
     multiaddr_t *bound = NULL;
+    fprintf(stderr, "DEBUG: Getting local address...\n");
     if (libp2p_listener_local_addr(lst, &bound) != 0)
     {
+        fprintf(stderr, "DEBUG: Failed to get local address\n");
         return 1;
     }
+    fprintf(stderr, "DEBUG: Got local address\n");
+
     int ma_err = 0;
     char *bound_str = multiaddr_to_str(bound, &ma_err);
     if (!bound_str || ma_err != 0)
     {
+        fprintf(stderr, "DEBUG: Failed to convert address to string\n");
         multiaddr_free(bound);
         return 1;
     }
+    fprintf(stderr, "DEBUG: Bound address: %s\n", bound_str);
+
+    // Replace 0.0.0.0 with actual container IP for publishing
+    char *publish_str = bound_str;
+    char actual_addr[256];
+    if (strstr(bound_str, "0.0.0.0"))
+    {
+        // Get the tcp/port from the bound address (/ip4/0.0.0.0/tcp/40515 -> /tcp/40515)
+        char *tcp_start = strstr(bound_str, "/tcp/");
+        if (tcp_start)
+        {
+            // Get container IP by connecting to an external address and checking local socket
+            int test_sock = socket(AF_INET, SOCK_DGRAM, 0);
+            if (test_sock >= 0)
+            {
+                struct sockaddr_in test_addr;
+                test_addr.sin_family = AF_INET;
+                test_addr.sin_port = htons(80);
+                inet_pton(AF_INET, "8.8.8.8", &test_addr.sin_addr);
+
+                if (connect(test_sock, (struct sockaddr *)&test_addr, sizeof(test_addr)) == 0)
+                {
+                    struct sockaddr_in local_addr;
+                    socklen_t len = sizeof(local_addr);
+                    if (getsockname(test_sock, (struct sockaddr *)&local_addr, &len) == 0)
+                    {
+                        char ip_str[INET_ADDRSTRLEN];
+                        inet_ntop(AF_INET, &local_addr.sin_addr, ip_str, INET_ADDRSTRLEN);
+                        snprintf(actual_addr, sizeof(actual_addr), "/ip4/%s%s", ip_str, tcp_start);
+                        publish_str = actual_addr;
+                        fprintf(stderr, "DEBUG: Replaced 0.0.0.0 with actual IP: %s\n", publish_str);
+                    }
+                }
+                close(test_sock);
+            }
+        }
+    }
+
+    fprintf(stderr, "DEBUG: Connecting to Redis at %s:%s...\n", redis_host, redis_port);
     int rfd = redis_connect(redis_host, redis_port);
     if (rfd < 0)
     {
@@ -204,19 +274,34 @@ static int run_listener(const char *ip, const char *redis_host, const char *redi
         free(bound_str);
         return 1;
     }
-    int rc = redis_rpush(rfd, "listenerAddr", bound_str);
+    fprintf(stderr, "DEBUG: Connected to Redis successfully\n");
+
+    fprintf(stderr, "DEBUG: Publishing address to Redis...\n");
+    int rc = redis_rpush(rfd, "listenerAddr", publish_str);
+    if (rc != 0)
+    {
+        fprintf(stderr, "DEBUG: Failed to publish address to Redis\n");
+        close(rfd);
+        free(bound_str);
+        multiaddr_free(bound);
+        return 1;
+    }
+    fprintf(stderr, "DEBUG: Published address to Redis successfully\n");
     close(rfd);
     free(bound_str);
     multiaddr_free(bound);
-    if (rc != 0)
-        return 1;
+
     libp2p_conn_t *raw = NULL;
+    fprintf(stderr, "DEBUG: Waiting for incoming connection (this may hang)...\n");
     if (libp2p_listener_accept(lst, &raw) != 0)
     {
+        fprintf(stderr, "DEBUG: Accept failed\n");
         libp2p_listener_close(lst);
         libp2p_listener_free(lst);
         return 1;
     }
+    fprintf(stderr, "DEBUG: Accepted connection!\n");
+
     uint8_t static_key[32], id_key[32];
     gen_keys(static_key, 32);
     gen_keys(id_key, 32);
@@ -319,12 +404,19 @@ static int run_listener(const char *ip, const char *redis_host, const char *redi
 
 static int run_dialer(const char *redis_host, const char *redis_port, int timeout, const char *muxer_name)
 {
+    fprintf(stderr, "DEBUG: run_dialer started with redis_host=%s, redis_port=%s, timeout=%d, muxer=%s\n", redis_host, redis_port, timeout,
+            muxer_name);
+
+    fprintf(stderr, "DEBUG: Connecting to Redis...\n");
     int rfd = redis_connect(redis_host, redis_port);
     if (rfd < 0)
     {
         fprintf(stderr, "dialer failed to connect to redis\n");
         return 1;
     }
+    fprintf(stderr, "DEBUG: Connected to Redis successfully\n");
+
+    fprintf(stderr, "DEBUG: Waiting for listener address from Redis (timeout=%d)...\n", timeout);
     char *addr_str = redis_blpop(rfd, "listenerAddr", timeout);
     close(rfd);
     if (!addr_str)
@@ -332,15 +424,25 @@ static int run_dialer(const char *redis_host, const char *redis_port, int timeou
         fprintf(stderr, "dialer failed to get listener address from redis\n");
         return 1;
     }
+    fprintf(stderr, "DEBUG: Got listener address: %s\n", addr_str);
+
     int err = 0;
     multiaddr_t *addr = multiaddr_new_from_str(addr_str, &err);
     free(addr_str);
     if (!addr || err)
+    {
+        fprintf(stderr, "DEBUG: Failed to parse multiaddr (err=%d)\n", err);
         return 1;
+    }
+    fprintf(stderr, "DEBUG: Parsed multiaddr successfully\n");
+
     libp2p_tcp_config_t tcfg = libp2p_tcp_config_default();
     libp2p_transport_t *tcp = libp2p_tcp_transport_new(&tcfg);
+    fprintf(stderr, "DEBUG: Created TCP transport\n");
+
     libp2p_conn_t *raw = NULL;
     uint64_t start = now_mono_ms();
+    fprintf(stderr, "DEBUG: Attempting to dial...\n");
     if (libp2p_transport_dial(tcp, addr, &raw) != 0)
     {
         fprintf(stderr, "transport dial failed\n");
@@ -348,6 +450,8 @@ static int run_dialer(const char *redis_host, const char *redis_port, int timeou
         libp2p_transport_free(tcp);
         return 1;
     }
+    fprintf(stderr, "DEBUG: Dial successful!\n");
+
     uint8_t static_key[32], id_key[32];
     gen_keys(static_key, 32);
     gen_keys(id_key, 32);
@@ -532,39 +636,54 @@ static int run_dialer(const char *redis_host, const char *redis_port, int timeou
 
 int main(void)
 {
+    fprintf(stderr, "DEBUG: Starting interop program\n");
     setvbuf(stderr, NULL, _IONBF, 0);
     const char *transport = getenv("transport");
+    fprintf(stderr, "DEBUG: transport = %s\n", transport ? transport : "NULL");
     if (!transport || strcmp(transport, "tcp") != 0)
     {
         fprintf(stderr, "unsupported transport\n");
         return 1;
     }
     const char *muxer = getenv("muxer");
+    fprintf(stderr, "DEBUG: muxer = %s\n", muxer ? muxer : "NULL");
     if (!muxer || (strcmp(muxer, "yamux") != 0 && strcmp(muxer, "mplex") != 0))
     {
         fprintf(stderr, "unsupported muxer (supported: yamux, mplex)\n");
         return 1;
     }
     const char *sec = getenv("security");
+    fprintf(stderr, "DEBUG: security = %s\n", sec ? sec : "NULL");
     if (!sec || strcmp(sec, "noise") != 0)
     {
         fprintf(stderr, "unsupported security\n");
         return 1;
     }
     int is_dialer = getenv("is_dialer") && strcmp(getenv("is_dialer"), "true") == 0;
+    fprintf(stderr, "DEBUG: is_dialer = %s\n", is_dialer ? "true" : "false");
     const char *ip = getenv("ip");
     if (!ip)
         ip = "0.0.0.0";
+    fprintf(stderr, "DEBUG: ip = %s\n", ip);
     const char *redis_addr = getenv("redis_addr");
     if (!redis_addr)
         redis_addr = "redis:6379"; // Default to Docker service name
+    fprintf(stderr, "DEBUG: redis_addr = %s\n", redis_addr);
     int timeout = getenv("test_timeout_seconds") ? atoi(getenv("test_timeout_seconds")) : 180;
+    fprintf(stderr, "DEBUG: timeout = %d\n", timeout);
     char host[64] = "", port[16] = "";
     sscanf(redis_addr, "%63[^:]:%15s", host, port);
     if (!*port)
         strcpy(port, "6379");
+    fprintf(stderr, "DEBUG: redis host = %s, port = %s\n", host, port);
     if (is_dialer)
+    {
+        fprintf(stderr, "DEBUG: Running as dialer\n");
         return run_dialer(host, port, timeout, muxer);
+    }
     else
+    {
+        fprintf(stderr, "DEBUG: Running as listener\n");
         return run_listener(ip, host, port, timeout, muxer);
+    }
 }
