@@ -71,6 +71,7 @@ static libp2p_multiselect_err_t conn_read_exact(libp2p_conn_t *c, uint8_t *buf, 
 
 static libp2p_multiselect_err_t send_msg(libp2p_conn_t *c, const char *msg)
 {
+    fprintf(stderr, "[MULTISELECT] >> %s\n", msg);
     if (!c || !msg)
     {
         return LIBP2P_MULTISELECT_ERR_NULL_PTR;
@@ -107,9 +108,7 @@ static libp2p_multiselect_err_t send_msg(libp2p_conn_t *c, const char *msg)
 }
 
 /* Send multiple messages in a single write. */
-static libp2p_multiselect_err_t send_msg_batch(libp2p_conn_t *c,
-                                               const char *const msgs[],
-                                               size_t count)
+static libp2p_multiselect_err_t send_msg_batch(libp2p_conn_t *c, const char *const msgs[], size_t count)
 {
     if (!c || !msgs)
     {
@@ -132,8 +131,7 @@ static libp2p_multiselect_err_t send_msg_batch(libp2p_conn_t *c,
             return LIBP2P_MULTISELECT_ERR_PROTO_MAL;
         }
         lens[i] = mlen;
-        if (unsigned_varint_encode((uint64_t)mlen, vars[i], sizeof(vars[i]),
-                                   &vlen[i]))
+        if (unsigned_varint_encode((uint64_t)mlen, vars[i], sizeof(vars[i]), &vlen[i]))
         {
             return LIBP2P_MULTISELECT_ERR_INTERNAL;
         }
@@ -160,7 +158,6 @@ static libp2p_multiselect_err_t send_msg_batch(libp2p_conn_t *c,
     free(frame);
     return rc;
 }
-
 
 /* reads a frame → returns heap string w/o “\n”; caller frees                */
 static libp2p_multiselect_err_t recv_msg(libp2p_conn_t *c, char **out)
@@ -218,6 +215,7 @@ static libp2p_multiselect_err_t recv_msg(libp2p_conn_t *c, char **out)
 
     payload[pl_len - 1] = '\0'; /* strip newline              */
     *out = (char *)payload;
+    fprintf(stderr, "[MULTISELECT] << %s\n", *out);
     return LIBP2P_MULTISELECT_OK;
 }
 
@@ -232,7 +230,7 @@ static bool str_in_list(const char *needle, const char *const list[])
     }
     return false;
 }
-                                      
+
 static libp2p_multiselect_err_t send_ls_response(libp2p_conn_t *c, const char *const supported[])
 {
     size_t inner = 0;
@@ -277,7 +275,6 @@ static libp2p_multiselect_err_t send_ls_response(libp2p_conn_t *c, const char *c
     free(frame);
     return rc;
 }
-
 
 libp2p_multiselect_err_t libp2p_multiselect_dial(libp2p_conn_t *conn, const char *const proposals[], uint64_t timeout_ms, const char **accepted_out)
 {

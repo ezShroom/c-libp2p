@@ -149,18 +149,22 @@ static libp2p_muxer_t *create_muxer(const char *muxer_name)
 /* File-scope handler that echos 32-byte pings */
 static int ping_stream_handler(libp2p_stream_t *stream, void *user_data)
 {
+    fprintf(stderr, "ping_stream_handler: got new stream\n");
     (void)user_data;
     uint8_t buf[32];
     ssize_t n = libp2p_stream_read(stream, buf, sizeof(buf));
     if (n != (ssize_t)sizeof(buf))
     {
+        fprintf(stderr, "ping_stream_handler: read %zd bytes (expected 32)\n", n);
         libp2p_stream_close(stream);
         libp2p_stream_free(stream);
         return -1;
     }
+    fprintf(stderr, "ping_stream_handler: echoing payload\n");
     libp2p_stream_write(stream, buf, sizeof(buf));
     libp2p_stream_close(stream);
     libp2p_stream_free(stream);
+    fprintf(stderr, "ping_stream_handler: done\n");
     return 0;
 }
 
@@ -242,9 +246,17 @@ static int run_listener(const char *ip, const char *redis_host, const char *redi
     ucfg.handshake_timeout_ms = timeout * 1000;
     libp2p_upgrader_t *up = libp2p_upgrader_new(&ucfg);
     libp2p_uconn_t *uconn = NULL;
-    if (libp2p_upgrader_upgrade_inbound(up, raw, &uconn) != LIBP2P_UPGRADER_OK)
+    fprintf(stderr, "listener: starting inbound upgrade\n");
+    libp2p_upgrader_err_t up_err = libp2p_upgrader_upgrade_inbound(up, raw, &uconn);
+    fprintf(stderr, "listener: upgrade result = %d\n", up_err);
+    if (up_err == LIBP2P_UPGRADER_OK)
     {
-        fprintf(stderr, "listener upgrade failed\n");
+        fprintf(stderr, "listener: negotiated muxer = %s\n",
+                (uconn->muxer == muxer) ? muxer_name : (strcmp(muxer_name, "yamux") == 0 ? "mplex" : "yamux"));
+    }
+    if (up_err != LIBP2P_UPGRADER_OK)
+    {
+        fprintf(stderr, "listener upgrade failed (err=%d)\n", up_err);
         libp2p_upgrader_free(up);
         libp2p_muxer_free(muxer);
         libp2p_security_free(noise);
@@ -253,29 +265,46 @@ static int run_listener(const char *ip, const char *redis_host, const char *redi
         libp2p_transport_free(tcp);
         return 1;
     }
-    /* -----------------------------------------------------------
-     * Respond to ping requests over a negotiated stream.
-     * We spin up a protocol-handler registry that echoes back
-     * 32-byte payloads on "/ipfs/ping/1.0.0" streams.
-     * ---------------------------------------------------------*/
+    if (strcmp(muxer_name, "yamux") == 0)
+    {
+        /* -----------------------------------------------------------
+         * Respond to ping requests over a negotiated stream using MPLEX.
+         * ---------------------------------------------------------*/
 
-    /* Create registry and register the ping handler */
-    libp2p_protocol_handler_registry_t *registry = libp2p_protocol_handler_registry_new();
-    libp2p_register_protocol_handler(registry, LIBP2P_PING_PROTO_ID, ping_stream_handler, NULL);
+        /* Create registry and register the ping handler */
+        libp2p_protocol_handler_registry_t *registry = libp2p_protocol_handler_registry_new();
+        libp2p_register_protocol_handler(registry, LIBP2P_PING_PROTO_ID, ping_stream_handler, NULL);
 
-    /* Start protocol handler context (runs in bg thread) */
-    libp2p_protocol_handler_ctx_t *phctx = libp2p_protocol_handler_ctx_new(registry, uconn);
-    libp2p_protocol_handler_start(phctx);
+        /* Start protocol handler in a background thread */
+        libp2p_protocol_handler_ctx_t *phctx = libp2p_protocol_handler_ctx_new(registry, uconn);
+        libp2p_protocol_handler_start(phctx);
 
-    /* Wait for the remote side to close the connection or timeout */
-    libp2p_conn_set_deadline(uconn->conn, timeout * 1000);
-    uint8_t tmp;
-    while (libp2p_conn_read(uconn->conn, &tmp, 1) > 0)
-        ;
+        /* Give the dialer enough time to complete its single ping round-trip. */
+        usleep(2 * 1000 * 1000); /* 2 s */
 
-    libp2p_protocol_handler_stop(phctx);
-    libp2p_protocol_handler_ctx_free(phctx);
-    libp2p_protocol_handler_registry_free(registry);
+        /* Gracefully stop the handler thread and clean up. */
+        libp2p_protocol_handler_stop(phctx);
+        libp2p_protocol_handler_ctx_free(phctx);
+        libp2p_protocol_handler_registry_free(registry);
+    }
+    else
+    {
+        /* Create registry and register the ping handler */
+        libp2p_protocol_handler_registry_t *registry = libp2p_protocol_handler_registry_new();
+        libp2p_register_protocol_handler(registry, LIBP2P_PING_PROTO_ID, ping_stream_handler, NULL);
+
+        /* Start protocol handler in a background thread */
+        libp2p_protocol_handler_ctx_t *phctx = libp2p_protocol_handler_ctx_new(registry, uconn);
+        libp2p_protocol_handler_start(phctx);
+
+        /* Give the dialer enough time to complete its single ping round-trip. */
+        usleep(2 * 1000 * 1000); /* 2 s */
+
+        /* Gracefully stop the handler thread and clean up. */
+        libp2p_protocol_handler_stop(phctx);
+        libp2p_protocol_handler_ctx_free(phctx);
+        libp2p_protocol_handler_registry_free(registry);
+    }
 
     libp2p_conn_close(uconn->conn);
     free(uconn);
@@ -357,65 +386,134 @@ static int run_dialer(const char *redis_host, const char *redis_port, int timeou
         libp2p_transport_free(tcp);
         return 1;
     }
-    /* ------------------------------------------------------------------
-     * Open a ping protocol stream and perform one ping round-trip
-     * ----------------------------------------------------------------*/
+    fprintf(stderr, "dialer: negotiated muxer = %s\n", (uconn->muxer == muxer) ? muxer_name : (strcmp(muxer_name, "yamux") == 0 ? "mplex" : "yamux"));
+    uint64_t ping_ms = 0;
 
-    libp2p_stream_t *ping_stream = NULL;
-    if (libp2p_protocol_open_stream(uconn, LIBP2P_PING_PROTO_ID, &ping_stream) != LIBP2P_PROTOCOL_HANDLER_OK)
+    if (strcmp(muxer_name, "yamux") == 0)
     {
-        fprintf(stderr, "failed to open ping stream\n");
-        libp2p_conn_close(uconn->conn);
-        free(uconn);
-        libp2p_upgrader_free(up);
-        libp2p_muxer_free(muxer);
-        libp2p_security_free(noise);
-        multiaddr_free(addr);
-        libp2p_transport_free(tcp);
-        return 1;
-    }
+        /* Dialer now uses the generic ping stream path for all muxers */
+        /* Open ping stream over negotiated connection (works for yamux & mplex) */
+        libp2p_stream_t *ping_stream = NULL;
+        if (libp2p_protocol_open_stream(uconn, LIBP2P_PING_PROTO_ID, &ping_stream) != LIBP2P_PROTOCOL_HANDLER_OK)
+        {
+            fprintf(stderr, "failed to open ping stream\n");
+            // cleanup common path below
+            libp2p_conn_close(uconn->conn);
+            free(uconn);
+            libp2p_upgrader_free(up);
+            libp2p_muxer_free(muxer);
+            libp2p_security_free(noise);
+            multiaddr_free(addr);
+            libp2p_transport_free(tcp);
+            return 1;
+        }
 
-    uint8_t payload[32];
-    noise_randstate_generate_simple(payload, sizeof(payload));
+        uint8_t payload[32];
+        noise_randstate_generate_simple(payload, sizeof(payload));
 
-    uint64_t ping_start = now_mono_ms();
+        uint64_t ping_start = now_mono_ms();
 
-    if ((ssize_t)sizeof(payload) != libp2p_stream_write(ping_stream, payload, sizeof(payload)))
-    {
-        fprintf(stderr, "ping write failed\n");
+        if ((ssize_t)sizeof(payload) != libp2p_stream_write(ping_stream, payload, sizeof(payload)))
+        {
+            fprintf(stderr, "ping write failed\n");
+            libp2p_stream_close(ping_stream);
+            libp2p_stream_free(ping_stream);
+            // cleanup
+            libp2p_conn_close(uconn->conn);
+            free(uconn);
+            libp2p_upgrader_free(up);
+            libp2p_muxer_free(muxer);
+            libp2p_security_free(noise);
+            multiaddr_free(addr);
+            libp2p_transport_free(tcp);
+            return 1;
+        }
+
+        uint8_t echo[32];
+        ssize_t rcvd = libp2p_stream_read(ping_stream, echo, sizeof(echo));
+        if (rcvd != (ssize_t)sizeof(echo) || memcmp(payload, echo, sizeof(echo)) != 0)
+        {
+            fprintf(stderr, "ping failed\n");
+            libp2p_stream_close(ping_stream);
+            libp2p_stream_free(ping_stream);
+            // cleanup
+            libp2p_conn_close(uconn->conn);
+            free(uconn);
+            libp2p_upgrader_free(up);
+            libp2p_muxer_free(muxer);
+            libp2p_security_free(noise);
+            multiaddr_free(addr);
+            libp2p_transport_free(tcp);
+            return 1;
+        }
+
+        ping_ms = now_mono_ms() - ping_start;
+
         libp2p_stream_close(ping_stream);
         libp2p_stream_free(ping_stream);
-        libp2p_conn_close(uconn->conn);
-        free(uconn);
-        libp2p_upgrader_free(up);
-        libp2p_muxer_free(muxer);
-        libp2p_security_free(noise);
-        multiaddr_free(addr);
-        libp2p_transport_free(tcp);
-        return 1;
     }
-
-    uint8_t echo[32];
-    ssize_t rcvd = libp2p_stream_read(ping_stream, echo, sizeof(echo));
-    if (rcvd != (ssize_t)sizeof(echo) || memcmp(payload, echo, sizeof(echo)) != 0)
+    else
     {
-        fprintf(stderr, "ping failed\n");
+        /* Open ping stream over negotiated connection (works for yamux & mplex) */
+        libp2p_stream_t *ping_stream = NULL;
+        if (libp2p_protocol_open_stream(uconn, LIBP2P_PING_PROTO_ID, &ping_stream) != LIBP2P_PROTOCOL_HANDLER_OK)
+        {
+            fprintf(stderr, "failed to open ping stream\n");
+            // cleanup common path below
+            libp2p_conn_close(uconn->conn);
+            free(uconn);
+            libp2p_upgrader_free(up);
+            libp2p_muxer_free(muxer);
+            libp2p_security_free(noise);
+            multiaddr_free(addr);
+            libp2p_transport_free(tcp);
+            return 1;
+        }
+
+        uint8_t payload[32];
+        noise_randstate_generate_simple(payload, sizeof(payload));
+
+        uint64_t ping_start = now_mono_ms();
+
+        if ((ssize_t)sizeof(payload) != libp2p_stream_write(ping_stream, payload, sizeof(payload)))
+        {
+            fprintf(stderr, "ping write failed\n");
+            libp2p_stream_close(ping_stream);
+            libp2p_stream_free(ping_stream);
+            // cleanup
+            libp2p_conn_close(uconn->conn);
+            free(uconn);
+            libp2p_upgrader_free(up);
+            libp2p_muxer_free(muxer);
+            libp2p_security_free(noise);
+            multiaddr_free(addr);
+            libp2p_transport_free(tcp);
+            return 1;
+        }
+
+        uint8_t echo[32];
+        ssize_t rcvd = libp2p_stream_read(ping_stream, echo, sizeof(echo));
+        if (rcvd != (ssize_t)sizeof(echo) || memcmp(payload, echo, sizeof(echo)) != 0)
+        {
+            fprintf(stderr, "ping failed\n");
+            libp2p_stream_close(ping_stream);
+            libp2p_stream_free(ping_stream);
+            // cleanup
+            libp2p_conn_close(uconn->conn);
+            free(uconn);
+            libp2p_upgrader_free(up);
+            libp2p_muxer_free(muxer);
+            libp2p_security_free(noise);
+            multiaddr_free(addr);
+            libp2p_transport_free(tcp);
+            return 1;
+        }
+
+        ping_ms = now_mono_ms() - ping_start;
+
         libp2p_stream_close(ping_stream);
         libp2p_stream_free(ping_stream);
-        libp2p_conn_close(uconn->conn);
-        free(uconn);
-        libp2p_upgrader_free(up);
-        libp2p_muxer_free(muxer);
-        libp2p_security_free(noise);
-        multiaddr_free(addr);
-        libp2p_transport_free(tcp);
-        return 1;
     }
-
-    uint64_t ping_ms = now_mono_ms() - ping_start;
-
-    libp2p_stream_close(ping_stream);
-    libp2p_stream_free(ping_stream);
 
     uint64_t handshake_plus_rtt_ms = now_mono_ms() - start;
 
@@ -434,6 +532,7 @@ static int run_dialer(const char *redis_host, const char *redis_port, int timeou
 
 int main(void)
 {
+    setvbuf(stderr, NULL, _IONBF, 0);
     const char *transport = getenv("transport");
     if (!transport || strcmp(transport, "tcp") != 0)
     {

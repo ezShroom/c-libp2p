@@ -1,6 +1,7 @@
 #include "protocol/mplex/protocol_mplex_codec.h"
 #include "multiformats/unsigned_varint/unsigned_varint.h"
 #include "protocol/tcp/protocol_tcp_util.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -208,6 +209,10 @@ libp2p_mplex_err_t libp2p_mplex_read_frame(libp2p_conn_t *conn, libp2p_mplex_fra
             return rc;
         }
     }
+
+    /* Trace: log every decoded frame header for debugging inbound stream issues */
+    fprintf(stderr, "[MPLEX] read frame id=%llu flag=%u len=%zu\n", (unsigned long long)out->id, (unsigned)out->flag, out->data_len);
+
     return LIBP2P_MPLEX_OK;
 }
 

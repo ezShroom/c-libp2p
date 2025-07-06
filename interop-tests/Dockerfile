@@ -15,10 +15,12 @@ RUN apt-get update && \
 
 # Set working directory and clone the repository with submodules
 WORKDIR /src
-RUN git clone --recursive https://github.com/Pier-Two/c-libp2p.git && \
-    cd c-libp2p && \
-    git checkout main && \
-    git submodule update --init --recursive
+
+# Copy the local source into the image instead of cloning upstream
+COPY . /src/c-libp2p
+
+# Ensure vendored submodules are initialised (ignore if already done)
+RUN cd c-libp2p && git submodule update --init --recursive || true
 
 # Build step (parallel & strip binary)
 RUN cd c-libp2p && \

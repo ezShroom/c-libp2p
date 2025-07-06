@@ -843,6 +843,7 @@ target_link_libraries(interop-c
         multiaddr
         peer_id
         peer_id_ed25519
+        protocol_handler
         Threads::Threads
 )
 set_target_properties(interop-c PROPERTIES

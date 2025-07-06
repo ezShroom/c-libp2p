@@ -1,8 +1,8 @@
 #include "protocol/yamux/protocol_yamux.h"
 #include "protocol/multiselect/protocol_multiselect.h"
 #include "protocol/tcp/protocol_tcp_util.h"
-#include <stdio.h>
 #include "transport/conn_util.h"
+#include <stdio.h>
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -77,7 +77,8 @@ static libp2p_muxer_err_t yamux_negotiate_out(libp2p_muxer_t *self, libp2p_conn_
     (void)self;
     libp2p_yamux_err_t yamux_err = libp2p_yamux_negotiate_outbound(c, t);
 
-    switch (yamux_err) {
+    switch (yamux_err)
+    {
         case LIBP2P_YAMUX_OK:
             return LIBP2P_MUXER_OK;
         case LIBP2P_YAMUX_ERR_NULL_PTR:
@@ -94,7 +95,8 @@ static libp2p_muxer_err_t yamux_negotiate_in(libp2p_muxer_t *self, libp2p_conn_t
     (void)self;
     libp2p_yamux_err_t yamux_err = libp2p_yamux_negotiate_inbound(c, t);
 
-    switch (yamux_err) {
+    switch (yamux_err)
+    {
         case LIBP2P_YAMUX_OK:
             return LIBP2P_MUXER_OK;
         case LIBP2P_YAMUX_ERR_NULL_PTR:
@@ -106,14 +108,12 @@ static libp2p_muxer_err_t yamux_negotiate_in(libp2p_muxer_t *self, libp2p_conn_t
     }
 }
 
-static libp2p_muxer_err_t yamux_negotiate(libp2p_muxer_t *mx, libp2p_conn_t *c,
-                                          uint64_t t, bool inbound)
+static libp2p_muxer_err_t yamux_negotiate(libp2p_muxer_t *mx, libp2p_conn_t *c, uint64_t t, bool inbound)
 {
     return inbound ? yamux_negotiate_in(mx, c, t) : yamux_negotiate_out(mx, c, t);
 }
 
-static int yamux_open_stream(libp2p_muxer_t *mx, const uint8_t *name,
-                             size_t name_len, libp2p_stream_t **out)
+static int yamux_open_stream(libp2p_muxer_t *mx, const uint8_t *name, size_t name_len, libp2p_stream_t **out)
 {
     (void)mx;
     (void)name;
@@ -138,10 +138,7 @@ static ssize_t yamux_stream_write(libp2p_stream_t *s, const void *buf, size_t le
     return -1;
 }
 
-static void yamux_stream_close(libp2p_stream_t *s)
-{
-    (void)s;
-}
+static void yamux_stream_close(libp2p_stream_t *s) { (void)s; }
 
 static libp2p_muxer_err_t yamux_close(libp2p_muxer_t *self)
 {
@@ -233,6 +230,10 @@ libp2p_yamux_err_t libp2p_yamux_read_frame(libp2p_conn_t *conn, libp2p_yamux_fra
             return rc;
         }
     }
+
+    /* Trace: log every decoded frame header for debugging inbound stream issues */
+    fprintf(stderr, "[YAMUX] read frame type=%u id=%u flags=0x%X len=%u\n", (unsigned)out->type, out->stream_id, out->flags, out->length);
+
     return LIBP2P_YAMUX_OK;
 }
 
@@ -247,18 +248,21 @@ void libp2p_yamux_frame_free(libp2p_yamux_frame_t *fr)
 
 libp2p_yamux_err_t libp2p_yamux_open_stream(libp2p_conn_t *conn, uint32_t id, uint32_t max_window)
 {
+    /*
+     * The original Yamux draft (and older libp2p implementations such as
+     * rust-libp2p ≤0.53) expect a WINDOW_UPDATE frame with the SYN flag set
+     * when opening a stream, whereas more recent implementations allow a
+     * zero-length DATA|SYN frame.  To maximise interoperability we always
+     * send WINDOW_UPDATE|SYN.  If the desired receive window equals the
+     * default (256 KiB) the delta is zero which is accepted by both the old
+     * and the new spec variants.
+     */
+
+    uint32_t delta = 0;
     if (max_window > YAMUX_INITIAL_WINDOW)
-        return libp2p_yamux_window_update(conn, id, max_window - YAMUX_INITIAL_WINDOW, LIBP2P_YAMUX_SYN);
-    libp2p_yamux_frame_t fr = {
-        .version = 0,
-        .type = LIBP2P_YAMUX_DATA,
-        .flags = LIBP2P_YAMUX_SYN,
-        .stream_id = id,
-        .length = 0,
-        .data = NULL,
-        .data_len = 0,
-    };
-    return libp2p_yamux_send_frame(conn, &fr);
+        delta = max_window - YAMUX_INITIAL_WINDOW;
+
+    return libp2p_yamux_window_update(conn, id, delta, LIBP2P_YAMUX_SYN);
 }
 
 libp2p_yamux_err_t libp2p_yamux_send_msg(libp2p_conn_t *conn, uint32_t id, const uint8_t *data, size_t data_len, uint16_t flags)
