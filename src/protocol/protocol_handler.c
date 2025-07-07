@@ -6,6 +6,7 @@
 #include "protocol/ping/protocol_ping.h"
 #include "protocol/yamux/protocol_yamux.h"
 #include <arpa/inet.h>
+#include <inttypes.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -1018,7 +1019,7 @@ static void *protocol_handler_thread(void *arg)
 
                 if (accept_result == LIBP2P_MPLEX_OK && new_stream)
                 {
-                    fprintf(stderr, "[PROTOCOL_HANDLER] Accepted MPLEX stream id=%lu\n", new_stream->id);
+                    fprintf(stderr, "[PROTOCOL_HANDLER] Accepted MPLEX stream id=%" PRIu64 "\n", new_stream->id);
                     int result = handle_incoming_stream_with_tracking(ctx, new_stream->id);
                     streams_processed++;
                     hctx->total_streams_processed++;
