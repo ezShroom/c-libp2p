@@ -118,7 +118,17 @@ static int recv_length_prefixed_message_yamux(libp2p_yamux_ctx_t *yx, uint32_t s
         libp2p_yamux_err_t rc = libp2p_yamux_stream_recv(yx, stream_id, &varint_buf[varint_bytes], 1, &bytes_read);
         fprintf(stderr, "[RECV_LENGTH_PREFIXED_YAMUX] yamux_stream_recv returned: rc=%d, bytes_read=%zu\n", rc, bytes_read);
 
-        if (rc != LIBP2P_YAMUX_OK)
+        if (rc == LIBP2P_YAMUX_ERR_AGAIN)
+        {
+            fprintf(stderr, "[RECV_LENGTH_PREFIXED_YAMUX] No data available (ERR_AGAIN), processing frames and retrying\n");
+            if (libp2p_yamux_process_one(yx) != LIBP2P_YAMUX_OK)
+                usleep(1000);
+            else
+                usleep(1000);
+            i--; /* retry same byte */
+            continue;
+        }
+        else if (rc != LIBP2P_YAMUX_OK)
         {
             fprintf(stderr, "[RECV_LENGTH_PREFIXED_YAMUX] Error reading varint byte: %d\n", rc);
             return -1;
@@ -161,7 +171,16 @@ static int recv_length_prefixed_message_yamux(libp2p_yamux_ctx_t *yx, uint32_t s
         libp2p_yamux_err_t rc = libp2p_yamux_stream_recv(yx, stream_id, (uint8_t *)buffer + total, msg_len - total, &got);
         fprintf(stderr, "[RECV_LENGTH_PREFIXED_YAMUX] yamux_stream_recv returned: rc=%d, got=%zu\n", rc, got);
 
-        if (rc != LIBP2P_YAMUX_OK)
+        if (rc == LIBP2P_YAMUX_ERR_AGAIN)
+        {
+            fprintf(stderr, "[RECV_LENGTH_PREFIXED_YAMUX] No data available (ERR_AGAIN), processing frames and retrying\n");
+            if (libp2p_yamux_process_one(yx) != LIBP2P_YAMUX_OK)
+                usleep(1000);
+            else
+                usleep(1000);
+            continue;
+        }
+        else if (rc != LIBP2P_YAMUX_OK)
         {
             fprintf(stderr, "[RECV_LENGTH_PREFIXED_YAMUX] Error reading message content: %d\n", rc);
             return -1;

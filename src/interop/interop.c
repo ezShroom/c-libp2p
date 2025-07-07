@@ -650,7 +650,7 @@ static int run_dialer(const char *redis_host, const char *redis_port, int timeou
         }
 
         uint8_t echo[32];
-        ssize_t rcvd = libp2p_stream_read(ping_stream, echo, sizeof(echo));
+        ssize_t rcvd = stream_read_exact(ping_stream, echo, sizeof(echo));
         if (rcvd != (ssize_t)sizeof(echo) || memcmp(payload, echo, sizeof(echo)) != 0)
         {
             fprintf(stderr, "ping failed\n");
@@ -712,7 +712,7 @@ static int run_dialer(const char *redis_host, const char *redis_port, int timeou
         }
 
         uint8_t echo[32];
-        ssize_t rcvd = libp2p_stream_read(ping_stream, echo, sizeof(echo));
+        ssize_t rcvd = stream_read_exact(ping_stream, echo, sizeof(echo));
         if (rcvd != (ssize_t)sizeof(echo) || memcmp(payload, echo, sizeof(echo)) != 0)
         {
             fprintf(stderr, "ping failed\n");
