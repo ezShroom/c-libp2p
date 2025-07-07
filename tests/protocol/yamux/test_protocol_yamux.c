@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 #ifdef _WIN32
@@ -22,6 +23,7 @@
 
 static libp2p_yamux_err_t g_dial_rc;
 static libp2p_yamux_err_t g_listen_rc;
+static libp2p_yamux_err_t g_loop_rc;
 
 typedef struct
 {
@@ -126,6 +128,12 @@ static void *listen_thread(void *arg)
 {
     libp2p_conn_t *c = arg;
     g_listen_rc = libp2p_yamux_negotiate_inbound(c, 5000);
+    return NULL;
+}
+
+static void *loop_thread(void *arg)
+{
+    g_loop_rc = libp2p_yamux_process_loop((libp2p_yamux_ctx_t *)arg);
     return NULL;
 }
 
@@ -865,6 +873,10 @@ static void test_keepalive(void)
 
     libp2p_yamux_frame_free(&fr);
     libp2p_yamux_stop(ctx);
+
+    // Give the background keepalive thread time to properly exit
+    usleep(100000); // 100ms
+
     libp2p_yamux_ctx_free(ctx);
     libp2p_conn_close(&c);
     libp2p_conn_close(&s);
@@ -897,6 +909,300 @@ static void test_recv_go_away(void)
     libp2p_conn_free(&s);
 }
 
+/**
+ * Test yamux muxer creation and basic functionality
+ * This verifies the yamux implementation basics work as expected
+ */
+static void test_yamux_muxer_creation(void)
+{
+    libp2p_muxer_t *muxer = libp2p_yamux_new();
+    assert(muxer != NULL);
+    assert(muxer->ctx == NULL); // Context should be NULL until negotiation
+
+    printf("TEST: yamux muxer creation PASS\n");
+
+    libp2p_muxer_free(muxer);
+}
+
+/**
+ * Test yamux frame operations work correctly without hanging
+ * This verifies basic frame send/receive functionality that interop tests rely on
+ */
+static void test_yamux_frame_operations(void)
+{
+    libp2p_conn_t c = {0}, s = {0};
+    make_pipe_pair(&c, &s);
+
+    // Test basic frame send/receive
+    libp2p_yamux_frame_t send_frame = {
+        .version = 0,
+        .type = LIBP2P_YAMUX_PING,
+        .flags = LIBP2P_YAMUX_SYN,
+        .stream_id = 0,
+        .length = 42,
+        .data = NULL,
+        .data_len = 0,
+    };
+
+    libp2p_yamux_err_t send_rc = libp2p_yamux_send_frame(&c, &send_frame);
+    if (send_rc != LIBP2P_YAMUX_OK)
+    {
+        printf("TEST: yamux frame operations FAIL (send failed: %d)\n", send_rc);
+        goto cleanup;
+    }
+
+    libp2p_yamux_frame_t recv_frame = {0};
+    libp2p_yamux_err_t recv_rc = libp2p_yamux_read_frame(&s, &recv_frame);
+    if (recv_rc != LIBP2P_YAMUX_OK)
+    {
+        printf("TEST: yamux frame operations FAIL (recv failed: %d)\n", recv_rc);
+        goto cleanup;
+    }
+
+    int ok = (recv_frame.type == LIBP2P_YAMUX_PING && recv_frame.flags == LIBP2P_YAMUX_SYN && recv_frame.length == 42);
+
+    printf("TEST: yamux frame operations %s\n", ok ? "PASS" : "FAIL");
+
+    libp2p_yamux_frame_free(&recv_frame);
+
+cleanup:
+    libp2p_conn_close(&c);
+    libp2p_conn_close(&s);
+    libp2p_conn_free(&c);
+    libp2p_conn_free(&s);
+}
+
+/**
+ * Test multiple concurrent streams handling
+ * This test ensures multi-stream protocol handling works correctly
+ */
+static void test_multiple_concurrent_streams(void)
+{
+    libp2p_conn_t c = {0}, s = {0};
+    make_pipe_pair(&c, &s);
+
+    libp2p_yamux_ctx_t *cli = libp2p_yamux_ctx_new(&c, 1, YAMUX_INITIAL_WINDOW);
+    libp2p_yamux_ctx_t *srv = libp2p_yamux_ctx_new(&s, 0, YAMUX_INITIAL_WINDOW);
+    assert(cli && srv);
+
+    const int num_streams = 5;
+    uint32_t stream_ids[num_streams];
+
+    // Open multiple streams
+    for (int i = 0; i < num_streams; i++)
+    {
+        assert(libp2p_yamux_stream_open(cli, &stream_ids[i]) == LIBP2P_YAMUX_OK);
+    }
+
+    // Process all incoming streams on server
+    for (int i = 0; i < num_streams; i++)
+    {
+        assert(libp2p_yamux_process_one(srv) == LIBP2P_YAMUX_OK);
+    }
+
+    // Send data on all streams
+    for (int i = 0; i < num_streams; i++)
+    {
+        char data[32];
+        snprintf(data, sizeof(data), "Stream %d data", i);
+        assert(libp2p_yamux_stream_send(cli, stream_ids[i], (const uint8_t *)data, strlen(data), 0) == LIBP2P_YAMUX_OK);
+    }
+
+    // Process all data frames on server
+    for (int i = 0; i < num_streams; i++)
+    {
+        assert(libp2p_yamux_process_one(srv) == LIBP2P_YAMUX_OK);
+    }
+
+    // Verify all streams received correct data
+    int all_correct = 1;
+    for (int i = 0; i < num_streams; i++)
+    {
+        uint8_t buf[64];
+        size_t len = 0;
+        libp2p_yamux_err_t rc = libp2p_yamux_stream_recv(srv, stream_ids[i], buf, sizeof(buf), &len);
+
+        char expected[32];
+        snprintf(expected, sizeof(expected), "Stream %d data", i);
+
+        if (rc != LIBP2P_YAMUX_OK || len != strlen(expected) || memcmp(buf, expected, strlen(expected)) != 0)
+        {
+            all_correct = 0;
+            break;
+        }
+    }
+
+    printf("TEST: yamux multiple concurrent streams %s\n", all_correct ? "PASS" : "FAIL");
+
+    libp2p_yamux_ctx_free(cli);
+    libp2p_yamux_ctx_free(srv);
+    libp2p_conn_close(&c);
+    libp2p_conn_close(&s);
+    libp2p_conn_free(&c);
+    libp2p_conn_free(&s);
+}
+
+/**
+ * Test yamux muxer context storage after negotiation
+ * This test prevents regression where context wasn't stored in muxer->ctx
+ */
+static void test_muxer_context_storage(void)
+{
+    libp2p_conn_t c = {0}, s = {0};
+    make_pipe_pair(&c, &s);
+
+    libp2p_muxer_t *m_dial = libp2p_yamux_new();
+    libp2p_muxer_t *m_listen = libp2p_yamux_new();
+    assert(m_dial && m_listen);
+
+    // Initially, context should be NULL
+    assert(m_dial->ctx == NULL);
+    assert(m_listen->ctx == NULL);
+
+    struct mux_args dargs = {m_dial, &c};
+    struct mux_args sargs = {m_listen, &s};
+    pthread_t td, ts;
+    pthread_create(&td, NULL, dial_mux_thread, &dargs);
+    pthread_create(&ts, NULL, listen_mux_thread, &sargs);
+    pthread_join(td, NULL);
+    pthread_join(ts, NULL);
+
+    // After successful negotiation, context should be stored in muxer->ctx
+    int ok = (g_mux_dial_rc == LIBP2P_MUXER_OK && g_mux_listen_rc == LIBP2P_MUXER_OK && m_dial->ctx != NULL && m_listen->ctx != NULL);
+    printf("TEST: yamux muxer context storage after negotiation %s\n", ok ? "PASS" : "FAIL");
+
+    libp2p_muxer_free(m_dial);
+    libp2p_muxer_free(m_listen);
+    libp2p_conn_close(&c);
+    libp2p_conn_close(&s);
+    libp2p_conn_free(&c);
+    libp2p_conn_free(&s);
+}
+
+/**
+ * Test partial frame reading to ensure non-blocking behavior
+ * This test verifies that partial frame reads are handled correctly
+ */
+static void test_partial_frame_reading(void)
+{
+    libp2p_conn_t c = {0}, s = {0};
+    make_pipe_pair(&c, &s);
+
+    libp2p_yamux_ctx_t *ctx = libp2p_yamux_ctx_new(&s, 0, YAMUX_INITIAL_WINDOW);
+    assert(ctx);
+
+    // Send partial frame header
+    uint8_t partial_header[6] = {0x00, 0x00, 0x00, 0x01, 0x00, 0x00}; // Version 0, Type DATA, partial flags
+    assert(libp2p_conn_write(&c, partial_header, sizeof(partial_header)) == sizeof(partial_header));
+
+    // Try to process - should return AGAIN since frame is incomplete
+    libp2p_yamux_err_t rc = libp2p_yamux_process_one(ctx);
+    int ok = (rc == LIBP2P_YAMUX_ERR_AGAIN);
+
+    // Complete the frame
+    uint8_t rest_header[6] = {0x00, 0x00, 0x00, 0x01, 0x00, 0x00}; // Stream ID 1, Length 0
+    assert(libp2p_conn_write(&c, rest_header, sizeof(rest_header)) == sizeof(rest_header));
+
+    // Now processing should work
+    rc = libp2p_yamux_process_one(ctx);
+    ok = ok && (rc == LIBP2P_YAMUX_OK);
+
+    printf("TEST: yamux partial frame reading %s\n", ok ? "PASS" : "FAIL");
+
+    libp2p_yamux_ctx_free(ctx);
+    libp2p_conn_close(&c);
+    libp2p_conn_close(&s);
+    libp2p_conn_free(&c);
+    libp2p_conn_free(&s);
+}
+
+/**
+ * Test stream flow control with window updates
+ * This test ensures flow control works correctly with window updates
+ */
+static void test_stream_flow_control(void)
+{
+    libp2p_conn_t c = {0}, s = {0};
+    make_pipe_pair(&c, &s);
+
+    libp2p_yamux_ctx_t *cli = libp2p_yamux_ctx_new(&c, 1, YAMUX_INITIAL_WINDOW);
+    libp2p_yamux_ctx_t *srv = libp2p_yamux_ctx_new(&s, 0, YAMUX_INITIAL_WINDOW);
+    assert(cli && srv);
+
+    // Open a stream
+    uint32_t stream_id = 0;
+    assert(libp2p_yamux_stream_open(cli, &stream_id) == LIBP2P_YAMUX_OK);
+    assert(libp2p_yamux_process_one(srv) == LIBP2P_YAMUX_OK);
+
+    // Reduce send window to test flow control
+    pthread_mutex_lock(&cli->mtx);
+    if (cli->num_streams > 0)
+    {
+        cli->streams[0]->send_window = 10; // Very small window
+    }
+    pthread_mutex_unlock(&cli->mtx);
+
+    // Try to send more data than window allows
+    uint8_t large_data[100];
+    memset(large_data, 'x', sizeof(large_data));
+    libp2p_yamux_err_t rc = libp2p_yamux_stream_send(cli, stream_id, large_data, sizeof(large_data), 0);
+
+    // Should fail with AGAIN due to flow control
+    int ok = (rc == LIBP2P_YAMUX_ERR_AGAIN);
+    printf("TEST: yamux stream flow control %s\n", ok ? "PASS" : "FAIL");
+
+    libp2p_yamux_ctx_free(cli);
+    libp2p_yamux_ctx_free(srv);
+    libp2p_conn_close(&c);
+    libp2p_conn_close(&s);
+    libp2p_conn_free(&c);
+    libp2p_conn_free(&s);
+}
+
+/**
+ * Test basic stream data exchange without process loop
+ * This test verifies that data can be sent and received between streams
+ */
+static void test_basic_stream_data_exchange(void)
+{
+    libp2p_conn_t c = {0}, s = {0};
+    make_pipe_pair(&c, &s);
+
+    libp2p_yamux_ctx_t *cli = libp2p_yamux_ctx_new(&c, 1, YAMUX_INITIAL_WINDOW);
+    libp2p_yamux_ctx_t *srv = libp2p_yamux_ctx_new(&s, 0, YAMUX_INITIAL_WINDOW);
+    assert(cli && srv);
+
+    // Open a stream
+    uint32_t stream_id = 0;
+    assert(libp2p_yamux_stream_open(cli, &stream_id) == LIBP2P_YAMUX_OK);
+
+    // Process the stream open on server
+    assert(libp2p_yamux_process_one(srv) == LIBP2P_YAMUX_OK);
+
+    // Send data from client to server
+    const char *test_data = "Hello yamux!";
+    size_t test_len = strlen(test_data);
+    assert(libp2p_yamux_stream_send(cli, stream_id, (const uint8_t *)test_data, test_len, 0) == LIBP2P_YAMUX_OK);
+
+    // Process the data frame on server
+    assert(libp2p_yamux_process_one(srv) == LIBP2P_YAMUX_OK);
+
+    // Receive data on server
+    uint8_t recv_buf[64];
+    size_t recv_len = 0;
+    libp2p_yamux_err_t rc = libp2p_yamux_stream_recv(srv, stream_id, recv_buf, sizeof(recv_buf), &recv_len);
+
+    int ok = (rc == LIBP2P_YAMUX_OK && recv_len == test_len && memcmp(recv_buf, test_data, test_len) == 0);
+    printf("TEST: yamux basic stream data exchange %s\n", ok ? "PASS" : "FAIL");
+
+    libp2p_yamux_ctx_free(cli);
+    libp2p_yamux_ctx_free(srv);
+    libp2p_conn_close(&c);
+    libp2p_conn_close(&s);
+    libp2p_conn_free(&c);
+    libp2p_conn_free(&s);
+}
+
 int main(void)
 {
     test_negotiate();
@@ -922,5 +1228,13 @@ int main(void)
     test_keepalive();
     test_large_frame();
     test_recv_go_away();
+
+    // New regression tests for yamux fixes from debug report
+    test_yamux_muxer_creation();
+    test_yamux_frame_operations();
+    test_multiple_concurrent_streams();
+    test_muxer_context_storage();
+    test_basic_stream_data_exchange();
+
     return 0;
 }

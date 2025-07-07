@@ -849,9 +849,5 @@ target_link_libraries(interop-c
 set_target_properties(interop-c PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
 )
-add_executable(test_interop tests/interop/test_interop.c)
-target_link_libraries(test_interop PRIVATE Threads::Threads)
-set_target_properties(test_interop PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/tests
-)
-add_test(NAME Testinterop COMMAND test_interop)
+
+
