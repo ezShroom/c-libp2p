@@ -623,139 +623,518 @@ static int handle_incoming_stream(libp2p_protocol_handler_ctx_t *ctx, uint64_t s
     return result;
 }
 
+/* ===== Stream Lifecycle Management ===== */
+
 /**
- * @brief Main thread function for handling incoming streams.
+ * @brief Stream state tracking for connection lifecycle management
+ */
+typedef struct active_stream_entry
+{
+    uint64_t stream_id;
+    int keep_alive; // 0 = ignore for keep-alive (like ping), 1 = keep connection alive
+    struct active_stream_entry *next;
+} active_stream_entry_t;
+
+typedef struct
+{
+    active_stream_entry_t *streams;
+    int total_streams;
+    int keep_alive_streams;
+    pthread_mutex_t mutex;
+} stream_tracker_t;
+
+static stream_tracker_t *stream_tracker_new(void)
+{
+    stream_tracker_t *tracker = calloc(1, sizeof(stream_tracker_t));
+    if (!tracker)
+        return NULL;
+
+    if (pthread_mutex_init(&tracker->mutex, NULL) != 0)
+    {
+        free(tracker);
+        return NULL;
+    }
+
+    return tracker;
+}
+
+static void stream_tracker_free(stream_tracker_t *tracker)
+{
+    if (!tracker)
+        return;
+
+    pthread_mutex_lock(&tracker->mutex);
+    active_stream_entry_t *entry = tracker->streams;
+    while (entry)
+    {
+        active_stream_entry_t *next = entry->next;
+        free(entry);
+        entry = next;
+    }
+    pthread_mutex_unlock(&tracker->mutex);
+    pthread_mutex_destroy(&tracker->mutex);
+    free(tracker);
+}
+
+static void stream_tracker_add_stream(stream_tracker_t *tracker, uint64_t stream_id, int keep_alive)
+{
+    if (!tracker)
+        return;
+
+    active_stream_entry_t *entry = calloc(1, sizeof(active_stream_entry_t));
+    if (!entry)
+        return;
+
+    entry->stream_id = stream_id;
+    entry->keep_alive = keep_alive;
+
+    pthread_mutex_lock(&tracker->mutex);
+    entry->next = tracker->streams;
+    tracker->streams = entry;
+    tracker->total_streams++;
+    if (keep_alive)
+    {
+        tracker->keep_alive_streams++;
+    }
+    pthread_mutex_unlock(&tracker->mutex);
+
+    fprintf(stderr, "[STREAM_TRACKER] Added stream %llu (keep_alive=%d), total=%d, keep_alive=%d\n", (unsigned long long)stream_id, keep_alive,
+            tracker->total_streams, tracker->keep_alive_streams);
+}
+
+static void stream_tracker_remove_stream(stream_tracker_t *tracker, uint64_t stream_id)
+{
+    if (!tracker)
+        return;
+
+    pthread_mutex_lock(&tracker->mutex);
+    active_stream_entry_t *entry = tracker->streams;
+    active_stream_entry_t *prev = NULL;
+
+    while (entry)
+    {
+        if (entry->stream_id == stream_id)
+        {
+            if (prev)
+            {
+                prev->next = entry->next;
+            }
+            else
+            {
+                tracker->streams = entry->next;
+            }
+
+            tracker->total_streams--;
+            if (entry->keep_alive)
+            {
+                tracker->keep_alive_streams--;
+            }
+
+            fprintf(stderr, "[STREAM_TRACKER] Removed stream %llu (keep_alive=%d), remaining=%d, keep_alive=%d\n", (unsigned long long)stream_id,
+                    entry->keep_alive, tracker->total_streams, tracker->keep_alive_streams);
+
+            free(entry);
+            break;
+        }
+        prev = entry;
+        entry = entry->next;
+    }
+    pthread_mutex_unlock(&tracker->mutex);
+}
+
+static int stream_tracker_should_close_connection(stream_tracker_t *tracker)
+{
+    if (!tracker)
+        return 1;
+
+    pthread_mutex_lock(&tracker->mutex);
+    int should_close = (tracker->keep_alive_streams == 0 && tracker->total_streams > 0);
+    pthread_mutex_unlock(&tracker->mutex);
+
+    return should_close;
+}
+
+/* ===== Protocol Handler State Machine ===== */
+
+typedef enum
+{
+    HANDLER_STATE_ACTIVE,   // Processing streams and frames
+    HANDLER_STATE_DRAINING, // No keep-alive streams, draining remaining streams
+    HANDLER_STATE_SHUTDOWN  // Ready to shutdown
+} handler_state_t;
+
+typedef struct
+{
+    handler_state_t state;
+    stream_tracker_t *streams;
+    int frames_processed_in_cycle;
+    int max_frames_per_cycle;
+    int total_streams_processed; // Track total streams processed to avoid premature shutdown
+    struct timespec last_activity;
+    int shutdown_timeout_ms;
+} handler_context_t;
+
+static handler_context_t *handler_context_new(void)
+{
+    handler_context_t *hctx = calloc(1, sizeof(handler_context_t));
+    if (!hctx)
+        return NULL;
+
+    hctx->state = HANDLER_STATE_ACTIVE;
+    hctx->streams = stream_tracker_new();
+    hctx->max_frames_per_cycle = 100; // Prevent infinite frame processing
+    hctx->shutdown_timeout_ms = 500;  // 500ms timeout for draining
+    clock_gettime(CLOCK_MONOTONIC, &hctx->last_activity);
+
+    if (!hctx->streams)
+    {
+        free(hctx);
+        return NULL;
+    }
+
+    return hctx;
+}
+
+static void handler_context_free(handler_context_t *hctx)
+{
+    if (!hctx)
+        return;
+    stream_tracker_free(hctx->streams);
+    free(hctx);
+}
+
+static void handler_context_update_activity(handler_context_t *hctx) { clock_gettime(CLOCK_MONOTONIC, &hctx->last_activity); }
+
+static int handler_context_is_drain_timeout(handler_context_t *hctx)
+{
+    if (hctx->state != HANDLER_STATE_DRAINING)
+        return 0;
+
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+
+    long long elapsed_ms = ((now.tv_sec - hctx->last_activity.tv_sec) * 1000) + ((now.tv_nsec - hctx->last_activity.tv_nsec) / 1000000);
+
+    return elapsed_ms > hctx->shutdown_timeout_ms;
+}
+
+/**
+ * @brief Enhanced stream handler that tracks stream lifecycle for keep-alive
+ */
+static int handle_incoming_stream_with_tracking(libp2p_protocol_handler_ctx_t *ctx, uint64_t stream_id)
+{
+    generic_muxer_ctx_t *gmx = (generic_muxer_ctx_t *)ctx->muxer_ctx;
+    handler_context_t *hctx = (handler_context_t *)ctx->handler_context;
+    char buffer[512];
+
+    fprintf(stderr, "[HANDLE_STREAM] Processing stream id=%llu\n", (unsigned long long)stream_id);
+
+    // Initially add as keep-alive stream (will be updated for ping)
+    stream_tracker_add_stream(hctx->streams, stream_id, 1);
+
+    // Receive multistream header
+    if (recv_length_prefixed_message_generic(gmx, stream_id, 0, buffer, sizeof(buffer)) < 0)
+    {
+        fprintf(stderr, "[HANDLE_STREAM] Failed to receive multistream header\n");
+        stream_tracker_remove_stream(hctx->streams, stream_id);
+        return -1;
+    }
+
+    fprintf(stderr, "[HANDLE_STREAM] Received header: %s", buffer);
+
+    if (strcmp(buffer, LIBP2P_MULTISELECT_PROTO_ID "\n") != 0)
+    {
+        fprintf(stderr, "[HANDLE_STREAM] Invalid multistream header\n");
+        stream_tracker_remove_stream(hctx->streams, stream_id);
+        return -1;
+    }
+
+    // Send acknowledgment
+    if (send_length_prefixed_message_generic(gmx, stream_id, LIBP2P_MULTISELECT_PROTO_ID "\n", 0) != 0)
+    {
+        fprintf(stderr, "[HANDLE_STREAM] Failed to send multistream ack\n");
+        stream_tracker_remove_stream(hctx->streams, stream_id);
+        return -1;
+    }
+
+    fprintf(stderr, "[HANDLE_STREAM] Sent multistream ack\n");
+
+    // Receive protocol request
+    if (recv_length_prefixed_message_generic(gmx, stream_id, 0, buffer, sizeof(buffer)) < 0)
+    {
+        fprintf(stderr, "[HANDLE_STREAM] Failed to receive protocol request\n");
+        stream_tracker_remove_stream(hctx->streams, stream_id);
+        return -1;
+    }
+
+    fprintf(stderr, "[HANDLE_STREAM] Received protocol request: %s", buffer);
+
+    // Remove trailing newline for lookup
+    size_t len = strlen(buffer);
+    if (len > 0 && buffer[len - 1] == '\n')
+    {
+        buffer[len - 1] = '\0';
+    }
+
+    // Update keep-alive status for ping protocol (like Rust libp2p)
+    int keep_alive = 1;
+    if (strcmp(buffer, LIBP2P_PING_PROTO_ID) == 0)
+    {
+        keep_alive = 0; // Ping streams don't keep connection alive
+        stream_tracker_remove_stream(hctx->streams, stream_id);
+        stream_tracker_add_stream(hctx->streams, stream_id, keep_alive);
+        fprintf(stderr, "[HANDLE_STREAM] Ping protocol detected - marked as non-keep-alive\n");
+    }
+
+    // Find handler for this protocol
+    libp2p_protocol_handler_entry_t *entry = find_protocol_handler(ctx->registry, buffer);
+    if (!entry)
+    {
+        fprintf(stderr, "[HANDLE_STREAM] No handler found for protocol: %s\n", buffer);
+        send_length_prefixed_message_generic(gmx, stream_id, LIBP2P_MULTISELECT_NA "\n", 0);
+        stream_tracker_remove_stream(hctx->streams, stream_id);
+        return -1;
+    }
+
+    fprintf(stderr, "[HANDLE_STREAM] Found handler for protocol: %s\n", buffer);
+
+    // Send protocol acknowledgment
+    char ack[LIBP2P_PROTOCOL_ID_MAX_LEN + 2];
+    snprintf(ack, sizeof(ack), "%s\n", buffer);
+    if (send_length_prefixed_message_generic(gmx, stream_id, ack, 0) != 0)
+    {
+        fprintf(stderr, "[HANDLE_STREAM] Failed to send protocol ack\n");
+        stream_tracker_remove_stream(hctx->streams, stream_id);
+        return -1;
+    }
+
+    fprintf(stderr, "[HANDLE_STREAM] Sent protocol ack\n");
+    fprintf(stderr, "[HANDLE_STREAM] Calling protocol handler for %s\n", buffer);
+
+    // Create stream object
+    libp2p_stream_t *stream = calloc(1, sizeof(libp2p_stream_t));
+    if (!stream)
+    {
+        fprintf(stderr, "[HANDLE_STREAM] Failed to allocate stream object\n");
+        stream_tracker_remove_stream(hctx->streams, stream_id);
+        return -1;
+    }
+
+    stream->uconn = ctx->uconn;
+    stream->stream_id = stream_id;
+    stream->initiator = 0; // Incoming stream
+    stream->protocol_id = strdup(buffer);
+    stream->ctx = ctx->muxer_ctx;
+
+    // Call the protocol handler
+    int result = entry->handler(stream, entry->user_data);
+    fprintf(stderr, "[HANDLE_STREAM] Protocol handler returned: %d\n", result);
+
+    // Stream completed - remove from tracker
+    stream_tracker_remove_stream(hctx->streams, stream_id);
+
+    // Cleanup
+    libp2p_stream_free(stream);
+
+    return result;
+}
+
+/**
+ * @brief Event-driven protocol handler thread - inspired by Rust libp2p architecture
  *
- * @param arg Protocol handler context
- * @return NULL
+ * This replaces the old polling-based approach with a proper event-driven model:
+ * - Processes frames until none available
+ * - Handles streams as they arrive
+ * - Uses stream lifecycle tracking for connection keep-alive
+ * - No arbitrary idle cycles or timeouts
+ * - Natural termination based on protocol completion
  */
 static void *protocol_handler_thread(void *arg)
 {
     libp2p_protocol_handler_ctx_t *ctx = (libp2p_protocol_handler_ctx_t *)arg;
     generic_muxer_ctx_t *gmx = (generic_muxer_ctx_t *)ctx->muxer_ctx;
 
-    int frame_count = 0;
-    int stream_count = 0;
+    // Initialize handler context with stream tracking
+    handler_context_t *hctx = handler_context_new();
+    if (!hctx)
+    {
+        fprintf(stderr, "[PROTOCOL_HANDLER] Failed to create handler context\n");
+        return NULL;
+    }
+    ctx->handler_context = hctx;
 
-    fprintf(stderr, "[PROTOCOL_HANDLER] Thread started, muxer_type=%s\n",
+    fprintf(stderr, "[PROTOCOL_HANDLER] Event-driven thread started, muxer_type=%s\n",
             gmx->type == MUXER_TYPE_YAMUX   ? "yamux"
             : gmx->type == MUXER_TYPE_MPLEX ? "mplex"
                                             : "unknown");
 
-    // Continuous processing loop - like Go yamux pattern
     while (!ctx->stop_flag)
     {
-        fprintf(stderr, "[PROTOCOL_HANDLER] Loop iteration: stop_flag=%d\n", ctx->stop_flag);
+        int work_done = 0;
 
-        // Process available frames (non-blocking)
-        int frames_processed = 0;
+        // ==== PHASE 1: Process all available frames ====
+        hctx->frames_processed_in_cycle = 0;
 
-        // Process all immediately available frames
-        while (1)
+        while (hctx->frames_processed_in_cycle < hctx->max_frames_per_cycle && !ctx->stop_flag)
         {
-            int err = process_one_generic(gmx);
+            int frame_result = process_one_generic(gmx);
 
-            if (err == 0)
+            if (frame_result == 0)
             {
-                frames_processed++;
-                frame_count++;
+                // Frame processed successfully
+                hctx->frames_processed_in_cycle++;
+                work_done = 1;
+                handler_context_update_activity(hctx);
             }
-            else if (err == -2) // EOF/stop signal
+            else if (frame_result == -2)
             {
-                fprintf(stderr, "[PROTOCOL_HANDLER] Received EOF signal, stopping protocol handler\n");
-                ctx->stop_flag = 1; // Signal main thread to stop
+                // EOF/connection closed by remote
+                fprintf(stderr, "[PROTOCOL_HANDLER] Connection closed by remote, initiating graceful shutdown\n");
+                hctx->state = HANDLER_STATE_SHUTDOWN;
+                ctx->stop_flag = 1;
                 break;
             }
             else
             {
-                // No more frames immediately available
-                fprintf(stderr, "[PROTOCOL_HANDLER] No more frames available (err=%d)\n", err);
-                break;
-            }
-
-            // Safety limit to prevent infinite loops
-            if (frames_processed > 100)
-            {
-                fprintf(stderr, "[PROTOCOL_HANDLER] Hit frame processing limit (100), breaking\n");
+                // No more frames available right now
                 break;
             }
         }
 
-        if (frames_processed > 0)
+        if (hctx->frames_processed_in_cycle > 0)
         {
-            fprintf(stderr, "[PROTOCOL_HANDLER] Processed %d frames (total: %d)\n", frames_processed, frame_count);
+            fprintf(stderr, "[PROTOCOL_HANDLER] Processed %d frames in cycle\n", hctx->frames_processed_in_cycle);
         }
 
-        fprintf(stderr, "[PROTOCOL_HANDLER] Starting stream acceptance, muxer_type=%d\n", gmx->type);
+        // ==== PHASE 2: Handle new incoming streams ====
+        int streams_processed = 0;
 
-        // Handle stream acceptance based on muxer type
         if (gmx->type == MUXER_TYPE_MPLEX)
         {
-            fprintf(stderr, "[PROTOCOL_HANDLER] Processing MPLEX streams\n");
             libp2p_mplex_stream_t *new_stream = NULL;
-            while (libp2p_mplex_accept_stream(gmx->ctx.mplex, &new_stream) == LIBP2P_MPLEX_OK && new_stream)
-            {
-                stream_count++;
-                fprintf(stderr, "[PROTOCOL_HANDLER] Accepted new MPLEX stream id=%llu (total: %d)\n", (unsigned long long)new_stream->id,
-                        stream_count);
-                // Handle the new stream immediately (all frames should be processed)
-                int result = handle_incoming_stream(ctx, new_stream->id);
-                fprintf(stderr, "[PROTOCOL_HANDLER] Stream handler result: %d\n", result);
-                new_stream = NULL; // Reset for next iteration
-            }
-        }
-        else if (gmx->type == MUXER_TYPE_YAMUX)
-        {
-            fprintf(stderr, "[PROTOCOL_HANDLER] Processing YAMUX streams\n");
-            // Yamux stream acceptance - process all available streams
-            libp2p_yamux_stream_t *new_stream = NULL;
             while (1)
             {
-                fprintf(stderr, "[PROTOCOL_HANDLER] Calling yamux_accept_stream\n");
-                libp2p_yamux_err_t accept_result = libp2p_yamux_accept_stream(gmx->ctx.yamux, &new_stream);
-                fprintf(stderr, "[PROTOCOL_HANDLER] yamux_accept_stream returned: %d\n", accept_result);
+                libp2p_mplex_err_t accept_result = libp2p_mplex_accept_stream(gmx->ctx.mplex, &new_stream);
 
-                if (accept_result == LIBP2P_YAMUX_OK && new_stream)
+                if (accept_result == LIBP2P_MPLEX_OK && new_stream)
                 {
-                    stream_count++;
-                    fprintf(stderr, "[PROTOCOL_HANDLER] Accepted new YAMUX stream id=%u (total: %d)\n", new_stream->id, stream_count);
-
-                    // Handle the stream in the current thread
-                    int result = handle_incoming_stream(ctx, new_stream->id);
-                    fprintf(stderr, "[PROTOCOL_HANDLER] Stream handler result: %d\n", result);
-                    new_stream = NULL; // Reset for next iteration
+                    fprintf(stderr, "[PROTOCOL_HANDLER] Accepted MPLEX stream id=%lu\n", new_stream->id);
+                    int result = handle_incoming_stream_with_tracking(ctx, new_stream->id);
+                    streams_processed++;
+                    hctx->total_streams_processed++;
+                    work_done = 1;
+                    handler_context_update_activity(hctx);
+                    new_stream = NULL;
                 }
-                else if (accept_result == LIBP2P_YAMUX_ERR_AGAIN)
+                else if (accept_result == LIBP2P_MPLEX_ERR_AGAIN)
                 {
-                    // No more streams available right now - this is normal
-                    fprintf(stderr, "[PROTOCOL_HANDLER] No more yamux streams available (ERR_AGAIN)\n");
+                    // No more streams available
                     break;
                 }
                 else
                 {
-                    fprintf(stderr, "[PROTOCOL_HANDLER] yamux_accept_stream error: %d\n", accept_result);
+                    // Error accepting stream
+                    break;
+                }
+            }
+        }
+        else if (gmx->type == MUXER_TYPE_YAMUX)
+        {
+            libp2p_yamux_stream_t *new_stream = NULL;
+            while (1)
+            {
+                libp2p_yamux_err_t accept_result = libp2p_yamux_accept_stream(gmx->ctx.yamux, &new_stream);
+
+                if (accept_result == LIBP2P_YAMUX_OK && new_stream)
+                {
+                    fprintf(stderr, "[PROTOCOL_HANDLER] Accepted YAMUX stream id=%u\n", new_stream->id);
+                    int result = handle_incoming_stream_with_tracking(ctx, new_stream->id);
+                    streams_processed++;
+                    hctx->total_streams_processed++;
+                    work_done = 1;
+                    handler_context_update_activity(hctx);
+                    new_stream = NULL;
+                }
+                else if (accept_result == LIBP2P_YAMUX_ERR_AGAIN)
+                {
+                    // No more streams available
+                    break;
+                }
+                else
+                {
+                    // Error accepting stream
                     break;
                 }
             }
         }
 
-        fprintf(stderr, "[PROTOCOL_HANDLER] Finished stream processing, frames_processed=%d\n", frames_processed);
+        if (streams_processed > 0)
+        {
+            fprintf(stderr, "[PROTOCOL_HANDLER] Processed %d new streams\n", streams_processed);
+        }
 
-        // Continue processing indefinitely with a small delay when idle
-        // This prevents busy waiting while ensuring responsiveness
-        if (frames_processed == 0)
+        // ==== PHASE 3: Connection lifecycle management ====
+
+        // Check current stream state
+        pthread_mutex_lock(&hctx->streams->mutex);
+        int total_streams = hctx->streams->total_streams;
+        int keep_alive_streams = hctx->streams->keep_alive_streams;
+        pthread_mutex_unlock(&hctx->streams->mutex);
+
+        // Update state based on stream tracker
+        if (hctx->state == HANDLER_STATE_ACTIVE)
         {
-            fprintf(stderr, "[PROTOCOL_HANDLER] No frames processed, sleeping 10ms\n");
-            usleep(10000); // 10ms when no frames processed
+            // Only consider shutdown after processing at least one stream
+            if (hctx->total_streams_processed > 0)
+            {
+                if (total_streams == 0)
+                {
+                    fprintf(stderr, "[PROTOCOL_HANDLER] All streams completed after processing %d streams, ready for immediate shutdown\n",
+                            hctx->total_streams_processed);
+                    hctx->state = HANDLER_STATE_SHUTDOWN;
+                    ctx->stop_flag = 1;
+                }
+                else if (keep_alive_streams == 0 && total_streams > 0)
+                {
+                    fprintf(stderr, "[PROTOCOL_HANDLER] No keep-alive streams remaining (%d non-keep-alive streams), entering drain state\n",
+                            total_streams);
+                    hctx->state = HANDLER_STATE_DRAINING;
+                    handler_context_update_activity(hctx);
+                }
+            }
         }
-        else
+
+        // Check if we should shutdown from draining state
+        if (hctx->state == HANDLER_STATE_DRAINING)
         {
-            fprintf(stderr, "[PROTOCOL_HANDLER] Frames processed, sleeping 1ms\n");
-            usleep(1000); // 1ms when frames were processed
+            if (total_streams == 0)
+            {
+                fprintf(stderr, "[PROTOCOL_HANDLER] All streams completed, ready for shutdown\n");
+                hctx->state = HANDLER_STATE_SHUTDOWN;
+                ctx->stop_flag = 1;
+            }
+            else if (handler_context_is_drain_timeout(hctx))
+            {
+                fprintf(stderr, "[PROTOCOL_HANDLER] Drain timeout reached, forcing shutdown\n");
+                hctx->state = HANDLER_STATE_SHUTDOWN;
+                ctx->stop_flag = 1;
+            }
         }
+
+        // ==== PHASE 4: Event loop timing ====
+
+        if (!work_done && !ctx->stop_flag)
+        {
+            // No work was done this cycle - brief sleep to prevent busy waiting
+            // This is much shorter than the old 10ms idle sleep
+            usleep(1000); // 1ms - responsive but not busy-waiting
+        }
+        // If work was done, continue immediately to next cycle
     }
 
-    fprintf(stderr, "[PROTOCOL_HANDLER] Thread stopping gracefully (processed %d frames, %d streams)\n", frame_count, stream_count);
+    fprintf(stderr, "[PROTOCOL_HANDLER] Event-driven thread shutting down gracefully\n");
+    handler_context_free(hctx);
+    ctx->handler_context = NULL;
     return NULL;
 }
 

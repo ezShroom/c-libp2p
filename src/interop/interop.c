@@ -254,55 +254,49 @@ static ssize_t stream_read_exact(libp2p_stream_t *stream, uint8_t *buf, size_t l
 
 static int ping_stream_handler(libp2p_stream_t *stream, void *user_data)
 {
-    fprintf(stderr, "ping_stream_handler: got new stream\n");
     (void)user_data;
 
-    // Simple ping echo server - wait for 32 bytes, then echo them back
-    uint8_t payload[32];
-    size_t total_read = 0;
+    fprintf(stderr, "ping_stream_handler: got new stream\n");
 
-    // Read exactly 32 bytes, handling partial reads and waiting for data
-    while (total_read < 32)
+    uint8_t buffer[32];
+    ssize_t total_read = 0;
+    const size_t expected_size = 32;
+
+    // Read ping payload using the existing stream_read_exact function
+    ssize_t bytes_read = stream_read_exact(stream, buffer, expected_size);
+
+    if (bytes_read < 0)
     {
-        ssize_t bytes_read = libp2p_stream_read(stream, payload + total_read, 32 - total_read);
-
-        if (bytes_read > 0)
-        {
-            total_read += bytes_read;
-            fprintf(stderr, "ping_stream_handler: read %zd bytes (total: %zu/32)\n", bytes_read, total_read);
-        }
-        else if (bytes_read == 0)
-        {
-            // EOF - stream closed
-            fprintf(stderr, "ping_stream_handler: stream closed by peer\n");
-            return -1;
-        }
-        else
-        {
-            // Error or would block - wait a bit and try again
-            // This handles the case where yamux data frame hasn't arrived yet
-            struct timespec ts = {0, 10000000}; // 10ms
-            nanosleep(&ts, NULL);
-        }
+        fprintf(stderr, "ping_stream_handler: failed to read ping payload (error=%zd)\n", bytes_read);
+        return -1;
     }
 
+    if ((size_t)bytes_read != expected_size)
+    {
+        fprintf(stderr, "ping_stream_handler: read incomplete payload (%zd bytes, expected %zu)\n", bytes_read, expected_size);
+        return -1;
+    }
+
+    fprintf(stderr, "ping_stream_handler: read %zd bytes (total: %zd/%zu)\n", bytes_read, bytes_read, expected_size);
     fprintf(stderr, "ping_stream_handler: received complete 32-byte ping payload\n");
 
     // Echo the payload back
-    fprintf(stderr, "ping_stream_handler: attempting to write 32 bytes back\n");
-    ssize_t bytes_written = libp2p_stream_write(stream, payload, 32);
-    if (bytes_written != 32)
+    fprintf(stderr, "ping_stream_handler: attempting to write %zu bytes back\n", expected_size);
+    ssize_t bytes_written = libp2p_stream_write(stream, buffer, expected_size);
+
+    if (bytes_written != (ssize_t)expected_size)
     {
-        fprintf(stderr, "ping_stream_handler: failed to write ping response (wrote %zd bytes)\n", bytes_written);
+        fprintf(stderr, "ping_stream_handler: failed to write complete echo (wrote %zd, expected %zu)\n", bytes_written, expected_size);
         return -1;
     }
 
     fprintf(stderr, "ping_stream_handler: successfully echoed ping payload\n");
 
-    // Add a small delay to ensure the response is sent before stream might be closed
-    usleep(100000); // 100ms delay
+    // Properly close the stream after completing the ping
+    fprintf(stderr, "ping_stream_handler: closing stream after ping completion\n");
+    libp2p_stream_close(stream);
 
-    // Keep the stream open for potential additional pings
+    fprintf(stderr, "ping_stream_handler: ping protocol completed successfully\n");
     return 0;
 }
 
@@ -480,6 +474,55 @@ static int run_listener(const char *ip, const char *redis_host, const char *redi
     if (strcmp(muxer_name, "yamux") == 0)
     {
         /* -----------------------------------------------------------
+         * Respond to ping requests over a negotiated stream using YAMUX.
+         * ---------------------------------------------------------*/
+
+        /* Create registry and register the ping handler */
+        libp2p_protocol_handler_registry_t *registry = libp2p_protocol_handler_registry_new();
+        libp2p_register_protocol_handler(registry, LIBP2P_PING_PROTO_ID, ping_stream_handler, NULL);
+        libp2p_register_protocol_handler(registry, LIBP2P_IDENTIFY_PROTO_ID, identify_stream_handler, NULL);
+
+        /* Start protocol handler in a background thread */
+        libp2p_protocol_handler_ctx_t *phctx = libp2p_protocol_handler_ctx_new(registry, uconn);
+        libp2p_protocol_handler_start(phctx);
+
+        /* Wait for protocol handler to complete naturally or timeout */
+        fprintf(stderr, "listener: waiting for protocol handler to complete\n");
+        int wait_cycles = 0;
+        const int max_wait_cycles = 200; // 200 * 100ms = 20 seconds maximum wait
+
+        while (!phctx->stop_flag && wait_cycles < max_wait_cycles)
+        {
+            usleep(100000); // 100ms
+            wait_cycles++;
+
+            if (wait_cycles % 10 == 0) // Log every second
+            {
+                fprintf(stderr, "listener: waiting for completion (%d/200)\n", wait_cycles);
+            }
+        }
+
+        if (phctx->stop_flag)
+        {
+            fprintf(stderr, "listener: protocol handler completed naturally\n");
+        }
+        else
+        {
+            fprintf(stderr, "listener: protocol handler timeout, forcing stop\n");
+        }
+
+        /* Gracefully stop the handler thread and clean up. */
+        libp2p_protocol_handler_stop(phctx);
+        libp2p_protocol_handler_ctx_free(phctx);
+        libp2p_protocol_handler_registry_free(registry);
+
+        /* Add a small delay to ensure proper connection closure signaling */
+        fprintf(stderr, "listener: allowing time for connection closure signaling\n");
+        usleep(100000); // 100ms delay
+    }
+    else
+    {
+        /* -----------------------------------------------------------
          * Respond to ping requests over a negotiated stream using MPLEX.
          * ---------------------------------------------------------*/
 
@@ -492,34 +535,68 @@ static int run_listener(const char *ip, const char *redis_host, const char *redi
         libp2p_protocol_handler_ctx_t *phctx = libp2p_protocol_handler_ctx_new(registry, uconn);
         libp2p_protocol_handler_start(phctx);
 
-        /* Give the dialer enough time to complete its single ping round-trip. */
-        usleep(2 * 1000 * 1000); /* 2 s */
+        /* Wait for protocol handler to complete naturally or timeout */
+        fprintf(stderr, "listener: waiting for protocol handler to complete\n");
+        int wait_cycles = 0;
+        const int max_wait_cycles = 200; // 200 * 100ms = 20 seconds maximum wait
+
+        while (!phctx->stop_flag && wait_cycles < max_wait_cycles)
+        {
+            usleep(100000); // 100ms
+            wait_cycles++;
+
+            if (wait_cycles % 10 == 0) // Log every second
+            {
+                fprintf(stderr, "listener: waiting for completion (%d/200)\n", wait_cycles);
+            }
+        }
+
+        if (phctx->stop_flag)
+        {
+            fprintf(stderr, "listener: protocol handler completed naturally\n");
+        }
+        else
+        {
+            fprintf(stderr, "listener: protocol handler timeout, forcing stop\n");
+        }
 
         /* Gracefully stop the handler thread and clean up. */
         libp2p_protocol_handler_stop(phctx);
         libp2p_protocol_handler_ctx_free(phctx);
         libp2p_protocol_handler_registry_free(registry);
+
+        /* Add a small delay to ensure proper connection closure signaling */
+        fprintf(stderr, "listener: allowing time for connection closure signaling\n");
+        usleep(100000); // 100ms delay
+
+        /* Send graceful shutdown signal for yamux */
+        if (strcmp(muxer_name, "yamux") == 0)
+        {
+            fprintf(stderr, "listener: sending yamux GoAway signal for graceful shutdown\n");
+            // Access the yamux context from the muxer to send GoAway
+            libp2p_yamux_ctx_t *yamux_ctx = (libp2p_yamux_ctx_t *)uconn->muxer->ctx;
+            if (yamux_ctx)
+            {
+                libp2p_yamux_stop(yamux_ctx);
+                usleep(50000); // 50ms to allow GoAway to be sent
+            }
+        }
     }
-    else
+
+    /* Send graceful shutdown signal for yamux (if applicable) */
+    if (strcmp(muxer_name, "yamux") == 0)
     {
-        /* Create registry and register the ping handler */
-        libp2p_protocol_handler_registry_t *registry = libp2p_protocol_handler_registry_new();
-        libp2p_register_protocol_handler(registry, LIBP2P_PING_PROTO_ID, ping_stream_handler, NULL);
-        libp2p_register_protocol_handler(registry, LIBP2P_IDENTIFY_PROTO_ID, identify_stream_handler, NULL);
-
-        /* Start protocol handler in a background thread */
-        libp2p_protocol_handler_ctx_t *phctx = libp2p_protocol_handler_ctx_new(registry, uconn);
-        libp2p_protocol_handler_start(phctx);
-
-        /* Give the dialer enough time to complete its single ping round-trip. */
-        usleep(2 * 1000 * 1000); /* 2 s */
-
-        /* Gracefully stop the handler thread and clean up. */
-        libp2p_protocol_handler_stop(phctx);
-        libp2p_protocol_handler_ctx_free(phctx);
-        libp2p_protocol_handler_registry_free(registry);
+        fprintf(stderr, "listener: sending yamux GoAway signal for graceful shutdown\n");
+        // Access the yamux context from the muxer to send GoAway
+        libp2p_yamux_ctx_t *yamux_ctx = (libp2p_yamux_ctx_t *)uconn->muxer->ctx;
+        if (yamux_ctx)
+        {
+            libp2p_yamux_stop(yamux_ctx);
+            usleep(50000); // 50ms to allow GoAway to be sent
+        }
     }
 
+    fprintf(stderr, "listener: closing connection\n");
     libp2p_conn_close(uconn->conn);
     free(uconn);
     libp2p_upgrader_free(up);
@@ -691,8 +768,13 @@ static int run_dialer(const char *redis_host, const char *redis_port, int timeou
 
         ping_ms = now_mono_ms() - ping_start;
 
+        // Properly close the stream after ping completion
+        fprintf(stderr, "DEBUG: dialer closing ping stream after completion\n");
         libp2p_stream_close(ping_stream);
         libp2p_stream_free(ping_stream);
+
+        // Add a small delay to ensure proper closure signaling
+        usleep(50000); // 50ms delay to ensure closure frames are sent
     }
     else
     {
@@ -762,8 +844,13 @@ static int run_dialer(const char *redis_host, const char *redis_port, int timeou
 
         ping_ms = now_mono_ms() - ping_start;
 
+        // Properly close the stream after ping completion
+        fprintf(stderr, "DEBUG: dialer closing ping stream after completion\n");
         libp2p_stream_close(ping_stream);
         libp2p_stream_free(ping_stream);
+
+        // Add a small delay to ensure proper closure signaling
+        usleep(50000); // 50ms delay to ensure closure frames are sent
     }
 
     uint64_t handshake_plus_rtt_ms = now_mono_ms() - start;
