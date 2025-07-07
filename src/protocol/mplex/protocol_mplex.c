@@ -77,8 +77,17 @@ static libp2p_mplex_err_t conn_read_exact(libp2p_conn_t *c, uint8_t *buf, size_t
  */
 static libp2p_muxer_err_t mplex_negotiate_out(libp2p_muxer_t *self, libp2p_conn_t *c, uint64_t to)
 {
-    (void)self;
     libp2p_mplex_err_t mplex_err = libp2p_mplex_negotiate_outbound(c, to);
+
+    // Create mplex context after successful negotiation (similar to yamux)
+    if (mplex_err == LIBP2P_MPLEX_OK)
+    {
+        self->ctx = libp2p_mplex_ctx_new(c);
+        if (!self->ctx)
+        {
+            return LIBP2P_MUXER_ERR_INTERNAL;
+        }
+    }
 
     // Convert mplex-specific error codes to generic muxer error codes
     switch (mplex_err)
@@ -99,8 +108,17 @@ static libp2p_muxer_err_t mplex_negotiate_out(libp2p_muxer_t *self, libp2p_conn_
  */
 static libp2p_muxer_err_t mplex_negotiate_in(libp2p_muxer_t *self, libp2p_conn_t *c, uint64_t to)
 {
-    (void)self;
     libp2p_mplex_err_t mplex_err = libp2p_mplex_negotiate_inbound(c, to);
+
+    // Create mplex context after successful negotiation (similar to yamux)
+    if (mplex_err == LIBP2P_MPLEX_OK)
+    {
+        self->ctx = libp2p_mplex_ctx_new(c);
+        if (!self->ctx)
+        {
+            return LIBP2P_MUXER_ERR_INTERNAL;
+        }
+    }
 
     // Convert mplex-specific error codes to generic muxer error codes
     switch (mplex_err)
@@ -117,18 +135,29 @@ static libp2p_muxer_err_t mplex_negotiate_in(libp2p_muxer_t *self, libp2p_conn_t
 }
 
 /**
- * @brief Close a muxer instance (no-op for mplex).
+ * @brief Close a muxer instance (cleanup mplex context).
  */
 static libp2p_muxer_err_t mplex_close(libp2p_muxer_t *self)
 {
-    (void)self;
+    if (self && self->ctx)
+    {
+        libp2p_mplex_ctx_free(self->ctx);
+        self->ctx = NULL;
+    }
     return LIBP2P_MUXER_OK;
 }
 
 /**
  * @brief Free a muxer instance allocated with ::libp2p_mplex_new.
  */
-static void mplex_free(libp2p_muxer_t *self) { free(self); }
+static void mplex_free(libp2p_muxer_t *self)
+{
+    if (self && self->ctx)
+    {
+        libp2p_mplex_ctx_free(self->ctx);
+    }
+    free(self);
+}
 
 static int mplex_negotiate(libp2p_muxer_t *mx, libp2p_conn_t *c, uint64_t to, bool inbound)
 {
@@ -906,14 +935,14 @@ int recv_length_prefixed_message(libp2p_mplex_ctx_t *mx, uint64_t stream_id, int
 {
     if (!mx || !buffer)
         return -1;
-    
+
     uint8_t varint_buf[10];
     size_t bytes_read = 0;
     uint64_t msg_len = 0;
     size_t varint_bytes = 0;
     int frame_processed_count = 0;
     const int MAX_FRAME_PROCESSING = 100; // Limit to prevent infinite loops
-    
+
     // Read varint length with frame processing limit
     for (int i = 0; i < 10; i++)
     {
@@ -923,7 +952,8 @@ int recv_length_prefixed_message(libp2p_mplex_ctx_t *mx, uint64_t stream_id, int
         if (bytes_read == 0)
         {
             // Frame-based processing with limit (like Rust implementation)
-            if (frame_processed_count >= MAX_FRAME_PROCESSING) {
+            if (frame_processed_count >= MAX_FRAME_PROCESSING)
+            {
                 // Too many frames processed, yield to prevent infinite loop
                 fprintf(stderr, "[RECV_LENGTH_PREFIXED] Hit frame processing limit, yielding\n");
                 return -1;
@@ -942,7 +972,7 @@ int recv_length_prefixed_message(libp2p_mplex_ctx_t *mx, uint64_t stream_id, int
     }
     if (msg_len == 0 || msg_len >= max_len)
         return -1;
-    
+
     // Read message data with frame processing limit
     size_t total = 0;
     frame_processed_count = 0; // Reset counter for data reading
@@ -955,8 +985,9 @@ int recv_length_prefixed_message(libp2p_mplex_ctx_t *mx, uint64_t stream_id, int
         if (got == 0)
         {
             // Frame-based processing with limit (like Rust implementation)
-            if (frame_processed_count >= MAX_FRAME_PROCESSING) {
-                // Too many frames processed, yield to prevent infinite loop  
+            if (frame_processed_count >= MAX_FRAME_PROCESSING)
+            {
+                // Too many frames processed, yield to prevent infinite loop
                 fprintf(stderr, "[RECV_LENGTH_PREFIXED] Hit frame processing limit while reading data, yielding\n");
                 return -1;
             }

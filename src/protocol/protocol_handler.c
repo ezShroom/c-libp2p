@@ -913,7 +913,8 @@ libp2p_protocol_handler_ctx_t *libp2p_protocol_handler_ctx_new(libp2p_protocol_h
     switch (muxer_type)
     {
         case MUXER_TYPE_MPLEX:
-            gmx->ctx.mplex = libp2p_mplex_ctx_new(uconn->conn);
+            // Use the mplex context from the muxer (similar to yamux)
+            gmx->ctx.mplex = (libp2p_mplex_ctx_t *)uconn->muxer->ctx;
             if (!gmx->ctx.mplex)
             {
                 free(gmx);
@@ -998,11 +999,7 @@ void libp2p_protocol_handler_ctx_free(libp2p_protocol_handler_ctx_t *ctx)
     generic_muxer_ctx_t *gmx = (generic_muxer_ctx_t *)ctx->muxer_ctx;
     if (gmx)
     {
-        if (gmx->type == MUXER_TYPE_MPLEX && gmx->ctx.mplex)
-        {
-            libp2p_mplex_ctx_free(gmx->ctx.mplex);
-        }
-        // Note: For yamux, we don't free the context as it's owned by the muxer
+        // Note: For both mplex and yamux, we don't free the context as it's owned by the muxer
         free(gmx);
     }
     pthread_mutex_destroy(&ctx->mutex);
@@ -1034,7 +1031,8 @@ int libp2p_protocol_open_stream(libp2p_uconn_t *uconn, const char *protocol_id, 
     switch (muxer_type)
     {
         case MUXER_TYPE_MPLEX:
-            gmx->ctx.mplex = libp2p_mplex_ctx_new(uconn->conn);
+            // Use the mplex context from the muxer (similar to yamux)
+            gmx->ctx.mplex = (libp2p_mplex_ctx_t *)uconn->muxer->ctx;
             if (!gmx->ctx.mplex)
             {
                 free(gmx);
@@ -1044,7 +1042,6 @@ int libp2p_protocol_open_stream(libp2p_uconn_t *uconn, const char *protocol_id, 
             // Open a new mplex stream
             if (libp2p_mplex_stream_open(gmx->ctx.mplex, NULL, 0, &stream_id) != LIBP2P_MPLEX_OK)
             {
-                libp2p_mplex_ctx_free(gmx->ctx.mplex);
                 free(gmx);
                 return LIBP2P_PROTOCOL_HANDLER_ERR_STREAM;
             }
@@ -1077,10 +1074,6 @@ int libp2p_protocol_open_stream(libp2p_uconn_t *uconn, const char *protocol_id, 
     // Perform protocol negotiation
     if (negotiate_protocol(gmx, stream_id, protocol_id, 1) != 0)
     {
-        if (muxer_type == MUXER_TYPE_MPLEX)
-        {
-            libp2p_mplex_ctx_free(gmx->ctx.mplex);
-        }
         free(gmx);
         return LIBP2P_PROTOCOL_HANDLER_ERR_MULTISELECT;
     }
@@ -1089,10 +1082,6 @@ int libp2p_protocol_open_stream(libp2p_uconn_t *uconn, const char *protocol_id, 
     libp2p_stream_t *new_stream = calloc(1, sizeof(libp2p_stream_t));
     if (!new_stream)
     {
-        if (muxer_type == MUXER_TYPE_MPLEX)
-        {
-            libp2p_mplex_ctx_free(gmx->ctx.mplex);
-        }
         free(gmx);
         return LIBP2P_PROTOCOL_HANDLER_ERR_INTERNAL;
     }

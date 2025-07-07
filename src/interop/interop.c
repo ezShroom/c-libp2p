@@ -216,30 +216,39 @@ typedef struct
 static ssize_t stream_read_exact(libp2p_stream_t *stream, uint8_t *buf, size_t len)
 {
     size_t total_read = 0;
-    while (total_read < len)
+    int retry_count = 0;
+    const int MAX_RETRIES = 200; // Allow more retries for mplex frame processing
+
+    while (total_read < len && retry_count < MAX_RETRIES)
     {
         ssize_t n = libp2p_stream_read(stream, buf + total_read, len - total_read);
         if (n > 0)
         {
             total_read += n;
+            retry_count = 0; // Reset retry count on successful read
         }
-        else if (n == -5) // EAGAIN
+        else if (n == -5) // EAGAIN - no data available yet
         {
-            // Data not available yet, wait a bit and try again
-            usleep(1000); // 1ms
+            retry_count++;
+            usleep(5000); // 5ms delay for frame processing
             continue;
         }
         else if (n == 0)
         {
-            // EOF before reading all data
-            return total_read;
+            // EOF - but for mplex, frames might still be processing
+            retry_count++;
+            usleep(5000); // 5ms delay to allow frame processing
+            continue;
         }
         else
         {
-            // Other error
-            return n;
+            // Other error - but might be temporary in mplex
+            retry_count++;
+            usleep(5000); // 5ms delay
+            continue;
         }
     }
+
     return total_read;
 }
 
@@ -280,14 +289,18 @@ static int ping_stream_handler(libp2p_stream_t *stream, void *user_data)
     fprintf(stderr, "ping_stream_handler: received complete 32-byte ping payload\n");
 
     // Echo the payload back
+    fprintf(stderr, "ping_stream_handler: attempting to write 32 bytes back\n");
     ssize_t bytes_written = libp2p_stream_write(stream, payload, 32);
     if (bytes_written != 32)
     {
-        fprintf(stderr, "ping_stream_handler: failed to write ping response\n");
+        fprintf(stderr, "ping_stream_handler: failed to write ping response (wrote %zd bytes)\n", bytes_written);
         return -1;
     }
 
     fprintf(stderr, "ping_stream_handler: successfully echoed ping payload\n");
+
+    // Add a small delay to ensure the response is sent before stream might be closed
+    usleep(100000); // 100ms delay
 
     // Keep the stream open for potential additional pings
     return 0;
@@ -650,10 +663,19 @@ static int run_dialer(const char *redis_host, const char *redis_port, int timeou
         }
 
         uint8_t echo[32];
+        fprintf(stderr, "DEBUG: dialer attempting to read ping response\n");
         ssize_t rcvd = stream_read_exact(ping_stream, echo, sizeof(echo));
+        fprintf(stderr, "DEBUG: dialer read %zd bytes (expected %zu)\n", rcvd, sizeof(echo));
         if (rcvd != (ssize_t)sizeof(echo) || memcmp(payload, echo, sizeof(echo)) != 0)
         {
-            fprintf(stderr, "ping failed\n");
+            if (rcvd != (ssize_t)sizeof(echo))
+            {
+                fprintf(stderr, "ping failed: incorrect byte count (got %zd, expected %zu)\n", rcvd, sizeof(echo));
+            }
+            else
+            {
+                fprintf(stderr, "ping failed: payload mismatch\n");
+            }
             libp2p_stream_close(ping_stream);
             libp2p_stream_free(ping_stream);
             // cleanup
@@ -712,10 +734,19 @@ static int run_dialer(const char *redis_host, const char *redis_port, int timeou
         }
 
         uint8_t echo[32];
+        fprintf(stderr, "DEBUG: dialer attempting to read ping response\n");
         ssize_t rcvd = stream_read_exact(ping_stream, echo, sizeof(echo));
+        fprintf(stderr, "DEBUG: dialer read %zd bytes (expected %zu)\n", rcvd, sizeof(echo));
         if (rcvd != (ssize_t)sizeof(echo) || memcmp(payload, echo, sizeof(echo)) != 0)
         {
-            fprintf(stderr, "ping failed\n");
+            if (rcvd != (ssize_t)sizeof(echo))
+            {
+                fprintf(stderr, "ping failed: incorrect byte count (got %zd, expected %zu)\n", rcvd, sizeof(echo));
+            }
+            else
+            {
+                fprintf(stderr, "ping failed: payload mismatch\n");
+            }
             libp2p_stream_close(ping_stream);
             libp2p_stream_free(ping_stream);
             // cleanup
