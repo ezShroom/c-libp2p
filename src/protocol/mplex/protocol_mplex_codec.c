@@ -70,7 +70,7 @@ static libp2p_mplex_err_t conn_write_all(libp2p_conn_t *c, const uint8_t *buf, s
  * @brief Read exactly @p len bytes from a connection.
  *
  * Repeatedly reads from the connection until the requested number of bytes has
- * been obtained or an error occurs.
+ * been obtained or an error occurs. Includes timeout protection like conn_write_all.
  *
  * @param c   Connection to read from.
  * @param buf Destination buffer.
@@ -79,6 +79,9 @@ static libp2p_mplex_err_t conn_write_all(libp2p_conn_t *c, const uint8_t *buf, s
  */
 static libp2p_mplex_err_t conn_read_exact(libp2p_conn_t *c, uint8_t *buf, size_t len)
 {
+    const uint64_t SLOW_MS = 100; // Same timeout as conn_write_all
+    uint64_t start = now_mono_ms();
+
     while (len)
     {
         ssize_t n = libp2p_conn_read(c, buf, len);
@@ -86,10 +89,18 @@ static libp2p_mplex_err_t conn_read_exact(libp2p_conn_t *c, uint8_t *buf, size_t
         {
             buf += (size_t)n;
             len -= (size_t)n;
+            start = now_mono_ms(); // Reset timeout on progress
             continue;
         }
         if (n == LIBP2P_CONN_ERR_AGAIN)
+        {
+            // Add timeout protection like Rust implementation
+            if (now_mono_ms() - start > SLOW_MS)
+                return LIBP2P_MPLEX_ERR_TIMEOUT;
+            struct timespec ts = {.tv_sec = 0, .tv_nsec = 1000000L};
+            nanosleep(&ts, NULL);
             continue;
+        }
         return map_conn_err(n);
     }
     return LIBP2P_MPLEX_OK;
