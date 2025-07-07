@@ -1012,6 +1012,372 @@ static void test_duplicate_stream_id_io(void)
     libp2p_mplex_ctx_free(ctx);
 }
 
+/**
+ * Test that verifies the muxer properly stores the mplex context after negotiation
+ * This test prevents the regression where context wasn't stored in muxer->ctx
+ */
+static void test_muxer_context_storage(void)
+{
+    libp2p_transport_t *tcp = libp2p_tcp_transport_new(NULL);
+    assert(tcp);
+
+    int ma_err;
+    multiaddr_t *addr = multiaddr_new_from_str("/ip4/127.0.0.1/tcp/4030", &ma_err);
+    assert(addr && ma_err == 0);
+
+    libp2p_listener_t *lst = NULL;
+    assert(libp2p_transport_listen(tcp, addr, &lst) == LIBP2P_TRANSPORT_OK);
+
+    libp2p_conn_t *c = NULL;
+    assert(libp2p_transport_dial(tcp, addr, &c) == LIBP2P_TRANSPORT_OK);
+
+    libp2p_conn_t *s = NULL;
+    while (libp2p_listener_accept(lst, &s) == LIBP2P_LISTENER_ERR_AGAIN)
+        ;
+    assert(s);
+
+    libp2p_muxer_t *m_dial = libp2p_mplex_new();
+    libp2p_muxer_t *m_listen = libp2p_mplex_new();
+    assert(m_dial && m_listen);
+
+    // Initially, context should be NULL
+    assert(m_dial->ctx == NULL);
+    assert(m_listen->ctx == NULL);
+
+    struct mux_args dargs = {m_dial, c};
+    struct mux_args sargs = {m_listen, s};
+    pthread_t td, ts;
+    pthread_create(&td, NULL, dial_mux_thread, &dargs);
+    pthread_create(&ts, NULL, listen_mux_thread, &sargs);
+    pthread_join(td, NULL);
+    pthread_join(ts, NULL);
+
+    // After successful negotiation, context should be stored in muxer->ctx
+    int ok = (g_mux_dial_rc == LIBP2P_MUXER_OK && g_mux_listen_rc == LIBP2P_MUXER_OK && m_dial->ctx != NULL && m_listen->ctx != NULL);
+    print_standard("muxer context storage after negotiation", ok ? "" : "", ok);
+
+    libp2p_muxer_free(m_dial);
+    libp2p_muxer_free(m_listen);
+    libp2p_conn_close(c);
+    libp2p_conn_close(s);
+    libp2p_conn_free(c);
+    libp2p_conn_free(s);
+    libp2p_listener_close(lst);
+    libp2p_transport_close(tcp);
+    multiaddr_free(addr);
+    libp2p_transport_free(tcp);
+}
+
+/**
+ * Test that verifies context sharing between protocol handler and stream operations
+ * This test prevents the regression where protocol handler used different context
+ */
+static void test_protocol_handler_context_sharing(void)
+{
+    libp2p_transport_t *tcp = libp2p_tcp_transport_new(NULL);
+    assert(tcp);
+
+    int ma_err;
+    multiaddr_t *addr = multiaddr_new_from_str("/ip4/127.0.0.1/tcp/4031", &ma_err);
+    assert(addr && ma_err == 0);
+
+    libp2p_listener_t *lst = NULL;
+    assert(libp2p_transport_listen(tcp, addr, &lst) == LIBP2P_TRANSPORT_OK);
+
+    libp2p_conn_t *c = NULL;
+    assert(libp2p_transport_dial(tcp, addr, &c) == LIBP2P_TRANSPORT_OK);
+
+    libp2p_conn_t *s = NULL;
+    while (libp2p_listener_accept(lst, &s) == LIBP2P_LISTENER_ERR_AGAIN)
+        ;
+    assert(s);
+
+    libp2p_muxer_t *m_dial = libp2p_mplex_new();
+    libp2p_muxer_t *m_listen = libp2p_mplex_new();
+    assert(m_dial && m_listen);
+
+    struct mux_args dargs = {m_dial, c};
+    struct mux_args sargs = {m_listen, s};
+    pthread_t td, ts;
+    pthread_create(&td, NULL, dial_mux_thread, &dargs);
+    pthread_create(&ts, NULL, listen_mux_thread, &sargs);
+    pthread_join(td, NULL);
+    pthread_join(ts, NULL);
+
+    assert(g_mux_dial_rc == LIBP2P_MUXER_OK && g_mux_listen_rc == LIBP2P_MUXER_OK);
+
+    // Get the mplex context from the muxer
+    libp2p_mplex_ctx_t *dial_ctx = (libp2p_mplex_ctx_t *)m_dial->ctx;
+    libp2p_mplex_ctx_t *listen_ctx = (libp2p_mplex_ctx_t *)m_listen->ctx;
+    assert(dial_ctx && listen_ctx);
+
+    // Start protocol handler processing for listener
+    pthread_t processor_thread;
+    pthread_create(&processor_thread, NULL, loop_thread, listen_ctx);
+
+    // Open a stream using the same context
+    uint64_t stream_id = 0;
+    assert(libp2p_mplex_stream_open(dial_ctx, (const uint8_t *)"test", 4, &stream_id) == LIBP2P_MPLEX_OK);
+
+    // Send data through the stream
+    const char *test_data = "Hello, context sharing!";
+    size_t test_len = strlen(test_data);
+    assert(libp2p_mplex_stream_send(dial_ctx, stream_id, 1, (const uint8_t *)test_data, test_len) == LIBP2P_MPLEX_OK);
+
+    // Allow time for processing
+    usleep(50000); // 50ms
+
+    // Try to receive data on the listener side using the same context
+    uint8_t recv_buf[64];
+    size_t recv_len = 0;
+    libp2p_mplex_err_t rc = libp2p_mplex_stream_recv(listen_ctx, stream_id, 0, recv_buf, sizeof(recv_buf), &recv_len);
+
+    int ok = (rc == LIBP2P_MPLEX_OK && recv_len == test_len && memcmp(recv_buf, test_data, test_len) == 0);
+    print_standard("protocol handler context sharing", ok ? "" : "", ok);
+
+    // Stop the processor and cleanup
+    libp2p_mplex_stop(listen_ctx);
+    libp2p_conn_close(c);
+    pthread_join(processor_thread, NULL);
+    libp2p_conn_close(s);
+
+    libp2p_muxer_free(m_dial);
+    libp2p_muxer_free(m_listen);
+    libp2p_conn_free(c);
+    libp2p_conn_free(s);
+    libp2p_listener_close(lst);
+    libp2p_transport_close(tcp);
+    multiaddr_free(addr);
+    libp2p_transport_free(tcp);
+}
+
+/**
+ * Test that reproduces the ping scenario that was failing in interop tests
+ * This test verifies that ping/pong works correctly over mplex with proper context sharing
+ */
+static void test_mplex_ping_integration(void)
+{
+    libp2p_transport_t *tcp = libp2p_tcp_transport_new(NULL);
+    assert(tcp);
+
+    int ma_err;
+    multiaddr_t *addr = multiaddr_new_from_str("/ip4/127.0.0.1/tcp/4032", &ma_err);
+    assert(addr && ma_err == 0);
+
+    libp2p_listener_t *lst = NULL;
+    assert(libp2p_transport_listen(tcp, addr, &lst) == LIBP2P_TRANSPORT_OK);
+
+    libp2p_conn_t *c = NULL;
+    assert(libp2p_transport_dial(tcp, addr, &c) == LIBP2P_TRANSPORT_OK);
+
+    libp2p_conn_t *s = NULL;
+    while (libp2p_listener_accept(lst, &s) == LIBP2P_LISTENER_ERR_AGAIN)
+        ;
+    assert(s);
+
+    libp2p_muxer_t *m_dial = libp2p_mplex_new();
+    libp2p_muxer_t *m_listen = libp2p_mplex_new();
+    assert(m_dial && m_listen);
+
+    struct mux_args dargs = {m_dial, c};
+    struct mux_args sargs = {m_listen, s};
+    pthread_t td, ts;
+    pthread_create(&td, NULL, dial_mux_thread, &dargs);
+    pthread_create(&ts, NULL, listen_mux_thread, &sargs);
+    pthread_join(td, NULL);
+    pthread_join(ts, NULL);
+
+    assert(g_mux_dial_rc == LIBP2P_MUXER_OK && g_mux_listen_rc == LIBP2P_MUXER_OK);
+
+    // Get the mplex contexts
+    libp2p_mplex_ctx_t *dial_ctx = (libp2p_mplex_ctx_t *)m_dial->ctx;
+    libp2p_mplex_ctx_t *listen_ctx = (libp2p_mplex_ctx_t *)m_listen->ctx;
+    assert(dial_ctx && listen_ctx);
+
+    // The core regression test: verify that both contexts are properly stored and different
+    // This catches the bug where contexts weren't stored in muxer->ctx
+    int contexts_valid = (dial_ctx != NULL && listen_ctx != NULL && dial_ctx != listen_ctx);
+
+    // Test basic stream communication (the core of what ping does)
+    // Start background processing for listener
+    pthread_t processor_thread;
+    pthread_create(&processor_thread, NULL, loop_thread, listen_ctx);
+
+    // Open a stream for ping protocol
+    uint64_t ping_stream_id = 0;
+    libp2p_mplex_err_t open_rc = libp2p_mplex_stream_open(dial_ctx, (const uint8_t *)"/libp2p/ping/1.0.0", 18, &ping_stream_id);
+    int stream_opened = (open_rc == LIBP2P_MPLEX_OK);
+
+    if (stream_opened)
+    {
+        // Allow time for stream to be established
+        usleep(50000); // 50ms
+
+        // Send ping payload (32 bytes)
+        uint8_t ping_payload[32];
+        for (int i = 0; i < 32; i++)
+        {
+            ping_payload[i] = (uint8_t)(i % 256); // Deterministic pattern for testing
+        }
+
+        libp2p_mplex_err_t send_rc = libp2p_mplex_stream_send(dial_ctx, ping_stream_id, 1, ping_payload, sizeof(ping_payload));
+        int data_sent = (send_rc == LIBP2P_MPLEX_OK);
+
+        if (data_sent)
+        {
+            // Allow time for processing
+            usleep(50000); // 50ms
+
+            // Verify listener can receive the data (core context sharing test)
+            uint8_t recv_buf[64];
+            size_t recv_len = 0;
+            libp2p_mplex_err_t recv_rc = libp2p_mplex_stream_recv(listen_ctx, ping_stream_id, 0, recv_buf, sizeof(recv_buf), &recv_len);
+
+            int data_received = (recv_rc == LIBP2P_MPLEX_OK && recv_len == 32 && memcmp(recv_buf, ping_payload, 32) == 0);
+
+            // The test passes if we can successfully send from dialer context and receive in listener context
+            // This proves that both contexts are sharing the same underlying connection/stream state
+            int ok = contexts_valid && stream_opened && data_sent && data_received;
+            print_standard("mplex ping integration", ok ? "" : "", ok);
+        }
+        else
+        {
+            print_standard("mplex ping integration", "send failed", 0);
+        }
+    }
+    else
+    {
+        print_standard("mplex ping integration", "stream open failed", 0);
+    }
+
+    // Stop the processor and cleanup
+    libp2p_mplex_stop(listen_ctx);
+    libp2p_conn_close(c);
+    pthread_join(processor_thread, NULL);
+    libp2p_conn_close(s);
+
+    libp2p_muxer_free(m_dial);
+    libp2p_muxer_free(m_listen);
+    libp2p_conn_free(c);
+    libp2p_conn_free(s);
+    libp2p_listener_close(lst);
+    libp2p_transport_close(tcp);
+    multiaddr_free(addr);
+    libp2p_transport_free(tcp);
+}
+
+/**
+ * Test that verifies multiple concurrent streams work correctly with shared context
+ * This test ensures the context sharing fix doesn't break concurrent stream operations
+ */
+static void test_concurrent_streams_context_sharing(void)
+{
+    libp2p_transport_t *tcp = libp2p_tcp_transport_new(NULL);
+    assert(tcp);
+
+    int ma_err;
+    multiaddr_t *addr = multiaddr_new_from_str("/ip4/127.0.0.1/tcp/4033", &ma_err);
+    assert(addr && ma_err == 0);
+
+    libp2p_listener_t *lst = NULL;
+    assert(libp2p_transport_listen(tcp, addr, &lst) == LIBP2P_TRANSPORT_OK);
+
+    libp2p_conn_t *c = NULL;
+    assert(libp2p_transport_dial(tcp, addr, &c) == LIBP2P_TRANSPORT_OK);
+
+    libp2p_conn_t *s = NULL;
+    while (libp2p_listener_accept(lst, &s) == LIBP2P_LISTENER_ERR_AGAIN)
+        ;
+    assert(s);
+
+    libp2p_muxer_t *m_dial = libp2p_mplex_new();
+    libp2p_muxer_t *m_listen = libp2p_mplex_new();
+    assert(m_dial && m_listen);
+
+    struct mux_args dargs = {m_dial, c};
+    struct mux_args sargs = {m_listen, s};
+    pthread_t td, ts;
+    pthread_create(&td, NULL, dial_mux_thread, &dargs);
+    pthread_create(&ts, NULL, listen_mux_thread, &sargs);
+    pthread_join(td, NULL);
+    pthread_join(ts, NULL);
+
+    assert(g_mux_dial_rc == LIBP2P_MUXER_OK && g_mux_listen_rc == LIBP2P_MUXER_OK);
+
+    libp2p_mplex_ctx_t *dial_ctx = (libp2p_mplex_ctx_t *)m_dial->ctx;
+    libp2p_mplex_ctx_t *listen_ctx = (libp2p_mplex_ctx_t *)m_listen->ctx;
+    assert(dial_ctx && listen_ctx);
+
+    // Start background processing
+    pthread_t processor_thread;
+    pthread_create(&processor_thread, NULL, loop_thread, listen_ctx);
+
+    // Open multiple streams concurrently
+    const int num_streams = 5;
+    uint64_t stream_ids[num_streams];
+
+    for (int i = 0; i < num_streams; i++)
+    {
+        char stream_name[32];
+        snprintf(stream_name, sizeof(stream_name), "/test/stream/%d", i);
+        assert(libp2p_mplex_stream_open(dial_ctx, (const uint8_t *)stream_name, strlen(stream_name), &stream_ids[i]) == LIBP2P_MPLEX_OK);
+    }
+
+    // Allow time for streams to be established
+    usleep(50000); // 50ms
+
+    // Send data on all streams
+    int all_sent = 1;
+    for (int i = 0; i < num_streams; i++)
+    {
+        char data[32];
+        snprintf(data, sizeof(data), "Stream %d data", i);
+        if (libp2p_mplex_stream_send(dial_ctx, stream_ids[i], 1, (const uint8_t *)data, strlen(data)) != LIBP2P_MPLEX_OK)
+        {
+            all_sent = 0;
+            break;
+        }
+    }
+
+    // Allow time for processing
+    usleep(100000); // 100ms
+
+    // Receive data on all streams
+    int all_received = 1;
+    for (int i = 0; i < num_streams && all_received; i++)
+    {
+        uint8_t recv_buf[64];
+        size_t recv_len = 0;
+        libp2p_mplex_err_t rc = libp2p_mplex_stream_recv(listen_ctx, stream_ids[i], 0, recv_buf, sizeof(recv_buf), &recv_len);
+
+        char expected[32];
+        snprintf(expected, sizeof(expected), "Stream %d data", i);
+
+        if (rc != LIBP2P_MPLEX_OK || recv_len != strlen(expected) || memcmp(recv_buf, expected, strlen(expected)) != 0)
+        {
+            all_received = 0;
+        }
+    }
+
+    int ok = all_sent && all_received;
+    print_standard("concurrent streams context sharing", ok ? "" : "", ok);
+
+    // Stop the processor and cleanup
+    libp2p_mplex_stop(listen_ctx);
+    libp2p_conn_close(c);
+    pthread_join(processor_thread, NULL);
+    libp2p_conn_close(s);
+
+    libp2p_muxer_free(m_dial);
+    libp2p_muxer_free(m_listen);
+    libp2p_conn_free(c);
+    libp2p_conn_free(s);
+    libp2p_listener_close(lst);
+    libp2p_transport_close(tcp);
+    multiaddr_free(addr);
+    libp2p_transport_free(tcp);
+}
+
 int main(void)
 {
     test_negotiate_success();
@@ -1035,5 +1401,12 @@ int main(void)
     test_stream_id_limit();
     test_duplicate_stream_id();
     test_duplicate_stream_id_io();
+
+    // New regression tests for context sharing fix
+    test_muxer_context_storage();
+    test_protocol_handler_context_sharing();
+    test_mplex_ping_integration();
+    test_concurrent_streams_context_sharing();
+
     return 0;
 }
