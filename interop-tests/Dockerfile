@@ -19,9 +19,6 @@ WORKDIR /src
 # Copy the local source into the image instead of cloning upstream
 COPY . /src/c-libp2p
 
-# Ensure vendored submodules are initialised (ignore if already done)
-RUN cd c-libp2p && git submodule update --init --recursive || true
-
 # Build step (parallel & strip binary)
 RUN cd c-libp2p && \
     rm -rf build && mkdir build && cd build && \
