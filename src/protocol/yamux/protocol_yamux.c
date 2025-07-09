@@ -1,8 +1,9 @@
 #include "protocol/yamux/protocol_yamux.h"
 #include "protocol/multiselect/protocol_multiselect.h"
+#include "protocol/protocol_handler.h"
 #include "protocol/tcp/protocol_tcp_util.h"
-#include <stdio.h>
 #include "transport/conn_util.h"
+#include <stdio.h>
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -77,7 +78,18 @@ static libp2p_muxer_err_t yamux_negotiate_out(libp2p_muxer_t *self, libp2p_conn_
     (void)self;
     libp2p_yamux_err_t yamux_err = libp2p_yamux_negotiate_outbound(c, t);
 
-    switch (yamux_err) {
+    // Create yamux context after successful negotiation
+    if (yamux_err == LIBP2P_YAMUX_OK)
+    {
+        self->ctx = libp2p_yamux_ctx_new(c, 1, 256 * 1024); // 256KB default window
+        if (!self->ctx)
+        {
+            return LIBP2P_MUXER_ERR_INTERNAL;
+        }
+    }
+
+    switch (yamux_err)
+    {
         case LIBP2P_YAMUX_OK:
             return LIBP2P_MUXER_OK;
         case LIBP2P_YAMUX_ERR_NULL_PTR:
@@ -94,7 +106,18 @@ static libp2p_muxer_err_t yamux_negotiate_in(libp2p_muxer_t *self, libp2p_conn_t
     (void)self;
     libp2p_yamux_err_t yamux_err = libp2p_yamux_negotiate_inbound(c, t);
 
-    switch (yamux_err) {
+    // Create yamux context after successful negotiation
+    if (yamux_err == LIBP2P_YAMUX_OK)
+    {
+        self->ctx = libp2p_yamux_ctx_new(c, 0, 256 * 1024); // 256KB default window
+        if (!self->ctx)
+        {
+            return LIBP2P_MUXER_ERR_INTERNAL;
+        }
+    }
+
+    switch (yamux_err)
+    {
         case LIBP2P_YAMUX_OK:
             return LIBP2P_MUXER_OK;
         case LIBP2P_YAMUX_ERR_NULL_PTR:
@@ -106,46 +129,74 @@ static libp2p_muxer_err_t yamux_negotiate_in(libp2p_muxer_t *self, libp2p_conn_t
     }
 }
 
-static libp2p_muxer_err_t yamux_negotiate(libp2p_muxer_t *mx, libp2p_conn_t *c,
-                                          uint64_t t, bool inbound)
+static libp2p_muxer_err_t yamux_negotiate(libp2p_muxer_t *mx, libp2p_conn_t *c, uint64_t t, bool inbound)
 {
     return inbound ? yamux_negotiate_in(mx, c, t) : yamux_negotiate_out(mx, c, t);
 }
 
-static int yamux_open_stream(libp2p_muxer_t *mx, const uint8_t *name,
-                             size_t name_len, libp2p_stream_t **out)
+static int yamux_open_stream(libp2p_muxer_t *mx, const uint8_t *name, size_t name_len, libp2p_stream_t **out)
 {
-    (void)mx;
+    if (!mx || !mx->ctx || !out)
+        return LIBP2P_MUXER_ERR_NULL_PTR;
+
+    // Suppress unused parameter warnings for name/name_len since yamux doesn't use stream names
     (void)name;
     (void)name_len;
-    (void)out;
-    return LIBP2P_MUXER_ERR_INTERNAL;
+
+    uint32_t id;
+    if (libp2p_yamux_stream_open(mx->ctx, &id) != LIBP2P_YAMUX_OK)
+        return LIBP2P_MUXER_ERR_INTERNAL;
+
+    libp2p_stream_t *s = calloc(1, sizeof(*s));
+    if (!s)
+        return LIBP2P_MUXER_ERR_INTERNAL;
+
+    s->uconn = NULL;
+    s->stream_id = id;
+    s->initiator = 1;
+    s->protocol_id = NULL;
+    s->ctx = mx->ctx;
+    *out = s;
+    return LIBP2P_MUXER_OK;
 }
 
 static ssize_t yamux_stream_read(libp2p_stream_t *s, void *buf, size_t len)
 {
-    (void)s;
-    (void)buf;
-    (void)len;
+    if (!s || !buf)
+        return -1;
+
+    size_t out_len = 0;
+    libp2p_yamux_err_t rc = libp2p_yamux_stream_recv(s->ctx, s->stream_id, buf, len, &out_len);
+    if (rc == LIBP2P_YAMUX_OK)
+        return (ssize_t)out_len;
+    if (rc == LIBP2P_YAMUX_ERR_EOF)
+        return 0;
     return -1;
 }
 
 static ssize_t yamux_stream_write(libp2p_stream_t *s, const void *buf, size_t len)
 {
-    (void)s;
-    (void)buf;
-    (void)len;
-    return -1;
+    if (!s || !buf)
+        return -1;
+
+    libp2p_yamux_err_t rc = libp2p_yamux_stream_send(s->ctx, s->stream_id, buf, len, 0);
+    return rc == LIBP2P_YAMUX_OK ? (ssize_t)len : -1;
 }
 
 static void yamux_stream_close(libp2p_stream_t *s)
 {
-    (void)s;
+    if (!s)
+        return;
+    libp2p_yamux_stream_close(s->ctx, s->stream_id);
 }
 
 static libp2p_muxer_err_t yamux_close(libp2p_muxer_t *self)
 {
-    (void)self;
+    if (self && self->ctx)
+    {
+        libp2p_yamux_ctx_free(self->ctx);
+        self->ctx = NULL;
+    }
     return LIBP2P_MUXER_OK;
 }
 
@@ -233,6 +284,10 @@ libp2p_yamux_err_t libp2p_yamux_read_frame(libp2p_conn_t *conn, libp2p_yamux_fra
             return rc;
         }
     }
+
+    /* Trace: log every decoded frame header for debugging inbound stream issues */
+    fprintf(stderr, "[YAMUX] read frame type=%u id=%u flags=0x%X len=%u\n", (unsigned)out->type, out->stream_id, out->flags, out->length);
+
     return LIBP2P_YAMUX_OK;
 }
 
@@ -247,18 +302,21 @@ void libp2p_yamux_frame_free(libp2p_yamux_frame_t *fr)
 
 libp2p_yamux_err_t libp2p_yamux_open_stream(libp2p_conn_t *conn, uint32_t id, uint32_t max_window)
 {
+    /*
+     * The original Yamux draft (and older libp2p implementations such as
+     * rust-libp2p ≤0.53) expect a WINDOW_UPDATE frame with the SYN flag set
+     * when opening a stream, whereas more recent implementations allow a
+     * zero-length DATA|SYN frame.  To maximise interoperability we always
+     * send WINDOW_UPDATE|SYN.  If the desired receive window equals the
+     * default (256 KiB) the delta is zero which is accepted by both the old
+     * and the new spec variants.
+     */
+
+    uint32_t delta = 0;
     if (max_window > YAMUX_INITIAL_WINDOW)
-        return libp2p_yamux_window_update(conn, id, max_window - YAMUX_INITIAL_WINDOW, LIBP2P_YAMUX_SYN);
-    libp2p_yamux_frame_t fr = {
-        .version = 0,
-        .type = LIBP2P_YAMUX_DATA,
-        .flags = LIBP2P_YAMUX_SYN,
-        .stream_id = id,
-        .length = 0,
-        .data = NULL,
-        .data_len = 0,
-    };
-    return libp2p_yamux_send_frame(conn, &fr);
+        delta = max_window - YAMUX_INITIAL_WINDOW;
+
+    return libp2p_yamux_window_update(conn, id, delta, LIBP2P_YAMUX_SYN);
 }
 
 libp2p_yamux_err_t libp2p_yamux_send_msg(libp2p_conn_t *conn, uint32_t id, const uint8_t *data, size_t data_len, uint16_t flags)
@@ -539,41 +597,55 @@ libp2p_yamux_err_t libp2p_yamux_stream_open(libp2p_yamux_ctx_t *ctx, uint32_t *o
 
 libp2p_yamux_err_t libp2p_yamux_stream_send(libp2p_yamux_ctx_t *ctx, uint32_t id, const uint8_t *data, size_t data_len, uint16_t flags)
 {
+    fprintf(stderr, "[YAMUX_STREAM_SEND] Attempting to send %zu bytes to stream %u\n", data_len, id);
+
     pthread_mutex_lock(&ctx->mtx);
     size_t idx = 0;
     libp2p_yamux_stream_t *st = find_stream(ctx, id, &idx);
     if (!st)
     {
+        fprintf(stderr, "[YAMUX_STREAM_SEND] Stream %u not found\n", id);
         pthread_mutex_unlock(&ctx->mtx);
         return LIBP2P_YAMUX_ERR_PROTO_MAL;
     }
     if (st->reset)
     {
+        fprintf(stderr, "[YAMUX_STREAM_SEND] Stream %u is reset\n", id);
         maybe_cleanup_stream(ctx, idx);
         pthread_mutex_unlock(&ctx->mtx);
         return LIBP2P_YAMUX_ERR_RESET;
     }
     if (st->local_closed)
     {
+        fprintf(stderr, "[YAMUX_STREAM_SEND] Stream %u is locally closed\n", id);
         pthread_mutex_unlock(&ctx->mtx);
         return LIBP2P_YAMUX_ERR_PROTO_MAL;
     }
 
+    fprintf(stderr, "[YAMUX_STREAM_SEND] Stream %u: send_window=%u, data_len=%zu, initiator=%d, acked=%d\n", id, st->send_window, data_len,
+            st->initiator, st->acked);
+
     if (!st->initiator && !st->acked)
     {
+        fprintf(stderr, "[YAMUX_STREAM_SEND] Stream %u: Adding ACK flag\n", id);
         flags |= LIBP2P_YAMUX_ACK;
         st->acked = 1;
     }
 
     if (data_len > st->send_window)
     {
+        fprintf(stderr, "[YAMUX_STREAM_SEND] Stream %u: Insufficient send window (need %zu, have %u)\n", id, data_len, st->send_window);
         pthread_mutex_unlock(&ctx->mtx);
         return LIBP2P_YAMUX_ERR_AGAIN;
     }
 
     st->send_window -= (uint32_t)data_len;
+    fprintf(stderr, "[YAMUX_STREAM_SEND] Stream %u: Send window reduced to %u\n", id, st->send_window);
     pthread_mutex_unlock(&ctx->mtx);
-    return libp2p_yamux_send_msg(ctx->conn, id, data, data_len, flags);
+
+    libp2p_yamux_err_t result = libp2p_yamux_send_msg(ctx->conn, id, data, data_len, flags);
+    fprintf(stderr, "[YAMUX_STREAM_SEND] Stream %u: Send result = %d\n", id, result);
+    return result;
 }
 
 libp2p_yamux_err_t libp2p_yamux_stream_close(libp2p_yamux_ctx_t *ctx, uint32_t id)
@@ -652,17 +724,21 @@ libp2p_yamux_err_t libp2p_yamux_dispatch_frame(libp2p_yamux_ctx_t *ctx, const li
             }
             if (fr->flags & LIBP2P_YAMUX_SYN)
             {
+                fprintf(stderr, "[YAMUX_DISPATCH] DATA frame with SYN flag, stream_id=%u\n", fr->stream_id);
                 uint32_t parity = ctx->dialer ? 0 : 1;
                 if ((fr->stream_id & 1) != parity)
                 {
+                    fprintf(stderr, "[YAMUX_DISPATCH] Parity violation: stream_id=%u, expected_parity=%u\n", fr->stream_id, parity);
                     rc = proto_violation(ctx);
                     break;
                 }
                 st = find_stream(ctx, fr->stream_id, &idx);
                 if (!st)
                 {
+                    fprintf(stderr, "[YAMUX_DISPATCH] Creating new stream id=%u\n", fr->stream_id);
                     if (yq_length(&ctx->incoming) >= YAMUX_MAX_BACKLOG)
                     {
+                        fprintf(stderr, "[YAMUX_DISPATCH] Backlog full, resetting stream id=%u\n", fr->stream_id);
                         pthread_mutex_unlock(&ctx->mtx);
                         libp2p_yamux_reset_stream(ctx->conn, fr->stream_id);
                         pthread_mutex_lock(&ctx->mtx);
@@ -671,6 +747,7 @@ libp2p_yamux_err_t libp2p_yamux_dispatch_frame(libp2p_yamux_ctx_t *ctx, const li
                     st = calloc(1, sizeof(*st));
                     if (!st)
                     {
+                        fprintf(stderr, "[YAMUX_DISPATCH] Failed to allocate stream\n");
                         pthread_mutex_unlock(&ctx->mtx);
                         libp2p_yamux_reset_stream(ctx->conn, fr->stream_id);
                         pthread_mutex_lock(&ctx->mtx);
@@ -685,6 +762,7 @@ libp2p_yamux_err_t libp2p_yamux_dispatch_frame(libp2p_yamux_ctx_t *ctx, const li
                     libp2p_yamux_stream_t **tmp = realloc(ctx->streams, (ctx->num_streams + 1) * sizeof(*tmp));
                     if (!tmp)
                     {
+                        fprintf(stderr, "[YAMUX_DISPATCH] Failed to reallocate streams array\n");
                         free(st);
                         pthread_mutex_unlock(&ctx->mtx);
                         libp2p_yamux_reset_stream(ctx->conn, fr->stream_id);
@@ -694,7 +772,10 @@ libp2p_yamux_err_t libp2p_yamux_dispatch_frame(libp2p_yamux_ctx_t *ctx, const li
                     }
                     ctx->streams = tmp;
                     ctx->streams[ctx->num_streams++] = st;
+                    fprintf(stderr, "[YAMUX_DISPATCH] Queuing stream id=%u for acceptance (queue length before: %zu)\n", fr->stream_id,
+                            yq_length(&ctx->incoming));
                     yq_push(&ctx->incoming, st);
+                    fprintf(stderr, "[YAMUX_DISPATCH] Stream queued, queue length now: %zu\n", yq_length(&ctx->incoming));
                     if (ctx->max_window > YAMUX_INITIAL_WINDOW)
                     {
                         st->acked = 1;
@@ -702,6 +783,10 @@ libp2p_yamux_err_t libp2p_yamux_dispatch_frame(libp2p_yamux_ctx_t *ctx, const li
                         libp2p_yamux_window_update(ctx->conn, fr->stream_id, ctx->max_window - YAMUX_INITIAL_WINDOW, LIBP2P_YAMUX_ACK);
                         pthread_mutex_lock(&ctx->mtx);
                     }
+                }
+                else
+                {
+                    fprintf(stderr, "[YAMUX_DISPATCH] Stream id=%u already exists\n", fr->stream_id);
                 }
             }
 
@@ -983,9 +1068,15 @@ libp2p_yamux_err_t libp2p_yamux_accept_stream(libp2p_yamux_ctx_t *ctx, libp2p_ya
 {
     if (!ctx || !out)
         return LIBP2P_YAMUX_ERR_NULL_PTR;
+
+    fprintf(stderr, "[YAMUX_ACCEPT] Attempting to accept stream, queue length: %zu\n", yq_length(&ctx->incoming));
     libp2p_yamux_stream_t *st = yq_pop(&ctx->incoming);
     if (!st)
+    {
+        fprintf(stderr, "[YAMUX_ACCEPT] No streams in queue, returning AGAIN\n");
         return LIBP2P_YAMUX_ERR_AGAIN;
+    }
+    fprintf(stderr, "[YAMUX_ACCEPT] Successfully accepted stream id=%u\n", st->id);
     *out = st;
     return LIBP2P_YAMUX_OK;
 }

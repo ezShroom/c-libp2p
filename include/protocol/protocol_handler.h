@@ -80,7 +80,8 @@ typedef struct
 {
     libp2p_protocol_handler_registry_t *registry;
     libp2p_uconn_t *uconn;
-    void *muxer_ctx; /**< Muxer-specific context (e.g., libp2p_mplex_ctx_t *) */
+    void *muxer_ctx;       /**< Muxer-specific context (e.g., libp2p_mplex_ctx_t *) */
+    void *handler_context; /**< Event-driven handler context for stream lifecycle management */
     pthread_t handler_thread;
     int stop_flag;
     pthread_mutex_t mutex;
